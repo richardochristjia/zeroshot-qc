@@ -147,14 +147,16 @@ def _make_overlay(image: Image.Image, masks: list[RawMask]) -> Image.Image:
         color = _TINT_COLORS.get(mask.label, (255, 200, 0))
         try:
             binary = _decode_mask(mask.mask_rle, h, w)
+            if binary.shape != (h, w):
+                continue
+            # binary is (h, w) with 0/1
+            sel = binary.astype(bool)
+            if not sel.any():
+                continue
+            tint = np.array(color, dtype=np.float32)
+            overlay_arr[sel] = overlay_arr[sel] * 0.45 + tint * 0.55
         except Exception:
             continue
-        # binary is (h, w) with 0/1
-        sel = binary.astype(bool)
-        if not sel.any():
-            continue
-        tint = np.array(color, dtype=np.float32)
-        overlay_arr[sel] = overlay_arr[sel] * 0.45 + tint * 0.55
     return Image.fromarray(np.clip(overlay_arr, 0, 255).astype(np.uint8), mode="RGB")
 
 
@@ -202,6 +204,7 @@ def main(argv: list[str] | None = None) -> int:
 
     per_image_masks: list[list[RawMask]] = []
     overlays: list[Image.Image] = []
+    seen_stems: dict[str, int] = {}
 
     try:
         for stem, image in images:
@@ -219,7 +222,12 @@ def main(argv: list[str] | None = None) -> int:
 
             overlay = _make_overlay(image, masks)
             overlays.append(overlay)
-            overlay_path = overlay_dir / f"{stem}_overlay.png"
+            occurrence = seen_stems.get(stem, 0)
+            seen_stems[stem] = occurrence + 1
+            if occurrence == 0:
+                overlay_path = overlay_dir / f"{stem}_overlay.png"
+            else:
+                overlay_path = overlay_dir / f"{stem}_{occurrence + 1}_overlay.png"
             overlay.save(overlay_path, format="PNG")
     except AdapterNotConfiguredError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -251,6 +259,9 @@ def main(argv: list[str] | None = None) -> int:
         verdict = judge.judge(first_image, first_overlay, None, detections, profile)
     except AdapterNotConfiguredError as exc:
         print(f"error: {exc}", file=sys.stderr)
+        return 1
+    except ValidationError as exc:
+        print(f"error: judge verdict failed validation: {exc}", file=sys.stderr)
         return 1
 
     try:

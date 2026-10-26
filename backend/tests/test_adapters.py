@@ -2,14 +2,14 @@
 and the real adapters' no-network not-configured guard.
 
 Run: cd backend && python3.11 -m pytest
-Note: pycocotools decode/area raise on this host (see risks.md), so RLE
-acceptance here is encoder acceptance plus structural checks only.
 """
 
+import base64
+import io
 import json
+from pathlib import Path
 
 import httpx
-import numpy as np
 import pytest
 from PIL import Image
 from pycocotools import mask as mask_api
@@ -20,6 +20,7 @@ from app.adapters.muse_image import MuseImageGenerator
 from app.adapters.muse_spark import MuseSparkJudge
 from app.adapters.sam import SamSegmenter
 from app.config import settings
+from app.pipeline.cache import CachedSegmenter, DiskCache
 from app.schemas import Detection, ProductProfile, Verdict
 
 IMAGE_W, IMAGE_H = 40, 30
@@ -76,13 +77,15 @@ def test_fake_segmenter_rle_acceptance_and_structure(image: Image.Image) -> None
         rle = mask.mask_rle
         assert rle["size"] == [IMAGE_H, IMAGE_W]
         assert isinstance(rle["counts"], str)
-        json.dumps(rle)
-        assert rle["counts"].encode("utf-8")
-        assert rle["counts"].encode("utf-8").decode("utf-8") == rle["counts"]
-        blank = np.zeros((IMAGE_H, IMAGE_W), dtype=np.uint8, order="F")
-        encoded = mask_api.encode(blank)
-        assert [int(encoded["size"][0]), int(encoded["size"][1])] == rle["size"]
-        assert isinstance(encoded["counts"], bytes)
+        assert json.loads(json.dumps(rle)) == rle
+        decodable = {
+            "size": rle["size"],
+            "counts": rle["counts"].encode("utf-8"),
+        }
+        decoded = mask_api.decode(decodable)
+        assert decoded.shape == (IMAGE_H, IMAGE_W)
+        assert int(decoded.sum()) > 0
+        assert int(mask_api.area(decodable)) == int(decoded.sum())
 
 
 def test_fake_judge_validates_first_try(
@@ -177,3 +180,184 @@ def test_sam_empty_model_id_alone_raises_without_http(
 def test_sop_to_profile_is_m5_stub() -> None:
     with pytest.raises(NotImplementedError):
         MuseSparkJudge().sop_to_profile("Some SOP text.", "bottle")
+
+
+class _StubResponse:
+    def __init__(self, payload: object) -> None:
+        self._payload = payload
+
+    def raise_for_status(self) -> None:
+        return None
+
+    def json(self) -> object:
+        return self._payload
+
+
+def _configure_all(monkeypatch: pytest.MonkeyPatch, base_url: str) -> None:
+    monkeypatch.setattr(settings, "meta_api_key", "test-key")
+    monkeypatch.setattr(settings, "meta_api_base_url", base_url)
+    monkeypatch.setattr(settings, "sam_model_id", "sam-test")
+    monkeypatch.setattr(settings, "judge_model_id", "judge-test")
+    monkeypatch.setattr(settings, "image_model_id", "image-test")
+
+
+def _call_adapter(
+    name: str, image: Image.Image, profile: ProductProfile
+) -> object:
+    if name == "sam":
+        return SamSegmenter().segment(image, PROMPTS)
+    if name == "judge":
+        return MuseSparkJudge().judge(image, image, None, [], profile)
+    return MuseImageGenerator().add_defect(image, "a scratch", None)
+
+
+@pytest.mark.parametrize("adapter_name", ["sam", "judge", "image"])
+@pytest.mark.parametrize(
+    "empty_field", ["meta_api_key", "meta_api_base_url", None]
+)
+def test_not_configured_single_empty_field(
+    adapter_name: str,
+    empty_field: str | None,
+    image: Image.Image,
+    profile: ProductProfile,
+    monkeypatch: pytest.MonkeyPatch,
+    no_http: list,
+) -> None:
+    # None parametrizes the adapter's own model field below.
+    model_field = {
+        "sam": "sam_model_id",
+        "judge": "judge_model_id",
+        "image": "image_model_id",
+    }[adapter_name]
+    _configure_all(monkeypatch, "https://example.test/meta")
+    monkeypatch.setattr(settings, empty_field or model_field, "")
+    with pytest.raises(AdapterNotConfiguredError):
+        _call_adapter(adapter_name, image, profile)
+    assert no_http == []
+
+
+@pytest.mark.parametrize("adapter_name", ["sam", "judge", "image"])
+def test_http_base_url_rejected_before_http(
+    adapter_name: str,
+    image: Image.Image,
+    profile: ProductProfile,
+    monkeypatch: pytest.MonkeyPatch,
+    no_http: list,
+) -> None:
+    _configure_all(monkeypatch, "http://example.test/meta")
+    with pytest.raises(AdapterNotConfiguredError):
+        _call_adapter(adapter_name, image, profile)
+    assert no_http == []
+
+
+@pytest.mark.parametrize("adapter_name", ["sam", "judge", "image"])
+def test_https_base_url_reaches_stubbed_http(
+    adapter_name: str,
+    image: Image.Image,
+    profile: ProductProfile,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _configure_all(monkeypatch, "https://example.test/meta")
+    calls: list = []
+
+    def _stub(*args, **kwargs):  # type: ignore[no-untyped-def]
+        calls.append((args, kwargs))
+        if adapter_name == "sam":
+            return _StubResponse({"masks": []})
+        if adapter_name == "judge":
+            return _StubResponse(
+                {
+                    "verdict": "PASS",
+                    "confidence": 0.5,
+                    "rulings": [],
+                    "missed_defects": [],
+                    "summary": "ok",
+                }
+            )
+        buffer = io.BytesIO()
+        Image.new("RGB", (2, 2), color=(10, 20, 30)).save(buffer, format="PNG")
+        return _StubResponse(
+            {"image": base64.b64encode(buffer.getvalue()).decode("ascii")}
+        )
+
+    monkeypatch.setattr(httpx, "post", _stub)
+    result = _call_adapter(adapter_name, image, profile)
+    assert len(calls) == 1
+    if adapter_name == "sam":
+        assert result == []
+    elif adapter_name == "judge":
+        assert isinstance(result, Verdict)
+    else:
+        assert isinstance(result, Image.Image)
+
+
+@pytest.fixture
+def sam_http(monkeypatch: pytest.MonkeyPatch):
+    _configure_all(monkeypatch, "https://example.test/meta")
+    state: dict = {"payload": {"masks": []}, "calls": 0}
+
+    def _stub(*args, **kwargs):  # type: ignore[no-untyped-def]
+        state["calls"] += 1
+        return _StubResponse(state["payload"])
+
+    monkeypatch.setattr(httpx, "post", _stub)
+    return state
+
+
+def test_sam_drops_mismatched_and_malformed_rle(
+    image: Image.Image, sam_http: dict
+) -> None:
+    valid = FakeSegmenter().segment(image, PROMPTS)[0]
+    donor = FakeSegmenter().segment(
+        Image.new("RGB", (200, 200), color=(120, 120, 120)), PROMPTS
+    )[0]
+    sam_http["payload"] = {
+        "masks": [
+            {
+                "label": valid.label,
+                "score": valid.score,
+                "mask_rle": valid.mask_rle,
+            },
+            {
+                "label": "scratch",
+                "score": 0.9,
+                "mask_rle": donor.mask_rle,
+            },
+            {
+                "label": "crack",
+                "score": 0.9,
+                "mask_rle": {"size": [IMAGE_H, IMAGE_W], "counts": 12345},
+            },
+            {
+                "label": "dent",
+                "score": 0.9,
+                "mask_rle": {
+                    "size": [IMAGE_H, IMAGE_W],
+                    "counts": "x" * 20000,
+                },
+            },
+        ]
+    }
+    result = SamSegmenter().segment(image, PROMPTS)
+    assert [m.label for m in result] == [valid.label]
+    assert result[0].mask_rle == valid.mask_rle
+
+
+def test_sam_malformed_mask_never_reaches_disk_cache(
+    image: Image.Image, sam_http: dict, tmp_path: Path
+) -> None:
+    donor = FakeSegmenter().segment(
+        Image.new("RGB", (200, 200), color=(120, 120, 120)), PROMPTS
+    )[0]
+    sam_http["payload"] = {
+        "masks": [
+            {"label": "scratch", "score": 0.9, "mask_rle": donor.mask_rle}
+        ]
+    }
+    cache_dir = tmp_path / "cache"
+    cached = CachedSegmenter(SamSegmenter(), "sam-test", DiskCache(cache_dir))
+    assert cached.segment(image, PROMPTS) == []
+    for path in cache_dir.glob("*.json"):
+        text = path.read_text(encoding="utf-8")
+        assert donor.mask_rle["counts"] not in text
+        assert "200" not in text

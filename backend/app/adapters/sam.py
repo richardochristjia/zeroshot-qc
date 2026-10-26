@@ -10,6 +10,7 @@ and built only from the shared settings values.
 
 import base64
 import io
+from urllib.parse import urlsplit
 
 import httpx
 from PIL import Image
@@ -17,6 +18,24 @@ from PIL import Image
 from app.adapters.base import AdapterNotConfiguredError
 from app.config import settings
 from app.schemas import RawMask
+
+
+def _is_valid_mask_rle(mask_rle: object, height: int, width: int) -> bool:
+    if not isinstance(mask_rle, dict):
+        return False
+    size = mask_rle.get("size")
+    if not isinstance(size, (list, tuple)) or len(size) != 2:
+        return False
+    if list(size) != [height, width]:
+        return False
+    counts = mask_rle.get("counts")
+    if not isinstance(counts, (str, bytes)):
+        return False
+    if len(counts) == 0:
+        return False
+    if len(counts) > max(4096, height * width * 10):
+        return False
+    return True
 
 
 class SamSegmenter:
@@ -27,6 +46,10 @@ class SamSegmenter:
             raise AdapterNotConfiguredError(
                 "SAM adapter is not configured: META_API_KEY, META_API_BASE_URL "
                 "and SAM_MODEL_ID must all be set."
+            )
+        if urlsplit(settings.meta_api_base_url).scheme != "https":
+            raise AdapterNotConfiguredError(
+                "SAM adapter is not configured: META_API_BASE_URL must use https."
             )
         return self._segment_via_meta_api(image, prompts)
 
@@ -56,11 +79,17 @@ class SamSegmenter:
         # entries carry label/score/mask_rle is assumed.
         data = response.json()
         masks = data.get("masks", []) if isinstance(data, dict) else []
-        return [
-            RawMask(
-                label=str(entry["label"]),
-                score=float(entry["score"]),
-                mask_rle=dict(entry["mask_rle"]),
-            )
-            for entry in masks
-        ]
+        result: list[RawMask] = []
+        for entry in masks:
+            if not isinstance(entry, dict):
+                continue
+            try:
+                label = str(entry["label"])
+                score = float(entry["score"])
+                mask_rle = dict(entry["mask_rle"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if not _is_valid_mask_rle(mask_rle, image.height, image.width):
+                continue
+            result.append(RawMask(label=label, score=score, mask_rle=mask_rle))
+        return result
