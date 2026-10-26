@@ -70,6 +70,19 @@ def test_fake_smoke_placeholders_exit_zero(
     assert isinstance(Verdict.model_validate(parsed), Verdict)
 
 
+def test_fallback_discovery_ignores_cli_overlays(
+    smoke_dirs, capsys: pytest.CaptureFixture[str]
+) -> None:
+    data_dir, _mvtec_dir = smoke_dirs
+    _save_image(data_dir / "runs" / "cli" / "probe_overlay.png", (10, 10, 10))
+    _save_image(data_dir / "runs" / "cli" / "solo_overlay.png", (20, 20, 20))
+    _save_image(data_dir / "runs" / "cli" / "extra_overlay.png", (30, 30, 30))
+    assert smoke.main(["--fake"]) == 0
+    captured = capsys.readouterr()
+    assert "probe_overlay:" not in captured.out
+    assert "placeholder_1: scratch=" in captured.out
+
+
 def test_real_smoke_empty_dirs_data_missing_exits_one(
     smoke_dirs, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -80,7 +80,10 @@ def discover_image_paths() -> list[Path]:
     data_dir = Path(settings.data_dir)
     cache_root = data_dir / "cache"
     smoke_root = data_dir / "runs" / "smoke"
-    fallback = _collect_images(data_dir, exclude_roots=[cache_root, smoke_root])
+    cli_root = data_dir / "runs" / "cli"
+    fallback = _collect_images(
+        data_dir, exclude_roots=[cache_root, smoke_root, cli_root]
+    )
     if len(fallback) >= 3:
         return fallback[:3]
     return (images or fallback)[:3]
