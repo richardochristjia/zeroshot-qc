@@ -10,6 +10,7 @@ from the shared settings values.
 
 import base64
 import io
+from urllib.parse import urlsplit
 
 import httpx
 from PIL import Image
@@ -28,6 +29,10 @@ class MuseImageGenerator:
             raise AdapterNotConfiguredError(
                 "Image adapter is not configured: META_API_KEY, META_API_BASE_URL "
                 "and IMAGE_MODEL_ID must all be set."
+            )
+        if urlsplit(settings.meta_api_base_url).scheme != "https":
+            raise AdapterNotConfiguredError(
+                "Image adapter is not configured: META_API_BASE_URL must use https."
             )
         return self._add_defect_via_meta_api(good_image, defect_description, mask)
 
