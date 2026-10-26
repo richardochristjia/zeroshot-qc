@@ -9,13 +9,15 @@ import json
 from pathlib import Path
 
 import httpx
+import numpy as np
 import pytest
 from PIL import Image
+from pycocotools import mask as mask_api
 
 from app.adapters.fakes import FakeSegmenter
 from app.config import settings
 from app.pipeline.overlay import make_overlay
-from app.schemas import Detection, Verdict
+from app.schemas import Detection, RawMask, Verdict
 
 
 def _load_smoke():  # type: ignore[no-untyped-def]
@@ -90,6 +92,60 @@ def test_smoke_same_stem_images_produce_three_overlays(
     overlays = sorted((data_dir / "runs" / "smoke").glob("*.png"))
     assert len(overlays) == 3
     assert len({p.name for p in overlays}) == 3
+
+
+def test_make_overlay_empty_list_returns_unmarked_image() -> None:
+    image = Image.new("RGB", (IMAGE_W, IMAGE_H), color=(120, 120, 120))
+    overlay = make_overlay(image, [])
+    assert overlay.size == (IMAGE_W, IMAGE_H)
+    assert np.array_equal(np.asarray(overlay), np.asarray(image))
+
+
+def test_masks_to_detections_skips_zero_area_mask() -> None:
+    encoded = mask_api.encode(
+        np.asfortranarray(np.zeros((IMAGE_H, IMAGE_W), dtype=np.uint8))
+    )
+    empty = RawMask(
+        label="scratch",
+        score=0.9,
+        mask_rle={
+            "size": [int(encoded["size"][0]), int(encoded["size"][1])],
+            "counts": encoded["counts"].decode("utf-8"),
+        },
+    )
+    with pytest.warns(UserWarning, match="zero-area"):
+        assert smoke._masks_to_detections([empty]) == []
+
+
+def test_make_overlay_skips_giant_mismatched_rle_without_decoding(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_decode = mask_api.decode
+    decoded_giant: list[object] = []
+
+    def _spy(rle):  # type: ignore[no-untyped-def]
+        size = rle.get("size") if isinstance(rle, dict) else None
+        if size == [30000, 30000]:
+            decoded_giant.append(size)
+            raise AssertionError("giant mismatched RLE must skip pre-decode")
+        return real_decode(rle)
+
+    monkeypatch.setattr(mask_api, "decode", _spy)
+    image = Image.new("RGB", (IMAGE_W, IMAGE_H), color=(120, 120, 120))
+    det = Detection(
+        id="d1",
+        label="scratch",
+        score=0.9,
+        bbox=(0, 0, IMAGE_W, IMAGE_H),
+        mask_rle={"size": [30000, 30000], "counts": "zzzzzzzzzzzz"},
+        area_px=0,
+        length_px=0.0,
+    )
+    with pytest.warns(UserWarning, match="skipping RLE"):
+        overlay = make_overlay(image, [det])
+    assert decoded_giant == []
+    assert overlay.size == (IMAGE_W, IMAGE_H)
+    assert np.array_equal(np.asarray(overlay), np.asarray(image))
 
 
 def test_make_overlay_skips_mismatched_rle_without_raising() -> None:

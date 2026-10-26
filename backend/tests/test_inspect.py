@@ -8,6 +8,8 @@ vs 0.3), so it cannot exercise the drop path (see check-2.md).
 Run: cd backend && .venv/bin/python -m pytest -q
 """
 
+import os
+
 import numpy as np
 import pytest
 from PIL import Image
@@ -15,7 +17,13 @@ from pycocotools import mask as mask_api
 
 from app.adapters.fakes import FakeSegmenter
 from app.pipeline.cache import CachedSegmenter, DiskCache
-from app.pipeline.inspect import inspect_image, load_profile, run_inspection
+from app.pipeline.inspect import (
+    PROFILES_DIR,
+    _mask_iou,
+    inspect_image,
+    load_profile,
+    run_inspection,
+)
 from app.pipeline.measure import decode_rle
 from app.schemas import ProductProfile, RawMask
 
@@ -236,6 +244,99 @@ def test_fake_segmenter_scores_never_drop_below_default_min_score(
 def test_load_profile_unknown_name_raises_value_error() -> None:
     with pytest.raises(ValueError, match="unknown profile"):
         load_profile("no-such-profile")
+
+
+def test_load_profile_rejects_traversal_and_absolute_paths(
+    tmp_path, profile: ProductProfile
+) -> None:
+    outside = tmp_path / "evil.json"
+    outside.write_text(profile.model_dump_json(), encoding="utf-8")
+    traversal = os.path.relpath(str(tmp_path / "evil"), str(PROFILES_DIR))
+    absolute = str(tmp_path / "evil")
+    assert "/" in traversal  # premise: the name really escapes PROFILES_DIR
+    with pytest.raises(ValueError, match="unknown profile"):
+        load_profile(traversal)
+    with pytest.raises(ValueError, match="unknown profile"):
+        load_profile(absolute)
+
+
+def test_zero_area_mask_is_skipped(
+    image: Image.Image, profile: ProductProfile
+) -> None:
+    empty = RawMask(
+        label="scratch",
+        score=0.9,
+        mask_rle=_rle_of(np.zeros((IMG_H, IMG_W), dtype=np.uint8)),
+    )
+    stub = StubSegmenter(
+        [empty, _rect_mask(10, 5, 100, 50, "crack", 0.8)]
+    )
+    with pytest.warns(UserWarning, match="zero-area"):
+        detections = run_inspection(image, profile, stub)
+    assert [d.label for d in detections] == ["crack"]
+
+
+def test_giant_mismatched_rle_is_skipped_without_decoding(
+    image: Image.Image, profile: ProductProfile, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_decode = mask_api.decode
+    decoded_giant: list[object] = []
+
+    def _spy(rle):  # type: ignore[no-untyped-def]
+        size = rle.get("size") if isinstance(rle, dict) else None
+        if size == [30000, 30000]:
+            decoded_giant.append(size)
+            raise AssertionError("giant mismatched RLE must skip pre-decode")
+        return real_decode(rle)
+
+    monkeypatch.setattr(mask_api, "decode", _spy)
+    giant = {"size": [30000, 30000], "counts": "zzzzzzzzzzzz"}
+    stub = StubSegmenter(
+        [
+            RawMask(label="scratch", score=0.9, mask_rle=giant),
+            _rect_mask(10, 5, 100, 50, "crack", 0.8),
+        ]
+    )
+    with pytest.warns(UserWarning, match="skipping RLE"):
+        detections = run_inspection(image, profile, stub)
+    assert decoded_giant == []
+    assert [d.label for d in detections] == ["crack"]
+
+
+def test_iou_exactly_half_pair_stays_split(
+    image: Image.Image, profile: ProductProfile
+) -> None:
+    # A is 2x2 (4 px), B is the left 2x1 half inside A (2 px):
+    # IoU = 2/4 = 0.5 exactly, and the strict `>` rule must NOT merge.
+    big = np.zeros((IMG_H, IMG_W), dtype=np.uint8)
+    big[5:7, 10:12] = 1
+    half = np.zeros((IMG_H, IMG_W), dtype=np.uint8)
+    half[5:7, 10:11] = 1
+    assert _mask_iou(big, half) == 0.5
+    stub = StubSegmenter(
+        [
+            RawMask(label="scratch", score=0.9, mask_rle=_rle_of(big)),
+            RawMask(label="crack", score=0.8, mask_rle=_rle_of(half)),
+        ]
+    )
+    detections = run_inspection(image, profile, stub)
+    assert [d.id for d in detections] == ["d1", "d2"]
+    assert [d.label for d in detections] == ["scratch", "crack"]
+
+
+def test_none_mm_per_px_yields_none_mm_fields(image: Image.Image) -> None:
+    profile = ProductProfile(
+        id="screw",
+        name="Screw",
+        defect_prompts=PROMPTS,
+        rules="No scratches.",
+    )
+    assert profile.mm_per_px is None
+    stub = StubSegmenter([_rect_mask(10, 5, 100, 50, "scratch", 0.9)])
+    (detection,) = run_inspection(image, profile, stub)
+    assert detection.area_px == 100 * 50
+    assert detection.area_mm2 is None
+    assert detection.length_mm is None
 
 
 def test_inspect_image_loads_image_and_profile_from_disk(

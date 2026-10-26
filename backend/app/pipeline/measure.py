@@ -8,13 +8,44 @@ import cv2
 import numpy as np
 from pycocotools import mask as mask_api
 
+# Absolute worst-case decode size: a single mask declaring more pixels
+# than this is rejected before pycocotools allocates it. Backstop for
+# callers that cannot pre-validate against image dims (e.g. smoke
+# measuring); 100 MP is far above any inspection image.
+MAX_RLE_PIXELS = 100_000_000
+
+
+def declared_rle_size(mask_rle: dict) -> tuple[int, int] | None:
+    """Declared ``(height, width)`` from an RLE dict's ``size`` field.
+
+    Returns ``None`` when the field is missing or unreadable, so callers
+    fall through to the normal decode path (which raises a catchable
+    error downstream).
+    """
+    if not isinstance(mask_rle, dict):
+        return None
+    size = mask_rle.get("size")
+    if not isinstance(size, (list, tuple)) or len(size) != 2:
+        return None
+    try:
+        return (int(size[0]), int(size[1]))
+    except (TypeError, ValueError):
+        return None
+
 
 def decode_rle(mask_rle: dict) -> np.ndarray:
     """Decode a COCO RLE dict to a binary (H, W) uint8 array.
 
     Accepts the JSON-safe text form of ``counts`` (as stored by the fake
-    segmenter and the cache path) as well as raw bytes.
+    segmenter and the cache path) as well as raw bytes. Masks declaring
+    more than ``MAX_RLE_PIXELS`` raise ``ValueError`` before decoding.
     """
+    declared = declared_rle_size(mask_rle)
+    if declared is not None and declared[0] * declared[1] > MAX_RLE_PIXELS:
+        raise ValueError(
+            f"RLE size {list(declared)} exceeds {MAX_RLE_PIXELS}-pixel "
+            "cap; refusing to decode"
+        )
     rle = {"size": list(mask_rle["size"]), "counts": mask_rle["counts"]}
     if isinstance(rle["counts"], str):
         rle["counts"] = rle["counts"].encode("utf-8")
