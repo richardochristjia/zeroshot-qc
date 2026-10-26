@@ -14,7 +14,8 @@ from PIL import Image
 
 from app.adapters.fakes import FakeSegmenter
 from app.config import settings
-from app.schemas import RawMask, Verdict
+from app.pipeline.overlay import make_overlay
+from app.schemas import Detection, Verdict
 
 
 def _load_smoke():  # type: ignore[no-untyped-def]
@@ -96,9 +97,17 @@ def test_make_overlay_skips_mismatched_rle_without_raising() -> None:
     donor = FakeSegmenter().segment(
         Image.new("RGB", (200, 200), color=(120, 120, 120)), ["scratch"]
     )[0]
-    mask = RawMask(label="scratch", score=0.9, mask_rle=donor.mask_rle)
+    det = Detection(
+        id="d1",
+        label="scratch",
+        score=0.9,
+        bbox=(0, 0, IMAGE_W, IMAGE_H),
+        mask_rle=donor.mask_rle,
+        area_px=0,
+        length_px=0.0,
+    )
     assert donor.mask_rle["size"] == [200, 200]
-    overlay = smoke._make_overlay(image, [mask])
+    overlay = make_overlay(image, [det])
     assert overlay.size == (IMAGE_W, IMAGE_H)
 
 

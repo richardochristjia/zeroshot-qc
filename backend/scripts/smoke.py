@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import warnings
 from collections import Counter
 from pathlib import Path
 
@@ -19,9 +20,7 @@ _BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(_BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(_BACKEND_ROOT))
 
-import numpy as np  # noqa: E402
 from PIL import Image, ImageDraw  # noqa: E402
-from pycocotools import mask as mask_api  # noqa: E402
 from pydantic import ValidationError  # noqa: E402
 
 from app.adapters.base import AdapterNotConfiguredError  # noqa: E402
@@ -30,15 +29,11 @@ from app.adapters.muse_spark import MuseSparkJudge  # noqa: E402
 from app.adapters.sam import SamSegmenter  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.pipeline.cache import CachedJudge, CachedSegmenter, DiskCache  # noqa: E402
+from app.pipeline.measure import measure_mask  # noqa: E402
+from app.pipeline.overlay import make_overlay  # noqa: E402
 from app.schemas import Detection, ProductProfile, RawMask  # noqa: E402
 
 SMOKE_PROMPTS = ["scratch", "crack", "dent"]
-
-_TINT_COLORS: dict[str, tuple[int, int, int]] = {
-    "scratch": (255, 80, 80),
-    "crack": (80, 200, 80),
-    "dent": (80, 120, 255),
-}
 
 
 def build_adapters(fake: bool) -> tuple[CachedSegmenter, CachedJudge]:
@@ -106,34 +101,34 @@ def _make_placeholders() -> list[tuple[str, Image.Image]]:
     return placeholders
 
 
-def _decode_mask(mask_rle: dict, height: int, width: int) -> np.ndarray:
-    counts = mask_rle.get("counts")
-    counts_bytes = counts.encode("utf-8") if isinstance(counts, str) else counts
-    rle = {"size": mask_rle.get("size", [height, width]), "counts": counts_bytes}
-    decoded = mask_api.decode(rle)
-    if decoded.ndim == 3:
-        decoded = decoded[:, :, 0]
-    return decoded
+def _masks_to_detections(masks: list[RawMask]) -> list[Detection]:
+    """Measure raw masks into `Detection`s with `d1...` ids, in mask order.
 
-
-def _make_overlay(image: Image.Image, masks: list[RawMask]) -> Image.Image:
-    base = image.convert("RGB")
-    h, w = base.size[1], base.size[0]
-    overlay_arr = np.array(base, dtype=np.float32)
+    Undecodable RLE is skipped with a warning (inspect.py precedent);
+    size-mismatched masks still measure fine here and are skipped with
+    a warning later by `make_overlay`.
+    """
+    detections: list[Detection] = []
     for mask in masks:
-        color = _TINT_COLORS.get(mask.label, (255, 200, 0))
         try:
-            binary = _decode_mask(mask.mask_rle, h, w)
-            if binary.shape != (h, w):
-                continue
-            sel = binary.astype(bool)
-            if not sel.any():
-                continue
-            tint = np.array(color, dtype=np.float32)
-            overlay_arr[sel] = overlay_arr[sel] * 0.45 + tint * 0.55
-        except Exception:
+            measured = measure_mask(mask.mask_rle)
+        except Exception as exc:
+            warnings.warn(
+                f"skipping undecodable RLE for {mask.label!r}: {exc}"
+            )
             continue
-    return Image.fromarray(np.clip(overlay_arr, 0, 255).astype(np.uint8), mode="RGB")
+        detections.append(
+            Detection(
+                id=f"d{len(detections) + 1}",
+                label=mask.label,
+                score=mask.score,
+                bbox=measured["bbox"],
+                mask_rle=mask.mask_rle,
+                area_px=measured["area_px"],
+                length_px=measured["length_px"],
+            )
+        )
+    return detections
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -176,14 +171,13 @@ def main(argv: list[str] | None = None) -> int:
     overlay_dir = Path(settings.data_dir) / "runs" / "smoke"
     overlay_dir.mkdir(parents=True, exist_ok=True)
 
-    per_image_masks: list[list[RawMask]] = []
+    per_image_detections: list[list[Detection]] = []
     overlays: list[Image.Image] = []
     seen_stems: dict[str, int] = {}
 
     try:
         for stem, image in images:
             masks = segmenter.segment(image, SMOKE_PROMPTS)
-            per_image_masks.append(masks)
             counts = Counter(m.label for m in masks)
             parts = ", ".join(
                 f"{prompt}={counts.get(prompt, 0)}" for prompt in SMOKE_PROMPTS
@@ -193,7 +187,9 @@ def main(argv: list[str] | None = None) -> int:
                 parts += ", " + ", ".join(f"{lbl}={counts[lbl]}" for lbl in sorted(extra))
             print(f"{stem}: {parts}")
 
-            overlay = _make_overlay(image, masks)
+            detections = _masks_to_detections(masks)
+            per_image_detections.append(detections)
+            overlay = make_overlay(image, detections)
             overlays.append(overlay)
             occurrence = seen_stems.get(stem, 0)
             seen_stems[stem] = occurrence + 1
@@ -208,19 +204,7 @@ def main(argv: list[str] | None = None) -> int:
 
     first_stem, first_image = images[0]
     first_overlay = overlays[0]
-    first_masks = per_image_masks[0]
-    detections = [
-        Detection(
-            id=f"d{i + 1}",
-            label=m.label,
-            score=m.score,
-            bbox=(0, 0, 0, 0),
-            mask_rle=m.mask_rle,
-            area_px=0,
-            length_px=0.0,
-        )
-        for i, m in enumerate(first_masks)
-    ]
+    detections = per_image_detections[0]
     profile = ProductProfile(
         id="smoke",
         name="Smoke",
