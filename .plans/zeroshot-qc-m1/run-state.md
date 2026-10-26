@@ -33,13 +33,13 @@ status: done
 outcome: verify.md — 62 passed; live health {"status":"ok","models":{"sam":"","judge":"","image":""}}; fake smoke 3 overlays + PASS verdict; grep guard clean
 
 ## Push and pull request
-status: skipped
-outcome: repo has no git remote (git remote -v empty); branch feat/zeroshot-qc-m1 is local only — human adds a remote, then push + open PR
+status: done
+outcome: pushed feat/zeroshot-qc-m1 to https://github.com/richardochristjia/zeroshot-qc.git; PR https://github.com/richardochristjia/zeroshot-qc/pull/1
 
 ## Browser walkthrough
 status: skipped
 outcome: no .harness/ fixture in repo and M1 has no frontend (M6); reported skipped per approve-plan step 7
 
 ## CI status
-status: skipped
-outcome: unknown — no remote, no CI configured
+status: done
+outcome: gh pr checks 1 → no checks reported on the branch (no CI configured)
