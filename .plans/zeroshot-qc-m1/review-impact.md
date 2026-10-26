@@ -1,0 +1,44 @@
+# Blast radius — feat/zeroshot-qc-m1 vs main
+
+## What it does
+
+Greenfield scaffold only. `main` is the empty initial commit, so nothing existing can break: 39 files, +1839/-0. New surface is HANDOFF §6 schemas ([backend/app/schemas.py](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/schemas.py:8)), §5 adapter protocols with real Meta HTTP adapters behind `TODO(meta-docs)` mappings, deterministic fakes ([backend/app/adapters/fakes.py](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/adapters/fakes.py:29)), a sha256 disk cache ([backend/app/pipeline/cache.py](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/pipeline/cache.py:55)), `GET /api/health` ([backend/app/main.py](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/main.py:20)), and the smoke CLI ([backend/scripts/smoke.py](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/scripts/smoke.py:161)). Routers are one-line stubs, not mounted. The blast radius is therefore forward: M2 measure/overlay, M3 inspect, and M5 synth will be built on these contracts.
+
+## The one fact it's safe because of
+
+**Proven (step 4 — ran the real code).** A fake mask survives the full path M2 depends on — `FakeSegmenter` → `model_dump` → JSON → `model_validate` → pycocotools decode — and decodes in the pinned `backend/.venv` to exactly the encoded rectangle. The host-global decode failure flagged in [risks.md](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/.plans/zeroshot-qc-m1/risks.md:7) does not occur in the venv. Script: `/tmp/prove_impact_m1.py` (imports the shipped `app.adapters.fakes` and `app.pipeline.cache`).
+
+```text
+OK scratch: score=0.743 area=105 bbox=[13, 11, 7, 15] counts_len=18
+OK crack: score=0.776 area=64 bbox=[36, 11, 4, 16] counts_len=12
+OK dent: score=0.732 area=100 bbox=[15, 10, 10, 10] counts_len=24
+OK cache-hit: inner_calls=1 files=1
+OK keys: framed_distinct=True order_sensitive=True fake_vs_real_distinct=True
+PROOF PASSED
+```
+
+Area matched `binary.sum()` and `toBbox` matched an independent numpy bbox for every prompt; a `CachedSegmenter` hit (`inner_calls=1`) returned identical, still-decodable masks. Baseline also green: `pytest -q` → 23 passed; `smoke.py --fake` twice → cache file count unchanged (8).
+
+## Risks
+
+- **Real SAM RLE shape breaks both cache and M2 decode — likely, high cost.** The fake emits JSON-safe text counts ([fakes.py:45](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/adapters/fakes.py:45)), but the real adapter copies `mask_rle` verbatim ([sam.py:59](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/adapters/sam.py:59)) and `mask_rle: dict` is unvalidated ([schemas.py:11](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/schemas.py:11)). Probed with `/tmp/probe_hazards_m1.py`: byte counts make `CachedSegmenter` raise `TypeError: Object of type bytes is not JSON serializable` on `put` (no partial file left); list counts cache fine but fail smoke's decoder, which only handles `str`/`bytes` ([smoke.py:125](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/scripts/smoke.py:125)), and overlay swallows decode errors silently ([smoke.py:150](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/scripts/smoke.py:150)). Check when Meta docs land: feed byte- and list-count fixtures through `CachedSegmenter`; normalise counts to text inside `_segment_via_meta_api` if needed.
+- **Fake cardinality and geometry teach wrong M2 assumptions — certain to differ, medium cost.** Fakes return exactly one non-empty axis-aligned rectangle per prompt, scores 0.55–0.95 ([fakes.py:36](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/adapters/fakes.py:36), [fakes.py:49](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/adapters/fakes.py:49)). Nothing yet applies `min_score=0.3` ([schemas.py:32](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/schemas.py:32)). M2 measure (min-area rotated rect per [schemas.py:21](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/schemas.py:21)) written only against rectangles degenerates, and code assuming one mask per prompt breaks on real SAM returning zero or many instances per prompt. Check: add an M2 test with multi-instance and empty mask lists before wiring real SAM.
+- **Cache keys freeze today's schema with no version — likely, low–medium cost.** Keys cover kind, PNG bytes, prompts, detections/profile JSON, model id ([cache.py:55](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/pipeline/cache.py:55), [cache.py:72](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/pipeline/cache.py:72)) but no schema version, and entries never expire. Adding a defaulted field to `RawMask`/`Verdict` silently serves stale entries; the judge key also embeds full `Detection` JSON ([cache.py:95](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/pipeline/cache.py:95)), so replacing smoke's zero `bbox`/`area_px` placeholders ([smoke.py:232](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/scripts/smoke.py:232)) with M2 measurements busts every judge entry once (safe misses, one recompute). Check before any schema edit: bump a version component in both key functions or clear `data/cache`.
+- **Wrapper model id can go stale against live settings — unlikely in M1, medium later.** `CachedSegmenter` captures `model_id` at wiring ([cache.py:157](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/pipeline/cache.py:157), [smoke.py:46](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/scripts/smoke.py:46)) while real adapters re-read the shared `settings` at call time ([sam.py:26](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/adapters/sam.py:26)). In the M1 CLI both are read once, so they agree; a long-lived M3 server that wires once and later rotates a model id would keep serving old-model entries under the old key. Check in M3: wire cached adapters per request or rebuild on settings change.
+- **Config discovery assumes source layout — unlikely locally, medium on deploy.** `.env` and relative data dirs anchor to `REPO_ROOT = parents[2]` ([config.py:13](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/config.py:13), [config.py:31](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/config.py:31)); proven cwd-independent (imported from `/tmp`, paths resolved to repo root). A packaged/container layout that moves `config.py` breaks the anchor, and env-vars-only deploy is still unprobed ([risks.md:4](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/.plans/zeroshot-qc-m1/risks.md:4)). Also inconsistent freshness: health re-reads `settings` per request ([main.py:25](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/main.py:25)) but CORS origins snapshot at import ([main.py:10](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/main.py:10)). Check before deploy work: run health with env vars only, no `.env`, from a non-repo cwd.
+
+## Cleared
+
+- No regression surface: `main` is empty, all 39 files are additions, router stubs are unmounted, and the only live route is health.
+- Fake/real cache poisoning: keys differ by model id and fakes use `fake-sam`/`fake-judge` discriminators ([smoke.py:50](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/scripts/smoke.py:50)) — proven distinct in the script above. The empty-model-id real path raises before HTTP and caches nothing.
+- Key collisions: length-prefixed framing ([cache.py:44](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/pipeline/cache.py:44)) separates `["ab","c"]` from `["a","bc"]` (proven); prompt order changes the key (harmless duplicate entries, consistent with the order-sensitive fake seed).
+- Corrupt entries count as misses and adapter exceptions are never cached ([cache.py:165](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/pipeline/cache.py:165)); API key never reaches disk (key excludes settings entirely; covered by `test_cache.py` sentinel test). Failed byte-counts `put` left no partial file (probed).
+- Secrets: health never returns key or base URL ([main.py:22](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/main.py:22)); real adapters raise `AdapterNotConfiguredError` before HTTP on any empty key/base/model id.
+
+## Before you merge
+
+Nothing blocks M1. Cheapest guards for the next milestones:
+
+1. Promote `/tmp/prove_impact_m1.py` into `backend/tests/` as the M2 contract test (decode-after-cache-hit) before writing measure code.
+2. When Meta docs arrive, add byte/list-count fixtures through `CachedSegmenter` and normalise counts in `_segment_via_meta_api` ([sam.py:33](/Users/167560.KEVIN/orca/projects/Zeroshot%20QC/backend/app/adapters/sam.py:33)) — that one function is the only place the fix is needed.
+3. Add multi-instance and zero-instance segmenter fixtures before M2 filtering/measure lands.
