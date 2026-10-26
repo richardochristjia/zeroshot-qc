@@ -8,14 +8,10 @@ TODO(meta-docs) and built only from the shared settings values.
 ``sop_to_profile`` is an explicit M5 stub (plan: SOP parsing lands M5).
 """
 
-import base64
-import io
-from urllib.parse import urlsplit
-
 import httpx
 from PIL import Image
 
-from app.adapters.base import AdapterNotConfiguredError
+from app.adapters.base import encode_image_b64, require_configured
 from app.config import settings
 from app.schemas import Detection, ProductProfile, Verdict
 
@@ -31,15 +27,9 @@ class MuseSparkJudge:
         detections: list[Detection],
         profile: ProductProfile,
     ) -> Verdict:
-        if not settings.meta_api_key or not settings.meta_api_base_url or not settings.judge_model_id:
-            raise AdapterNotConfiguredError(
-                "Judge adapter is not configured: META_API_KEY, META_API_BASE_URL "
-                "and JUDGE_MODEL_ID must all be set."
-            )
-        if urlsplit(settings.meta_api_base_url).scheme != "https":
-            raise AdapterNotConfiguredError(
-                "Judge adapter is not configured: META_API_BASE_URL must use https."
-            )
+        require_configured(
+            model_id=settings.judge_model_id, model_field="JUDGE_MODEL_ID", adapter="Judge"
+        )
         return self._judge_via_meta_api(image, overlay, reference, detections, profile)
 
     def sop_to_profile(self, sop_text: str, category_name: str) -> ProductProfile:
@@ -63,20 +53,14 @@ class MuseSparkJudge:
         # used verbatim until the docs name the judge path.
         url = settings.meta_api_base_url
 
-        def _encode(img: Image.Image) -> str:
-            # TODO(meta-docs): image encoding — PNG bytes, base64 text.
-            buffer = io.BytesIO()
-            img.save(buffer, format="PNG")
-            return base64.b64encode(buffer.getvalue()).decode("ascii")
-
         # TODO(meta-docs): request payload shape and field names,
         # including how images, detections, and rules are passed and
         # whether a structured-output / JSON mode exists.
         payload = {
             "model": settings.judge_model_id,
-            "image": _encode(image),
-            "overlay": _encode(overlay),
-            "reference": _encode(reference) if reference is not None else None,
+            "image": encode_image_b64(image),
+            "overlay": encode_image_b64(overlay),
+            "reference": encode_image_b64(reference) if reference is not None else None,
             "detections": [d.model_dump() for d in detections],
             "profile": profile.model_dump(),
         }
