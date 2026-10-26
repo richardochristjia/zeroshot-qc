@@ -132,3 +132,5 @@ Written at the end of implementation, verified against the built code (see the V
 - (config) Model IDs are currently read from environment configuration and never hardcoded.
 - (data) The data directory currently holds datasets, cache, and run outputs and is excluded from version control.
 ```
+
+> Divergence (Phase 7, Record review): Entry 1 `(pipeline) … every model call …` does not hold as written — only `CachedSegmenter`/`CachedJudge` exist (`backend/app/pipeline/cache.py:146,175`); `ImageGenerator` caching is deferred to M5 (same file:17-19) and `CachedJudge.sop_to_profile` is delegated uncached (same file:211-212). Per Verification (2b) nothing was written to `.agents/RECORD.md`; the other three entries were judged true (entry 3: `fake-sam`/`fake-judge` in `backend/scripts/smoke.py:50-51` are cache-discriminator ids, not env model IDs). Re-propose a narrowed pipeline entry (segment/judge only) for human approval before bootstrapping the Record.
