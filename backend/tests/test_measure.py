@@ -87,3 +87,18 @@ def test_encode_requires_fortran_order() -> None:
     assert binary.flags["C_CONTIGUOUS"]
     with pytest.raises(ValueError):
         mask_api.encode(binary)
+
+
+def test_decode_rle_rejects_giant_size_before_decoding(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    decoded: list[dict] = []
+
+    def _spy(rle):  # type: ignore[no-untyped-def]
+        decoded.append(rle)
+        raise AssertionError("giant RLE must be refused before decoding")
+
+    monkeypatch.setattr(mask_api, "decode", _spy)
+    with pytest.raises(ValueError, match="exceeds"):
+        decode_rle({"size": [30000, 30000], "counts": "zzzzzzzzzzzz"})
+    assert decoded == []

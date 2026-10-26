@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from app.pipeline.measure import decode_rle
+from app.pipeline.measure import declared_rle_size, decode_rle
 from app.schemas import Detection
 
 _TINT_COLORS: dict[str, tuple[int, int, int]] = {
@@ -34,6 +34,14 @@ def make_overlay(image: Image.Image, detections: list[Detection]) -> Image.Image
     overlay_arr = np.array(base, dtype=np.float32)
     drawn: list[Detection] = []
     for det in detections:
+        declared = declared_rle_size(det.mask_rle)
+        if declared is not None and declared != (height, width):
+            warnings.warn(
+                f"skipping RLE for detection {det.id!r} ({det.label!r}): "
+                f"declared size {list(declared)} != "
+                f"image (height={height}, width={width})"
+            )
+            continue
         try:
             binary = decode_rle(det.mask_rle)
         except Exception as exc:
