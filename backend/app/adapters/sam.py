@@ -8,14 +8,10 @@ presented as fact: every uncertain detail is marked TODO(meta-docs)
 and built only from the shared settings values.
 """
 
-import base64
-import io
-from urllib.parse import urlsplit
-
 import httpx
 from PIL import Image
 
-from app.adapters.base import AdapterNotConfiguredError
+from app.adapters.base import encode_image_b64, require_configured
 from app.config import settings
 from app.schemas import RawMask
 
@@ -42,15 +38,7 @@ class SamSegmenter:
     """Segmenter backed by SAM 3.1 over the Meta Model API."""
 
     def segment(self, image: Image.Image, prompts: list[str]) -> list[RawMask]:
-        if not settings.meta_api_key or not settings.meta_api_base_url or not settings.sam_model_id:
-            raise AdapterNotConfiguredError(
-                "SAM adapter is not configured: META_API_KEY, META_API_BASE_URL "
-                "and SAM_MODEL_ID must all be set."
-            )
-        if urlsplit(settings.meta_api_base_url).scheme != "https":
-            raise AdapterNotConfiguredError(
-                "SAM adapter is not configured: META_API_BASE_URL must use https."
-            )
+        require_configured(model_id=settings.sam_model_id, model_field="SAM_MODEL_ID", adapter="SAM")
         return self._segment_via_meta_api(image, prompts)
 
     def _segment_via_meta_api(self, image: Image.Image, prompts: list[str]) -> list[RawMask]:
@@ -61,14 +49,10 @@ class SamSegmenter:
         # TODO(meta-docs): endpoint path — the base URL from settings is
         # used verbatim until the docs name the segmentation path.
         url = settings.meta_api_base_url
-        # TODO(meta-docs): image encoding — PNG bytes, base64 text.
-        buffer = io.BytesIO()
-        image.save(buffer, format="PNG")
-        image_b64 = base64.b64encode(buffer.getvalue()).decode("ascii")
         # TODO(meta-docs): request payload shape and field names.
         payload = {
             "model": settings.sam_model_id,
-            "image": image_b64,
+            "image": encode_image_b64(image),
             "prompts": prompts,
         }
         # TODO(meta-docs): auth scheme — bearer key header assumed.

@@ -10,12 +10,11 @@ from the shared settings values.
 
 import base64
 import io
-from urllib.parse import urlsplit
 
 import httpx
 from PIL import Image
 
-from app.adapters.base import AdapterNotConfiguredError
+from app.adapters.base import encode_image_b64, require_configured
 from app.config import settings
 
 
@@ -25,15 +24,9 @@ class MuseImageGenerator:
     def add_defect(
         self, good_image: Image.Image, defect_description: str, mask: Image.Image | None
     ) -> Image.Image:
-        if not settings.meta_api_key or not settings.meta_api_base_url or not settings.image_model_id:
-            raise AdapterNotConfiguredError(
-                "Image adapter is not configured: META_API_KEY, META_API_BASE_URL "
-                "and IMAGE_MODEL_ID must all be set."
-            )
-        if urlsplit(settings.meta_api_base_url).scheme != "https":
-            raise AdapterNotConfiguredError(
-                "Image adapter is not configured: META_API_BASE_URL must use https."
-            )
+        require_configured(
+            model_id=settings.image_model_id, model_field="IMAGE_MODEL_ID", adapter="Image"
+        )
         return self._add_defect_via_meta_api(good_image, defect_description, mask)
 
     def _add_defect_via_meta_api(
@@ -48,18 +41,12 @@ class MuseImageGenerator:
         # used verbatim until the docs name the image-edit path.
         url = settings.meta_api_base_url
 
-        def _encode(img: Image.Image) -> str:
-            # TODO(meta-docs): image encoding — PNG bytes, base64 text.
-            buffer = io.BytesIO()
-            img.save(buffer, format="PNG")
-            return base64.b64encode(buffer.getvalue()).decode("ascii")
-
         # TODO(meta-docs): request payload shape and field names,
         # including whether inpainting with `mask` is supported.
         payload = {
             "model": settings.image_model_id,
-            "image": _encode(good_image),
-            "mask": _encode(mask) if mask is not None else None,
+            "image": encode_image_b64(good_image),
+            "mask": encode_image_b64(mask) if mask is not None else None,
             "defect_description": defect_description,
         }
         # TODO(meta-docs): auth scheme — bearer key header assumed.
