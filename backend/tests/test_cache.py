@@ -212,6 +212,110 @@ def test_adapter_exception_propagates_uncached(
     assert inner.calls == 2
 
 
+def _solid(color: tuple[int, int, int]) -> Image.Image:
+    return Image.new("RGB", (IMAGE_W, IMAGE_H), color=color)
+
+
+def test_segment_changed_image_is_miss_then_hit(cache_dir: Path) -> None:
+    inner = CountingSegmenter()
+    cached = CachedSegmenter(inner, SAM_MODEL, DiskCache(cache_dir))
+    first_image = _solid((120, 120, 120))
+    other_image = _solid((30, 60, 90))
+    cached.segment(first_image, PROMPTS)
+    assert inner.calls == 1
+    cached.segment(other_image, PROMPTS)
+    assert inner.calls == 2
+    cached.segment(other_image, PROMPTS)
+    assert inner.calls == 2
+    cached.segment(first_image, PROMPTS)
+    assert inner.calls == 2
+
+
+def test_segment_prompt_order_is_miss(
+    image: Image.Image, cache_dir: Path
+) -> None:
+    inner = CountingSegmenter()
+    cached = CachedSegmenter(inner, SAM_MODEL, DiskCache(cache_dir))
+    cached.segment(image, ["scratch", "crack"])
+    assert inner.calls == 1
+    cached.segment(image, ["crack", "scratch"])
+    assert inner.calls == 2
+    cached.segment(image, ["crack", "scratch"])
+    assert inner.calls == 2
+
+
+def test_judge_changed_detections_is_miss(
+    image: Image.Image, profile: ProductProfile, cache_dir: Path
+) -> None:
+    inner = CountingJudge()
+    cached = CachedJudge(inner, JUDGE_MODEL, DiskCache(cache_dir))
+    detections = _detections(image)
+    cached.judge(image, image, None, detections, profile)
+    assert inner.calls == 1
+    changed = [
+        detections[0].model_copy(update={"score": 0.11}),
+        detections[1],
+    ]
+    cached.judge(image, image, None, changed, profile)
+    assert inner.calls == 2
+    cached.judge(image, image, None, changed, profile)
+    assert inner.calls == 2
+
+
+def test_judge_changed_overlay_is_miss(
+    image: Image.Image, profile: ProductProfile, cache_dir: Path
+) -> None:
+    inner = CountingJudge()
+    cached = CachedJudge(inner, JUDGE_MODEL, DiskCache(cache_dir))
+    detections = _detections(image)
+    overlay = _solid((120, 120, 120))
+    other_overlay = _solid((200, 30, 30))
+    cached.judge(image, overlay, None, detections, profile)
+    assert inner.calls == 1
+    cached.judge(image, other_overlay, None, detections, profile)
+    assert inner.calls == 2
+    cached.judge(image, other_overlay, None, detections, profile)
+    assert inner.calls == 2
+
+
+def test_judge_reference_none_to_image_and_changed_image_are_misses(
+    image: Image.Image, profile: ProductProfile, cache_dir: Path
+) -> None:
+    inner = CountingJudge()
+    cached = CachedJudge(inner, JUDGE_MODEL, DiskCache(cache_dir))
+    detections = _detections(image)
+    reference_a = _solid((10, 200, 10))
+    reference_b = _solid((10, 10, 220))
+    cached.judge(image, image, None, detections, profile)
+    assert inner.calls == 1
+    cached.judge(image, image, reference_a, detections, profile)
+    assert inner.calls == 2
+    cached.judge(image, image, reference_a, detections, profile)
+    assert inner.calls == 2
+    cached.judge(image, image, reference_b, detections, profile)
+    assert inner.calls == 3
+    cached.judge(image, image, reference_b, detections, profile)
+    assert inner.calls == 3
+    cached.judge(image, image, None, detections, profile)
+    assert inner.calls == 3
+
+
+def test_judge_changed_model_id_is_miss(
+    image: Image.Image, profile: ProductProfile, cache_dir: Path
+) -> None:
+    detections = _detections(image)
+    first_inner = CountingJudge()
+    CachedJudge(first_inner, JUDGE_MODEL, DiskCache(cache_dir)).judge(
+        image, image, None, detections, profile
+    )
+    assert first_inner.calls == 1
+    other_inner = CountingJudge()
+    CachedJudge(other_inner, "other-judge-model", DiskCache(cache_dir)).judge(
+        image, image, None, detections, profile
+    )
+    assert other_inner.calls == 1
+
+
 def test_corrupt_entry_counts_as_miss(
     image: Image.Image, cache_dir: Path
 ) -> None:

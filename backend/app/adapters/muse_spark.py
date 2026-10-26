@@ -10,6 +10,7 @@ TODO(meta-docs) and built only from the shared settings values.
 
 import base64
 import io
+from urllib.parse import urlsplit
 
 import httpx
 from PIL import Image
@@ -34,6 +35,10 @@ class MuseSparkJudge:
             raise AdapterNotConfiguredError(
                 "Judge adapter is not configured: META_API_KEY, META_API_BASE_URL "
                 "and JUDGE_MODEL_ID must all be set."
+            )
+        if urlsplit(settings.meta_api_base_url).scheme != "https":
+            raise AdapterNotConfiguredError(
+                "Judge adapter is not configured: META_API_BASE_URL must use https."
             )
         return self._judge_via_meta_api(image, overlay, reference, detections, profile)
 
