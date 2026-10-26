@@ -24,13 +24,13 @@ from PIL import Image, ImageDraw  # noqa: E402
 from pydantic import ValidationError  # noqa: E402
 
 from app.adapters.base import AdapterNotConfiguredError  # noqa: E402
-from app.adapters.fakes import FakeJudge, FakeSegmenter  # noqa: E402
+from app.adapters.fakes import FakeJudge  # noqa: E402
 from app.adapters.muse_spark import MuseSparkJudge  # noqa: E402
-from app.adapters.sam import SamSegmenter  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.pipeline.cache import CachedJudge, CachedSegmenter, DiskCache  # noqa: E402
 from app.pipeline.measure import measure_mask  # noqa: E402
 from app.pipeline.overlay import make_overlay  # noqa: E402
+from app.pipeline.wiring import build_segmenter  # noqa: E402
 from app.schemas import Detection, ProductProfile, RawMask  # noqa: E402
 
 SMOKE_PROMPTS = ["scratch", "crack", "dent"]
@@ -39,13 +39,10 @@ SMOKE_PROMPTS = ["scratch", "crack", "dent"]
 def build_adapters(fake: bool) -> tuple[CachedSegmenter, CachedJudge]:
     """Single fake/real selection point. Returns cached adapters."""
     cache = DiskCache(Path(settings.data_dir) / "cache")
+    segmenter = build_segmenter(fake, cache)
     if fake:
-        segmenter = CachedSegmenter(FakeSegmenter(), "fake-sam", cache)
         judge = CachedJudge(FakeJudge(), "fake-judge", cache)
     else:
-        segmenter = CachedSegmenter(
-            SamSegmenter(), settings.sam_model_id, cache
-        )
         judge = CachedJudge(
             MuseSparkJudge(), settings.judge_model_id, cache
         )
@@ -106,7 +103,8 @@ def _masks_to_detections(masks: list[RawMask]) -> list[Detection]:
 
     Undecodable RLE is skipped with a warning (inspect.py precedent);
     size-mismatched masks still measure fine here and are skipped with
-    a warning later by `make_overlay`.
+    a warning later by `make_overlay`. Zero-area masks are skipped here
+    so they never emit a `(0,0,0,0)` detection.
     """
     detections: list[Detection] = []
     for mask in masks:
@@ -115,6 +113,12 @@ def _masks_to_detections(masks: list[RawMask]) -> list[Detection]:
         except Exception as exc:
             warnings.warn(
                 f"skipping undecodable RLE for {mask.label!r}: {exc}"
+            )
+            continue
+        if measured["area_px"] == 0:
+            warnings.warn(
+                f"skipping zero-area mask for {mask.label!r}: "
+                "no foreground pixels"
             )
             continue
         detections.append(

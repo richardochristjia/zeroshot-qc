@@ -7,6 +7,7 @@ No judge call in M2.
 """
 
 import json
+import re
 import warnings
 from pathlib import Path
 
@@ -15,20 +16,27 @@ from PIL import Image
 from pycocotools import mask as mask_api
 
 from app.adapters.base import Segmenter
-from app.pipeline.measure import decode_rle, measure_mask
+from app.pipeline.measure import declared_rle_size, decode_rle, measure_mask
 from app.schemas import Detection, ProductProfile, RawMask
 
 MERGE_IOU_THRESHOLD = 0.5
 
 PROFILES_DIR = Path(__file__).resolve().parents[2] / "profiles"
 
+# No separators or dots: absolute paths and `..` traversal cannot spell
+# a match, so the joined path always stays under PROFILES_DIR.
+_PROFILE_NAME_RE = re.compile(r"[A-Za-z0-9_-]+")
+
 
 def load_profile(name: str) -> ProductProfile:
     """Load ``backend/profiles/<name>.json`` and validate as ProductProfile.
 
     Anchored to this module file so repo-root and ``backend/`` CWDs
-    resolve identically.
+    resolve identically. Names outside ``[A-Za-z0-9_-]+`` are rejected
+    so untrusted input (e.g. CLI ``--profile``) cannot traverse.
     """
+    if not _PROFILE_NAME_RE.fullmatch(name):
+        raise ValueError(f"unknown profile {name!r}: invalid profile name")
     path = PROFILES_DIR / f"{name}.json"
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -58,9 +66,22 @@ def _encode_mask_text(binary: np.ndarray) -> dict:
 def _decode_valid_masks(
     masks: list[RawMask], width: int, height: int
 ) -> list[tuple[RawMask, np.ndarray]]:
-    """Decode masks, skipping undecodable or size-mismatched ones with a warning."""
+    """Decode masks, skipping undecodable, mismatched, or empty ones.
+
+    The declared RLE ``size`` is checked against the image dims before
+    decoding, so a giant mismatched mask never allocates. Each skip
+    warns; an all-zero mask would otherwise emit a ``(0,0,0,0)``
+    detection.
+    """
     valid: list[tuple[RawMask, np.ndarray]] = []
     for mask in masks:
+        declared = declared_rle_size(mask.mask_rle)
+        if declared is not None and declared != (height, width):
+            warnings.warn(
+                f"skipping RLE for {mask.label!r}: declared size "
+                f"{list(declared)} != image (height={height}, width={width})"
+            )
+            continue
         try:
             binary = decode_rle(mask.mask_rle)
         except Exception as exc:
@@ -70,6 +91,11 @@ def _decode_valid_masks(
             warnings.warn(
                 f"skipping RLE for {mask.label!r}: decoded shape "
                 f"{tuple(binary.shape)} != image (height={height}, width={width})"
+            )
+            continue
+        if not binary.any():
+            warnings.warn(
+                f"skipping zero-area mask for {mask.label!r}: no foreground pixels"
             )
             continue
         valid.append((mask, binary))

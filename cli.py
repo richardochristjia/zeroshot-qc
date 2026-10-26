@@ -20,20 +20,10 @@ if str(_BACKEND_ROOT) not in sys.path:
 from PIL import Image  # noqa: E402
 
 from app.adapters.base import AdapterNotConfiguredError  # noqa: E402
-from app.adapters.fakes import FakeSegmenter  # noqa: E402
-from app.adapters.sam import SamSegmenter  # noqa: E402
 from app.config import settings  # noqa: E402
-from app.pipeline.cache import CachedSegmenter, DiskCache  # noqa: E402
 from app.pipeline.inspect import load_profile, run_inspection  # noqa: E402
 from app.pipeline.overlay import make_overlay  # noqa: E402
-
-
-def build_segmenter(fake: bool) -> CachedSegmenter:
-    """Mirror smoke.build_adapters' segmenter half (incl. "fake-sam" id)."""
-    cache = DiskCache(Path(settings.data_dir) / "cache")
-    if fake:
-        return CachedSegmenter(FakeSegmenter(), "fake-sam", cache)
-    return CachedSegmenter(SamSegmenter(), settings.sam_model_id, cache)
+from app.pipeline.wiring import build_segmenter  # noqa: E402
 
 
 def _format_mm(value: float | None) -> str:
