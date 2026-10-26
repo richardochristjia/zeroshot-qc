@@ -26,6 +26,14 @@ def _seed_digest(image: Image.Image, prompts: list[str]) -> bytes:
     return digest.digest()
 
 
+def _seeded_box(width: int, height: int, digest: bytes) -> tuple[int, int, int, int]:
+    box_w = max(1, min(width, 1 + digest[0] % max(1, width // 2 + 1)))
+    box_h = max(1, min(height, 1 + digest[1] % max(1, height // 2 + 1)))
+    x0 = digest[2] % max(1, width - box_w + 1) if width > box_w else 0
+    y0 = digest[3] % max(1, height - box_h + 1) if height > box_h else 0
+    return x0, y0, box_w, box_h
+
+
 class FakeSegmenter:
     """One deterministic RawMask per prompt, geometry clamped to the image."""
 
@@ -35,10 +43,7 @@ class FakeSegmenter:
         masks: list[RawMask] = []
         for index, prompt in enumerate(prompts):
             per_prompt = hashlib.sha256(seed + index.to_bytes(4, "big")).digest()
-            box_w = max(1, min(width, 1 + per_prompt[0] % max(1, width // 2 + 1)))
-            box_h = max(1, min(height, 1 + per_prompt[1] % max(1, height // 2 + 1)))
-            x0 = per_prompt[2] % max(1, width - box_w + 1) if width > box_w else 0
-            y0 = per_prompt[3] % max(1, height - box_h + 1) if height > box_h else 0
+            x0, y0, box_w, box_h = _seeded_box(width, height, per_prompt)
             binary = np.zeros((height, width), dtype=np.uint8, order="F")
             binary[y0 : y0 + box_h, x0 : x0 + box_w] = 1
             encoded = mask_api.encode(binary)
@@ -100,10 +105,7 @@ class FakeImageGenerator:
             good_image.tobytes() + b"\x00" + defect_description.encode("utf-8")
         ).digest()
         if result.mode in ("RGB", "RGBA") and width >= 2 and height >= 2:
-            box_w = max(1, min(width, 1 + per_input[0] % max(1, width // 2 + 1)))
-            box_h = max(1, min(height, 1 + per_input[1] % max(1, height // 2 + 1)))
-            x0 = per_input[2] % max(1, width - box_w + 1) if width > box_w else 0
-            y0 = per_input[3] % max(1, height - box_h + 1) if height > box_h else 0
+            x0, y0, box_w, box_h = _seeded_box(width, height, per_input)
             draw = ImageDraw.Draw(result)
             draw.rectangle([x0, y0, x0 + box_w - 1, y0 + box_h - 1], fill=(255, 0, 0))
         return result
