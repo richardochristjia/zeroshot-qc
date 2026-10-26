@@ -6,14 +6,24 @@ can be corrected in one place when the official Meta Model API docs
 arrive (HANDOFF §2); every uncertain detail there is marked
 TODO(meta-docs) and built only from the shared settings values.
 ``sop_to_profile`` is an explicit M5 stub (plan: SOP parsing lands M5).
+
+M3: ``judge`` renders the HANDOFF §7 prompt, validates the response
+against ``Verdict``, retries once with the validation error appended,
+and raises ``JudgeValidationError`` on the second failure.
 """
 
 import httpx
 from PIL import Image
+from pydantic import ValidationError
 
 from app.adapters.base import encode_image_b64, require_configured
 from app.config import settings
+from app.prompts import render_judge_prompt
 from app.schemas import Detection, ProductProfile, Verdict
+
+
+class JudgeValidationError(ValueError):
+    """Both judge attempts returned output that failed Verdict validation."""
 
 
 class MuseSparkJudge:
@@ -30,7 +40,27 @@ class MuseSparkJudge:
         require_configured(
             model_id=settings.judge_model_id, model_field="JUDGE_MODEL_ID", adapter="Judge"
         )
-        return self._judge_via_meta_api(image, overlay, reference, detections, profile)
+        prompt = render_judge_prompt(profile.rules, detections)
+        try:
+            data = self._judge_via_meta_api(
+                image, overlay, reference, detections, profile, prompt
+            )
+            return Verdict.model_validate(data)
+        except ValidationError as first_error:
+            retry_prompt = (
+                f"{prompt}\n\nYour previous response failed validation:\n"
+                f"{first_error}\nReturn only JSON matching the schema."
+            )
+            try:
+                data = self._judge_via_meta_api(
+                    image, overlay, reference, detections, profile, retry_prompt
+                )
+                return Verdict.model_validate(data)
+            except ValidationError as second_error:
+                raise JudgeValidationError(
+                    "judge output failed Verdict validation twice: "
+                    f"{second_error}"
+                ) from second_error
 
     def sop_to_profile(self, sop_text: str, category_name: str) -> ProductProfile:
         # M5: SOP-to-profile parsing lands in M5; no behaviour in M1.
@@ -43,7 +73,8 @@ class MuseSparkJudge:
         reference: Image.Image | None,
         detections: list[Detection],
         profile: ProductProfile,
-    ) -> Verdict:
+        prompt: str,
+    ) -> object:
         # TODO(meta-docs): everything in this function is a placeholder
         # mapping to be corrected against the official Meta Model API
         # docs. Do not treat the endpoint, payload shape, auth scheme,
@@ -54,10 +85,11 @@ class MuseSparkJudge:
         url = settings.meta_api_base_url
 
         # TODO(meta-docs): request payload shape and field names,
-        # including how images, detections, and rules are passed and
-        # whether a structured-output / JSON mode exists.
+        # including how images, prompt, detections, and rules are
+        # passed and whether a structured-output / JSON mode exists.
         payload = {
             "model": settings.judge_model_id,
+            "prompt": prompt,
             "image": encode_image_b64(image),
             "overlay": encode_image_b64(overlay),
             "reference": encode_image_b64(reference) if reference is not None else None,
@@ -73,4 +105,4 @@ class MuseSparkJudge:
         data = response.json()
         if isinstance(data, dict) and isinstance(data.get("verdict"), dict):
             data = data["verdict"]
-        return Verdict.model_validate(data)
+        return data

@@ -1,8 +1,9 @@
-"""ZeroShot QC command line (M2: segmentation only, judging arrives in M3).
+"""ZeroShot QC command line (M3: segment plus judge).
 
-Canonical run: python cli.py inspect <image> --profile NAME [--no-judge] [--fake]
-Fake mode uses the deterministic fake segmenter (cache id "fake-sam",
-same as smoke); real mode is the default.
+Canonical run: python cli.py inspect <image> --profile NAME [--fake]
+Fake mode uses the deterministic fake adapters (cache ids
+"fake-sam" / "fake-judge", same as smoke); real mode is the default.
+`--no-judge` keeps the M2 segmentation-only output.
 """
 
 from __future__ import annotations
@@ -20,10 +21,11 @@ if str(_BACKEND_ROOT) not in sys.path:
 from PIL import Image  # noqa: E402
 
 from app.adapters.base import AdapterNotConfiguredError  # noqa: E402
+from app.adapters.muse_spark import JudgeValidationError  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.pipeline.inspect import load_profile, run_inspection  # noqa: E402
 from app.pipeline.overlay import make_overlay  # noqa: E402
-from app.pipeline.wiring import build_segmenter  # noqa: E402
+from app.pipeline.wiring import build_judge, build_segmenter  # noqa: E402
 
 
 def _format_mm(value: float | None) -> str:
@@ -39,12 +41,21 @@ def _print_detection_line(detection) -> None:
     )
 
 
-def cmd_inspect(args: argparse.Namespace) -> int:
-    if not args.no_judge:
+def _print_verdict_block(verdict) -> None:
+    print(f"verdict: {verdict.verdict} confidence={verdict.confidence:.2f}")
+    for ruling in verdict.rulings:
+        violated = ruling.rule_violated if ruling.rule_violated else "-"
         print(
-            "note: M2 stops after segmentation; judging arrives in M3.",
-            file=sys.stderr,
+            f"ruling {ruling.detection_id}: "
+            f"real_defect={ruling.is_real_defect} "
+            f"rule_violated={violated} reason={ruling.reason}"
         )
+    for missed in verdict.missed_defects:
+        print(f"missed: {missed}")
+    print(f"summary: {verdict.summary}")
+
+
+def cmd_inspect(args: argparse.Namespace) -> int:
     try:
         profile = load_profile(args.profile)
     except ValueError as exc:
@@ -57,10 +68,37 @@ def cmd_inspect(args: argparse.Namespace) -> int:
     except Exception as exc:
         print(f"error: could not open image {image_path}: {exc}", file=sys.stderr)
         return 1
+    reference = None
+    if args.reference is not None:
+        reference_path = Path(args.reference)
+        try:
+            with Image.open(reference_path) as raw:
+                reference = raw.convert("RGB").copy()
+        except Exception as exc:
+            print(
+                f"error: could not open reference image {reference_path}: {exc}",
+                file=sys.stderr,
+            )
+            return 1
     segmenter = build_segmenter(args.fake)
     try:
-        detections = run_inspection(image, profile, segmenter)
+        if args.no_judge:
+            detections = run_inspection(image, profile, segmenter)
+            verdict = None
+        else:
+            judge = build_judge(args.fake)
+            detections, verdict = run_inspection(
+                image,
+                profile,
+                segmenter,
+                judge=judge,
+                rules=args.rules,
+                reference=reference,
+            )
     except AdapterNotConfiguredError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    except (JudgeValidationError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     overlay_dir = Path(settings.data_dir) / "runs" / "cli"
@@ -73,6 +111,8 @@ def cmd_inspect(args: argparse.Namespace) -> int:
     for detection in detections:
         _print_detection_line(detection)
     print(f"overlay: {overlay_path}")
+    if verdict is not None:
+        _print_verdict_block(verdict)
     return 0
 
 
@@ -85,12 +125,22 @@ def main(argv: list[str] | None = None) -> int:
     inspect.add_argument(
         "--no-judge",
         action="store_true",
-        help="Stop after segmentation (M2 always stops here; judging arrives in M3).",
+        help="Stop after segmentation with the M2 output (no verdict).",
+    )
+    inspect.add_argument(
+        "--rules",
+        default=None,
+        help="Inline rules text replacing the profile rules for this run only.",
+    )
+    inspect.add_argument(
+        "--reference",
+        default=None,
+        help="Path to a known-good reference image (else profile reference).",
     )
     inspect.add_argument(
         "--fake",
         action="store_true",
-        help="Use the deterministic fake segmenter instead of the real Meta API.",
+        help="Use the deterministic fake adapters instead of the real Meta API.",
     )
     inspect.set_defaults(func=cmd_inspect)
     args = parser.parse_args(argv)
