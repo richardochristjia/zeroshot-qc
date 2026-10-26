@@ -47,3 +47,6 @@ Entries are added or amended **only with human approval**.
 - (data) The data directory currently holds datasets, cache, and run outputs and is excluded from version control.
 - (pipeline) Segmentation currently filters detections by profile min_score and merges duplicates with IoU above 0.5.
 - (pipeline) Detection sizes are currently measured in pixels and converted to millimetres when the profile sets mm_per_px.
+- (judge) Inspection currently judges detections against plain-English rules and a reference image, retrying once on schema failure.
+- (judge) A rules override currently replaces the profile rules for a single inspection run only.
+- (pipeline) A FAIL verdict is currently forced in code when any ruling cites a violated rule or any missed defect exists.
