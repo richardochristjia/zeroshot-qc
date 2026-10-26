@@ -12,8 +12,10 @@ Spec: `plan.md` in this folder. Tier: `tier.md` in this folder.
 - [x] Create README stub noting MVTec CC BY-NC-SA 4.0 (download instructions left to Data step phase)
 
 ## Schemas + config
-- [ ] Implement §6 Pydantic schemas verbatim in `backend/app/schemas.py`
-- [ ] Implement `backend/app/config.py` via pydantic-settings; model IDs from `.env` only
+- [x] Install pinned `backend/requirements.txt` into the Python 3.11 env and confirm imported `pydantic`/`pydantic-settings` report the pinned versions (2.10.4 / 2.7.0) before writing Phase 2 code — host `python3.11` currently resolves 2.13.4 / 2.14.2 (see check-2.md)
+- [x] Implement §6 Pydantic schemas verbatim in `backend/app/schemas.py` (HANDOFF §6 exactly, including `DefectRuling.rule_violated` with no default — required-but-nullable — and only `Verdict.confidence` bounded; do not add defaults or bounds)
+- [x] Implement `backend/app/config.py` via pydantic-settings: snake_case string fields for the 8 §11 keys, defaults mirroring `.env.example` (key/base/model IDs empty; `DATA_DIR`, `MVTEC_DIR`, `CORS_ORIGINS` as in `.env.example`), `CORS_ORIGINS` kept as a string, one shared settings instance imported by consumers (no direct `os.environ` reads, no hardcoded IDs)
+- [x] Make `.env` discovery CWD-independent in `backend/app/config.py` (resolve `.env` at the repo root regardless of repo-root vs `backend/` launch; interpret `DATA_DIR`/`MVTEC_DIR` from the repo root) so `cd backend && python -m pytest` and root launches read the same file
 
 ## Adapters
 - [ ] Define `Segmenter`/`Judge`/`ImageGenerator` protocols in `backend/app/adapters/base.py` (§5)
