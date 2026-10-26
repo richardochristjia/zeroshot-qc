@@ -9,6 +9,7 @@ never disturb rendering.
 """
 
 import json
+import re
 from pathlib import Path
 
 from app.schemas import Detection, Verdict
@@ -40,10 +41,13 @@ def build_detections_table(detections: list[Detection]) -> str:
 def render_judge_prompt(rules: str, detections: list[Detection]) -> str:
     """Render ``judge.md`` with the Verdict schema, rules, and table."""
     template = _JUDGE_TEMPLATE.read_text(encoding="utf-8")
-    schema = json.dumps(Verdict.model_json_schema(), sort_keys=True)
-    rendered = template.replace("{schema}", schema)
-    rendered = rendered.replace("{rules}", rules)
-    rendered = rendered.replace(
-        "{detections_table}", build_detections_table(detections)
+    values = {
+        "{schema}": json.dumps(Verdict.model_json_schema(), sort_keys=True),
+        "{rules}": rules,
+        "{detections_table}": build_detections_table(detections),
+    }
+    return re.sub(
+        r"\{schema\}|\{rules\}|\{detections_table\}",
+        lambda match: values[match.group(0)],
+        template,
     )
-    return rendered

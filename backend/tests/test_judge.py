@@ -435,3 +435,8 @@ def test_detections_table_empty_and_mm_dash() -> None:
     table = build_detections_table([detection])
     assert "d1 | scratch" in table
     assert table.rstrip().endswith("- | -")
+
+
+def test_rules_containing_slot_literal_render_verbatim() -> None:
+    rules = "reject if {detections_table} appears"
+    assert rules in render_judge_prompt(rules, [])
