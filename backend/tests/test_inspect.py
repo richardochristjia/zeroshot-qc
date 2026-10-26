@@ -3,7 +3,7 @@ and cache-hit identity.
 
 A stub segmenter with score/geometry control drives every case:
 FakeSegmenter scores never drop below the default min_score (0.55-0.95
-vs 0.3), so it cannot exercise the drop path (see check-2.md).
+vs 0.3), so it cannot exercise the drop path.
 
 Run: cd backend && .venv/bin/python -m pytest -q
 """
@@ -235,8 +235,8 @@ def test_cache_hit_rerun_returns_identical_detections_without_inner_call(
 def test_fake_segmenter_scores_never_drop_below_default_min_score(
     image: Image.Image, profile: ProductProfile
 ) -> None:
-    # Locks the check-2.md rationale for the stub above: FakeSegmenter
-    # cannot exercise the drop path under a default profile.
+    # FakeSegmenter cannot exercise the drop path under a default
+    # profile, hence the stub above.
     for mask in FakeSegmenter().segment(image, PROMPTS):
         assert mask.score >= profile.min_score
 

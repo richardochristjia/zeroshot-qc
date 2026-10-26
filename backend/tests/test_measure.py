@@ -18,7 +18,7 @@ def _rle_of(binary: np.ndarray) -> dict:
     """Encode a binary (H, W) array as JSON-safe COCO RLE.
 
     Must be Fortran-order: pycocotools.encode raises ValueError on
-    C-contiguous arrays (see check-1.md). Mirrors fakes.py.
+    C-contiguous arrays. Mirrors fakes.py.
     """
     fortran = np.asfortranarray(binary.astype(np.uint8))
     encoded = mask_api.encode(fortran)
