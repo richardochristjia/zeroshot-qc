@@ -1,9 +1,11 @@
-"""Segmentation orchestrator (M2 Inspect phase).
+"""Segmentation orchestrator (M2 Inspect phase) plus the M3 judge step.
 
 Single flow: load image (RGB) + named profile, segment, drop masks
 below ``profile.min_score``, greedily merge duplicates with IoU above
 0.5, assign stable ``d1, d2, ...`` ids in score order, measure each.
-No judge call in M2.
+With a judge supplied, render the overlay and judge the detections
+against the effective rules, then force FAIL in code per the
+consistency rule (HANDOFF §7 step 8).
 """
 
 import json
@@ -15,9 +17,10 @@ import numpy as np
 from PIL import Image
 from pycocotools import mask as mask_api
 
-from app.adapters.base import Segmenter
+from app.adapters.base import Judge, Segmenter
 from app.pipeline.measure import decode_rle_for_image, measure_mask
-from app.schemas import Detection, ProductProfile, RawMask
+from app.pipeline.overlay import make_overlay
+from app.schemas import Detection, ProductProfile, RawMask, Verdict
 
 MERGE_IOU_THRESHOLD = 0.5
 
@@ -86,10 +89,51 @@ def _decode_valid_masks(
     return valid
 
 
+def _load_reference_image(path: str) -> Image.Image:
+    """Load a known-good reference image; missing files are a caller error."""
+    try:
+        with Image.open(path) as raw:
+            return raw.convert("RGB").copy()
+    except Exception as exc:
+        raise ValueError(f"could not open reference image {path}: {exc}") from exc
+
+
+def enforce_consistency(verdict: Verdict) -> Verdict:
+    """Force FAIL in code when the rulings demand it (HANDOFF §7 step 8).
+
+    The model's own verdict word is not trusted: any ruling with
+    ``is_real_defect`` and a cited rule, or any missed defect, means
+    FAIL. Returns the input unchanged when it already agrees.
+    """
+    must_fail = any(
+        ruling.is_real_defect and ruling.rule_violated
+        for ruling in verdict.rulings
+    ) or bool(verdict.missed_defects)
+    if must_fail and verdict.verdict != "FAIL":
+        return verdict.model_copy(update={"verdict": "FAIL"})
+    return verdict
+
+
 def run_inspection(
-    image: Image.Image, profile: ProductProfile, segmenter: Segmenter
-) -> list[Detection]:
-    """Segment, filter, merge, and measure. Returns score-ordered detections."""
+    image: Image.Image,
+    profile: ProductProfile,
+    segmenter: Segmenter,
+    judge: Judge | None = None,
+    rules: str | None = None,
+    reference: Image.Image | None = None,
+) -> list[Detection] | tuple[list[Detection], Verdict]:
+    """Segment, filter, merge, measure, and optionally judge.
+
+    Without a judge this is the M2 path and returns score-ordered
+    detections. With a judge it also renders the overlay, judges the
+    detections, enforces the consistency rule, and returns
+    ``(detections, verdict)``.
+
+    ``rules`` replaces ``profile.rules`` for this call only (the
+    profile object is never mutated); ``reference`` overrides
+    ``profile.reference_image`` for this call, which is otherwise
+    loaded from disk when set.
+    """
     if image.mode != "RGB":
         image = image.convert("RGB")
     width, height = image.size
@@ -131,7 +175,19 @@ def run_inspection(
                 length_mm=sizes["length_mm"],
             )
         )
-    return detections
+    if judge is None:
+        return detections
+    effective_profile = profile
+    if rules is not None:
+        effective_profile = profile.model_copy(update={"rules": rules})
+    effective_reference = reference
+    if effective_reference is None and profile.reference_image:
+        effective_reference = _load_reference_image(profile.reference_image)
+    overlay = make_overlay(image, detections)
+    verdict = judge.judge(
+        image, overlay, effective_reference, detections, effective_profile
+    )
+    return detections, enforce_consistency(verdict)
 
 
 def inspect_image(

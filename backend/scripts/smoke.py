@@ -25,7 +25,7 @@ from pydantic import ValidationError  # noqa: E402
 
 from app.adapters.base import AdapterNotConfiguredError  # noqa: E402
 from app.adapters.fakes import FakeJudge  # noqa: E402
-from app.adapters.muse_spark import MuseSparkJudge  # noqa: E402
+from app.adapters.muse_spark import JudgeValidationError, MuseSparkJudge  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.pipeline.cache import CachedJudge, CachedSegmenter, DiskCache  # noqa: E402
 from app.pipeline.measure import measure_mask  # noqa: E402
@@ -223,7 +223,7 @@ def main(argv: list[str] | None = None) -> int:
     except AdapterNotConfiguredError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    except ValidationError as exc:
+    except (ValidationError, JudgeValidationError) as exc:
         print(f"error: judge verdict failed validation: {exc}", file=sys.stderr)
         return 1
 

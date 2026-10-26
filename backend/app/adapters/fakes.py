@@ -57,7 +57,14 @@ class FakeSegmenter:
 
 
 class FakeJudge:
-    """Verdict that validates first-try: one ruling per input detection."""
+    """Scripted verdict keyed off the rules text (M3).
+
+    Rules containing ``lenient`` (case-insensitive) pass every
+    candidate; any other rules fail the first candidate and pass the
+    rest. Deterministic, no network — proves the pipeline reacts to
+    rule edits, not the model's judgment. No detections always
+    passes.
+    """
 
     def judge(
         self,
@@ -67,21 +74,47 @@ class FakeJudge:
         detections: list[Detection],
         profile: ProductProfile,
     ) -> Verdict:
+        if "lenient" in profile.rules.lower() or not detections:
+            rulings = [
+                DefectRuling(
+                    detection_id=detection.id,
+                    is_real_defect=False,
+                    rule_violated=None,
+                    reason="Fake judge: no rule violation found for this candidate.",
+                )
+                for detection in detections
+            ]
+            return Verdict(
+                verdict="PASS",
+                confidence=0.9,
+                rulings=rulings,
+                missed_defects=[],
+                summary="Fake judge: all candidates dismissed, part passes.",
+            )
+        first, rest = detections[0], detections[1:]
         rulings = [
+            DefectRuling(
+                detection_id=first.id,
+                is_real_defect=True,
+                rule_violated=profile.rules,
+                reason="Fake judge: scripted strict-mode failure of the first candidate.",
+            )
+        ]
+        rulings.extend(
             DefectRuling(
                 detection_id=detection.id,
                 is_real_defect=False,
                 rule_violated=None,
                 reason="Fake judge: no rule violation found for this candidate.",
             )
-            for detection in detections
-        ]
+            for detection in rest
+        )
         return Verdict(
-            verdict="PASS",
+            verdict="FAIL",
             confidence=0.9,
             rulings=rulings,
             missed_defects=[],
-            summary="Fake judge: all candidates dismissed, part passes.",
+            summary="Fake judge: first candidate violates the rules, part fails.",
         )
 
     def sop_to_profile(self, sop_text: str, category_name: str) -> ProductProfile:
