@@ -4,6 +4,8 @@ Every size number in later surfaces comes from here. No config, no I/O:
 decode a COCO RLE dict, count pixels, and derive geometry with OpenCV.
 """
 
+import warnings
+
 import cv2
 import numpy as np
 from pycocotools import mask as mask_api
@@ -50,6 +52,36 @@ def decode_rle(mask_rle: dict) -> np.ndarray:
     if isinstance(rle["counts"], str):
         rle["counts"] = rle["counts"].encode("utf-8")
     return mask_api.decode(rle).astype(np.uint8)
+
+
+def decode_rle_for_image(
+    mask_rle: dict, width: int, height: int, what: str
+) -> np.ndarray | None:
+    """Decode an RLE validated against image dims; ``None`` when skipped.
+
+    The declared ``size`` is checked before decoding so a giant
+    mismatched mask never allocates. Undecodable or mismatched RLE
+    warns (naming ``what``) and yields ``None`` instead of raising.
+    """
+    declared = declared_rle_size(mask_rle)
+    if declared is not None and declared != (height, width):
+        warnings.warn(
+            f"skipping RLE for {what}: declared size "
+            f"{list(declared)} != image (height={height}, width={width})"
+        )
+        return None
+    try:
+        binary = decode_rle(mask_rle)
+    except Exception as exc:
+        warnings.warn(f"skipping undecodable RLE for {what}: {exc}")
+        return None
+    if binary.shape != (height, width):
+        warnings.warn(
+            f"skipping RLE for {what}: decoded shape "
+            f"{tuple(binary.shape)} != image (height={height}, width={width})"
+        )
+        return None
+    return binary
 
 
 def measure_mask(

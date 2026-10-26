@@ -16,7 +16,7 @@ from PIL import Image
 from pycocotools import mask as mask_api
 
 from app.adapters.base import Segmenter
-from app.pipeline.measure import declared_rle_size, decode_rle, measure_mask
+from app.pipeline.measure import decode_rle_for_image, measure_mask
 from app.schemas import Detection, ProductProfile, RawMask
 
 MERGE_IOU_THRESHOLD = 0.5
@@ -68,30 +68,14 @@ def _decode_valid_masks(
 ) -> list[tuple[RawMask, np.ndarray]]:
     """Decode masks, skipping undecodable, mismatched, or empty ones.
 
-    The declared RLE ``size`` is checked against the image dims before
-    decoding, so a giant mismatched mask never allocates. Each skip
-    warns; an all-zero mask would otherwise emit a ``(0,0,0,0)``
-    detection.
+    An all-zero mask would otherwise emit a ``(0,0,0,0)`` detection.
     """
     valid: list[tuple[RawMask, np.ndarray]] = []
     for mask in masks:
-        declared = declared_rle_size(mask.mask_rle)
-        if declared is not None and declared != (height, width):
-            warnings.warn(
-                f"skipping RLE for {mask.label!r}: declared size "
-                f"{list(declared)} != image (height={height}, width={width})"
-            )
-            continue
-        try:
-            binary = decode_rle(mask.mask_rle)
-        except Exception as exc:
-            warnings.warn(f"skipping undecodable RLE for {mask.label!r}: {exc}")
-            continue
-        if binary.shape != (height, width):
-            warnings.warn(
-                f"skipping RLE for {mask.label!r}: decoded shape "
-                f"{tuple(binary.shape)} != image (height={height}, width={width})"
-            )
+        binary = decode_rle_for_image(
+            mask.mask_rle, width, height, f"{mask.label!r}"
+        )
+        if binary is None:
             continue
         if not binary.any():
             warnings.warn(

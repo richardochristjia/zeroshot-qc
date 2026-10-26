@@ -4,12 +4,10 @@ One function: an image plus ``Detection``s becomes a labeled PIL image.
 The caller saves it — output naming stays in the callers, not here.
 """
 
-import warnings
-
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from app.pipeline.measure import declared_rle_size, decode_rle
+from app.pipeline.measure import decode_rle_for_image
 from app.schemas import Detection
 
 _TINT_COLORS: dict[str, tuple[int, int, int]] = {
@@ -34,30 +32,10 @@ def make_overlay(image: Image.Image, detections: list[Detection]) -> Image.Image
     overlay_arr = np.array(base, dtype=np.float32)
     drawn: list[Detection] = []
     for det in detections:
-        declared = declared_rle_size(det.mask_rle)
-        if declared is not None and declared != (height, width):
-            warnings.warn(
-                f"skipping RLE for detection {det.id!r} ({det.label!r}): "
-                f"declared size {list(declared)} != "
-                f"image (height={height}, width={width})"
-            )
-            continue
-        try:
-            binary = decode_rle(det.mask_rle)
-        except Exception as exc:
-            warnings.warn(
-                f"skipping undecodable RLE for detection {det.id!r} "
-                f"({det.label!r}): {exc}"
-            )
-            continue
-        if binary.ndim == 3:
-            binary = binary[:, :, 0]
-        if binary.shape != (height, width):
-            warnings.warn(
-                f"skipping RLE for detection {det.id!r} ({det.label!r}): "
-                f"decoded shape {tuple(binary.shape)} != "
-                f"image (height={height}, width={width})"
-            )
+        binary = decode_rle_for_image(
+            det.mask_rle, width, height, f"detection {det.id!r} ({det.label!r})"
+        )
+        if binary is None:
             continue
         sel = binary.astype(bool)
         if sel.any():
