@@ -1,0 +1,45 @@
+"""Modal hosting wrapper (M7): serve the container's FastAPI ``app`` via Modal ASGI.
+
+No app logic lives here. The ``modal`` import is guarded so this module
+imports without ``modal`` installed; only the deploy path raises without it.
+"""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend"))
+
+from app.main import app  # noqa: E402
+
+try:
+    import modal  # type: ignore[import-not-found]
+except ImportError:
+    modal = None  # type: ignore[assignment]
+
+
+def build_modal_asgi(app_obj=app):
+    """Expose the ASGI app through Modal. Requires the ``modal`` package."""
+    if modal is None:
+        raise RuntimeError(
+            "The 'modal' package is not installed. "
+            "Install it with `pip install modal` and run `modal setup` "
+            "before deploying modal_app.py."
+        )
+    return modal_app.function(image=modal_image)(modal.asgi_app()(lambda: app_obj))
+
+
+if modal is not None:
+    # Module scope so `modal deploy modal_app.py` discovers the App.
+    modal_app = modal.App("zeroshot-qc")
+    modal_image = modal.Image.debian_slim().pip_install_from_requirements(
+        "backend/requirements.txt"
+    )
+
+    @modal_app.function(image=modal_image)
+    @modal.asgi_app()
+    def asgi_app():
+        return app
+else:
+    modal_app = None
+    modal_image = None
+    asgi_app = None

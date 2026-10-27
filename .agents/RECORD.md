@@ -61,3 +61,6 @@ Entries are added or amended **only with human approval**.
 - (frontend) The Inspect page currently re-runs only the judge when rules change, reusing cached segmentation.
 - (frontend) The Eval page currently displays existing runs and never launches new ones.
 - (frontend) Image upload is currently file-based without webcam capture.
+- (synth) The synthetic gallery is currently served by GET /api/synth/gallery enumerating data/synth/ pairs with /files/ URLs.
+- (deploy) The backend currently ships as a Python 3.11 container running uvicorn with configuration by environment.
+- (deploy) The frontend currently builds to static assets targeting the backend through a build-time API URL.

@@ -1,19 +1,29 @@
 """SAM 3.1 adapter via the Meta Model API (real HTTP implementation).
 
-The Meta request/response mapping lives entirely in
-``SamSegmenter._segment_via_meta_api`` so it can be corrected in one
-place when the official Meta Model API docs arrive (HANDOFF §2).
-Nothing about the endpoint, payload, auth, or image encoding is
-presented as fact: every uncertain detail is marked TODO(meta-docs)
-and built only from the shared settings values.
+Request mapping follows the Meta docs pasted for the manual checks:
+SAM 3.1 is reached over the Responses API (``POST {base}/responses``)
+with the model id ``sam-3.1``; the response carries geometry as text.
+The exact geometry JSON keys are still defensive (several candidate
+shapes are accepted) because the docs point at the Media segmentation
+guide for the full schema: an unparseable reply raises with the raw
+text attached so the shape can be pinned from one live response.
 """
 
-import httpx
-from PIL import Image
+import base64
+import io
+import json
+import re
 
-from app.adapters.base import encode_image_b64, require_configured
+import httpx
+import numpy as np
+from PIL import Image, ImageDraw
+from pycocotools import mask as mask_utils
+
+from app.adapters.base import encode_image_b64, extract_responses_text, require_configured
 from app.config import settings
 from app.schemas import RawMask
+
+_GEOMETRY_KEYS = ("masks", "results", "detections", "instances", "boxes")
 
 
 def _is_valid_mask_rle(mask_rle: object, height: int, width: int) -> bool:
@@ -34,6 +44,160 @@ def _is_valid_mask_rle(mask_rle: object, height: int, width: int) -> bool:
     return True
 
 
+def _binary_to_rle(binary: np.ndarray) -> dict:
+    encoded = mask_utils.encode(np.asfortranarray(binary.astype(np.uint8)))
+    counts = encoded["counts"]
+    if isinstance(counts, bytes):
+        counts = counts.decode("ascii")
+    return {"size": [int(binary.shape[0]), int(binary.shape[1])], "counts": counts}
+
+
+def _mask_from_base64_png(raw: str, height: int, width: int) -> dict | None:
+    try:
+        decoded = base64.b64decode(raw)
+        with Image.open(io.BytesIO(decoded)) as parsed:
+            gray = parsed.convert("L").resize((width, height))
+    except Exception:
+        return None
+    return _binary_to_rle(np.array(gray) > 127)
+
+
+def _mask_from_polygons(polygons: object, height: int, width: int) -> dict | None:
+    if not isinstance(polygons, list) or not polygons:
+        return None
+    canvas = Image.new("L", (width, height), 0)
+    draw = ImageDraw.Draw(canvas)
+    drew = False
+    rings = polygons if isinstance(polygons[0], list) else [polygons]
+    for ring in rings:
+        if not isinstance(ring, list) or len(ring) < 6:
+            continue
+        flat = [float(v) for v in ring]
+        if len(flat) % 2:
+            continue
+        points = [(flat[i], flat[i + 1]) for i in range(0, len(flat), 2)]
+        draw.polygon(points, fill=1)
+        drew = True
+    if not drew:
+        return None
+    return _binary_to_rle(np.array(canvas) > 0)
+
+
+def _scale_coords(values: list[float], extent: int) -> list[float]:
+    if all(abs(v) <= 1.0 for v in values):
+        return [v * extent for v in values]
+    if max(values) > extent and max(values) <= 1000:
+        return [v * extent / 1000.0 for v in values]
+    return list(values)
+
+
+def _box_to_xywh(box: object, width: int, height: int) -> tuple[int, int, int, int] | None:
+    if isinstance(box, dict):
+        try:
+            return (
+                int(box["x"]),
+                int(box["y"]),
+                int(box["w"]),
+                int(box["h"]),
+            )
+        except (KeyError, TypeError, ValueError):
+            return None
+    if not isinstance(box, (list, tuple)) or len(box) != 4:
+        return None
+    try:
+        nums = [float(v) for v in box]
+    except (TypeError, ValueError):
+        return None
+    xs = _scale_coords([nums[0], nums[2]], width)
+    ys = _scale_coords([nums[1], nums[3]], height)
+    if xs[1] > xs[0] and ys[1] > ys[0]:
+        x0, x1, y0, y1 = xs[0], xs[1], ys[0], ys[1]
+    else:
+        x0, y0 = xs[0], ys[0]
+        x1, y1 = xs[0] + xs[1], ys[0] + ys[1]
+    x0 = max(0, min(width - 1, int(round(x0))))
+    y0 = max(0, min(height - 1, int(round(y0))))
+    x1 = max(x0 + 1, min(width, int(round(x1))))
+    y1 = max(y0 + 1, min(height, int(round(y1))))
+    return (x0, y0, x1 - x0, y1 - y0)
+
+
+def _mask_from_box(box: tuple[int, int, int, int], width: int, height: int) -> dict:
+    x, y, w, h = box
+    binary = np.zeros((height, width), dtype=np.uint8)
+    binary[y : y + h, x : x + w] = 1
+    return _binary_to_rle(binary)
+
+
+def _parse_kv(segment: str) -> dict:
+    fields: dict = {}
+    for chunk in segment.split(";"):
+        if "=" in chunk:
+            key, _, value = chunk.partition("=")
+            fields[key.strip()] = value
+    return fields
+
+
+def _native_entries(text: str) -> list[dict] | None:
+    """Parse SAM 3.1 native text geometry.
+
+    Observed shape (Responses output text)::
+
+        <0f>0<|box;x1=..;y1=..;x2=..;y2=..;w=..;h=..|><|mask;x=..;y=..;data=..|>
+
+    Box coordinates live in the ``w``/``h`` space named in the tag.
+    The mask ``data`` payload encoding is not documented in the material
+    available here, so it is carried through unparsed for now.
+    """
+
+    boxes = re.findall(r"<\|box;(.*?)\|>", text)
+    if not boxes:
+        return None
+    masks = re.findall(r"<\|mask;(.*?)\|>", text)
+    entries: list[dict] = []
+    for index, raw_box in enumerate(boxes):
+        box = _parse_kv(raw_box)
+        try:
+            space_w = float(box["w"])
+            space_h = float(box["h"])
+            coords = [float(box[k]) for k in ("x1", "y1", "x2", "y2")]
+        except (KeyError, TypeError, ValueError):
+            continue
+        entry: dict = {
+            "box_space": [space_w, space_h],
+            "box": coords,
+            "score": 1.0,
+            "label": "defect",
+        }
+        if index < len(masks):
+            entry["mask_native"] = _parse_kv(masks[index]).get("data", "")
+        entries.append(entry)
+    return entries
+
+
+def _entries_from_text(text: str) -> list[dict] | None:
+    """Parse geometry entries, or None when the shape is unrecognized.
+
+    An explicitly empty answer (``[]`` or an empty candidate list) is a
+    valid no-detections result, not an unknown shape.
+    """
+
+    try:
+        parsed = json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if isinstance(parsed, list):
+        return [e for e in parsed if isinstance(e, dict)]
+    if isinstance(parsed, dict):
+        for key in _GEOMETRY_KEYS:
+            value = parsed.get(key)
+            if isinstance(value, list):
+                return [e for e in value if isinstance(e, dict)]
+        if not parsed:
+            return []
+    return None
+
+
 class SamSegmenter:
     """Segmenter backed by SAM 3.1 over the Meta Model API."""
 
@@ -42,38 +206,79 @@ class SamSegmenter:
         return self._segment_via_meta_api(image, prompts)
 
     def _segment_via_meta_api(self, image: Image.Image, prompts: list[str]) -> list[RawMask]:
-        # TODO(meta-docs): everything in this function is a placeholder
-        # mapping to be corrected against the official Meta Model API
-        # docs. Do not treat the endpoint, payload shape, auth scheme,
-        # image encoding, or response shape below as fact.
-        # TODO(meta-docs): endpoint path — the base URL from settings is
-        # used verbatim until the docs name the segmentation path.
-        url = settings.meta_api_base_url
-        # TODO(meta-docs): request payload shape and field names.
+        url = settings.meta_api_base_url.rstrip("/") + "/responses"
+        headers = {"Authorization": f"Bearer {settings.meta_api_key}"}
+        image_url = "data:image/png;base64," + encode_image_b64(image)
+        content: list[dict] = [{"type": "input_image", "image_url": image_url}]
+        for prompt in prompts:
+            content.append(
+                {"type": "input_text", "text": f"Segment every instance of: {prompt}"}
+            )
         payload = {
             "model": settings.sam_model_id,
-            "image": encode_image_b64(image),
-            "prompts": prompts,
+            "input": [{"role": "user", "content": content}],
         }
-        # TODO(meta-docs): auth scheme — bearer key header assumed.
-        headers = {"Authorization": f"Bearer {settings.meta_api_key}"}
-        response = httpx.post(url, json=payload, headers=headers, timeout=60.0)
+        response = httpx.post(url, json=payload, headers=headers, timeout=120.0)
         response.raise_for_status()
-        # TODO(meta-docs): response shape — a top-level masks list whose
-        # entries carry label/score/mask_rle is assumed.
         data = response.json()
-        masks = data.get("masks", []) if isinstance(data, dict) else []
+        return self._parse_geometries(data, prompts, image.width, image.height)
+
+    @staticmethod
+    def _parse_geometries(
+        data: object, prompts: list[str], width: int, height: int
+    ) -> list[RawMask]:
+        text = extract_responses_text(data).strip()
+        if not text:
+            return []
+        entries = _native_entries(text)
+        if entries is None:
+            entries = _entries_from_text(text)
+        if entries is None:
+            raise RuntimeError(
+                "SAM response text did not match any known geometry shape; "
+                f"raw text (truncated): {text[:2000]}"
+            )
+        for entry in entries:
+            space = entry.get("box_space")
+            if (
+                isinstance(space, list)
+                and len(space) == 2
+                and space[0] > 0
+                and space[1] > 0
+                and isinstance(entry.get("box"), list)
+            ):
+                raw = entry["box"]
+                entry["box"] = [
+                    raw[0] * width / space[0],
+                    raw[1] * height / space[1],
+                    raw[2] * width / space[0],
+                    raw[3] * height / space[1],
+                ]
         result: list[RawMask] = []
-        for entry in masks:
-            if not isinstance(entry, dict):
-                continue
+        for entry in entries:
             try:
-                label = str(entry["label"])
-                score = float(entry["score"])
-                mask_rle = dict(entry["mask_rle"])
-            except (KeyError, TypeError, ValueError):
+                score = float(entry.get("score", 1.0))
+            except (TypeError, ValueError):
                 continue
-            if not _is_valid_mask_rle(mask_rle, image.height, image.width):
+            label = str(entry.get("label", entry.get("prompt", prompts[0] if prompts else "defect")))
+            mask_rle: object | None = None
+            raw_mask = entry.get("mask_rle", entry.get("mask", entry.get("polygon")))
+            if isinstance(raw_mask, dict) and "counts" in raw_mask:
+                counts = raw_mask.get("counts")
+                if isinstance(counts, bytes):
+                    raw_mask = {**raw_mask, "counts": counts.decode("ascii")}
+                if _is_valid_mask_rle(raw_mask, height, width):
+                    mask_rle = raw_mask
+            elif isinstance(raw_mask, str):
+                mask_rle = _mask_from_base64_png(raw_mask, height, width)
+            elif isinstance(raw_mask, list):
+                mask_rle = _mask_from_polygons(raw_mask, height, width)
+            box = _box_to_xywh(entry.get("box", entry.get("bbox")), width, height)
+            if mask_rle is None and box is not None:
+                mask_rle = _mask_from_box(box, width, height)
+            if mask_rle is None:
                 continue
+            if box is None:
+                box = (0, 0, width, height)
             result.append(RawMask(label=label, score=score, mask_rle=mask_rle))
         return result

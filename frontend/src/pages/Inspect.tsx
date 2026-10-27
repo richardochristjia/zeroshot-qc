@@ -4,6 +4,7 @@ import {
   ApiError,
   inspectImage,
   listProfiles,
+  resolveFileUrl,
 } from '../api.ts'
 import type { Detection, InspectionResult, ProductProfile } from '../api.ts'
 
@@ -217,7 +218,7 @@ export default function Inspect(): JSX.Element {
             <h2 className="text-sm font-semibold">Overlay</h2>
             <div className="relative mt-2 inline-block max-w-full">
               <img
-                src={shownImage}
+                src={resolveFileUrl(shownImage)}
                 alt={result !== null ? `Inspection overlay for ${result.profileId}` : 'Uploaded image preview'}
                 className="block max-w-full"
                 onLoad={(event) => {

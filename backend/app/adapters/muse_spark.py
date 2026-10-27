@@ -13,16 +13,57 @@ against ``Verdict``, retries once with the validation error appended,
 and raises ``JudgeValidationError`` on the second failure.
 """
 
+import json
 import re
 
 import httpx
 from PIL import Image
 from pydantic import ValidationError
 
-from app.adapters.base import encode_image_b64, require_configured
+from app.adapters.base import (
+    encode_image_b64,
+    extract_responses_text,
+    require_configured,
+)
 from app.config import settings
 from app.prompts import render_judge_prompt, render_sop_prompt
 from app.schemas import Detection, ProductProfile, Verdict
+
+
+def _responses_payload(model_id: str, prompt: str, images: list[Image.Image]) -> dict:
+    """Build a Responses API ``POST {base}/responses`` payload.
+
+    Follows the Meta docs pasted for the manual checks: Muse Spark is
+    reached over the Responses API with text plus image input parts.
+    """
+
+    content: list[dict] = [{"type": "input_text", "text": prompt}]
+    for image in images:
+        content.append(
+            {
+                "type": "input_image",
+                "image_url": "data:image/png;base64," + encode_image_b64(image),
+            }
+        )
+    return {"model": model_id, "input": [{"role": "user", "content": content}]}
+
+
+def _verdict_json(data: object) -> object:
+    """Extract the JSON object from a Responses envelope.
+
+    Returns ``{"_raw": text}`` when the output text is not JSON so
+    Verdict validation fails (and the retry path engages) instead of
+    raising a raw decode error the caller cannot recover from.
+    """
+
+    text = extract_responses_text(data).strip()
+    try:
+        parsed = json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        return {"_raw": text[:2000]}
+    if isinstance(parsed, dict) and isinstance(parsed.get("verdict"), dict):
+        return parsed["verdict"]
+    return parsed
 
 
 def _slugify_category(category_name: str) -> str:
@@ -115,30 +156,15 @@ class MuseSparkJudge:
         return profile
 
     def _sop_via_meta_api(self, prompt: str) -> object:
-        # TODO(meta-docs): everything in this function is a placeholder
-        # mapping to be corrected against the official Meta Model API
-        # docs. Do not treat the endpoint, payload shape, auth scheme,
-        # structured-output mode, or response shape below as fact.
-        # TODO(meta-docs): endpoint path — the base URL from settings is
-        # used verbatim until the docs name the SOP parsing path.
-        url = settings.meta_api_base_url
-
-        # TODO(meta-docs): request payload shape and field names, and
-        # whether a structured-output / JSON mode exists.
-        payload = {
-            "model": settings.judge_model_id,
-            "prompt": prompt,
-        }
-        # TODO(meta-docs): auth scheme — Bearer [REDACTED] header assumed.
+        url = settings.meta_api_base_url.rstrip("/") + "/responses"
+        payload = _responses_payload(settings.judge_model_id, prompt, [])
         headers = {"Authorization": f"Bearer {settings.meta_api_key}"}
-        response = httpx.post(url, json=payload, headers=headers, timeout=60.0)
+        response = httpx.post(url, json=payload, headers=headers, timeout=120.0)
         response.raise_for_status()
-        # TODO(meta-docs): response shape — a ProductProfile JSON object,
-        # possibly nested under a result/profile key, is assumed.
         data = response.json()
         if isinstance(data, dict) and isinstance(data.get("profile"), dict):
-            data = data["profile"]
-        return data
+            return data["profile"]
+        return _verdict_json(data)
 
     def _judge_via_meta_api(
         self,
@@ -156,27 +182,13 @@ class MuseSparkJudge:
         # below as fact.
         # TODO(meta-docs): endpoint path — the base URL from settings is
         # used verbatim until the docs name the judge path.
-        url = settings.meta_api_base_url
-
-        # TODO(meta-docs): request payload shape and field names,
-        # including how images, prompt, detections, and rules are
-        # passed and whether a structured-output / JSON mode exists.
-        payload = {
-            "model": settings.judge_model_id,
-            "prompt": prompt,
-            "image": encode_image_b64(image),
-            "overlay": encode_image_b64(overlay),
-            "reference": encode_image_b64(reference) if reference is not None else None,
-            "detections": [d.model_dump() for d in detections],
-            "profile": profile.model_dump(),
-        }
+        url = settings.meta_api_base_url.rstrip("/") + "/responses"
+        images = [image, overlay]
+        if reference is not None:
+            images.append(reference)
+        payload = _responses_payload(settings.judge_model_id, prompt, images)
         # TODO(meta-docs): auth scheme — bearer key header assumed.
         headers = {"Authorization": f"Bearer {settings.meta_api_key}"}
-        response = httpx.post(url, json=payload, headers=headers, timeout=60.0)
+        response = httpx.post(url, json=payload, headers=headers, timeout=120.0)
         response.raise_for_status()
-        # TODO(meta-docs): response shape — a Verdict JSON object,
-        # possibly nested under a result/verdict key, is assumed.
-        data = response.json()
-        if isinstance(data, dict) and isinstance(data.get("verdict"), dict):
-            data = data["verdict"]
-        return data
+        return _verdict_json(response.json())
