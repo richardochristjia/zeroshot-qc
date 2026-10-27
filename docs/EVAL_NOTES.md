@@ -70,6 +70,9 @@ same sampler, metrics, and ablations (`--mode`, `--adapter`,
 is defective, so expect recall near 1.0 and precision set by the
 false-positive rate — AUROC is uninformative single-class (0.5 by
 construction) and IoU measures mask overlap against the stored masks.
+Sampling note: synth `n_defective` is per defect type (up to N images
+from each `{profile}/{defect}/` dir), unlike MVTec `n_defective`
+which caps the total defective images per category.
 
 ## Manual rerun (real MVTec — human steps)
 
