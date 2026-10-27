@@ -12,6 +12,7 @@ text attached so the shape can be pinned from one live response.
 import base64
 import io
 import json
+import re
 
 import httpx
 import numpy as np
@@ -128,6 +129,52 @@ def _mask_from_box(box: tuple[int, int, int, int], width: int, height: int) -> d
     return _binary_to_rle(binary)
 
 
+def _parse_kv(segment: str) -> dict:
+    fields: dict = {}
+    for chunk in segment.split(";"):
+        if "=" in chunk:
+            key, _, value = chunk.partition("=")
+            fields[key.strip()] = value
+    return fields
+
+
+def _native_entries(text: str) -> list[dict] | None:
+    """Parse SAM 3.1 native text geometry.
+
+    Observed shape (Responses output text)::
+
+        <0f>0<|box;x1=..;y1=..;x2=..;y2=..;w=..;h=..|><|mask;x=..;y=..;data=..|>
+
+    Box coordinates live in the ``w``/``h`` space named in the tag.
+    The mask ``data`` payload encoding is not documented in the material
+    available here, so it is carried through unparsed for now.
+    """
+
+    boxes = re.findall(r"<\|box;(.*?)\|>", text)
+    if not boxes:
+        return None
+    masks = re.findall(r"<\|mask;(.*?)\|>", text)
+    entries: list[dict] = []
+    for index, raw_box in enumerate(boxes):
+        box = _parse_kv(raw_box)
+        try:
+            space_w = float(box["w"])
+            space_h = float(box["h"])
+            coords = [float(box[k]) for k in ("x1", "y1", "x2", "y2")]
+        except (KeyError, TypeError, ValueError):
+            continue
+        entry: dict = {
+            "box_space": [space_w, space_h],
+            "box": coords,
+            "score": 1.0,
+            "label": "defect",
+        }
+        if index < len(masks):
+            entry["mask_native"] = _parse_kv(masks[index]).get("data", "")
+        entries.append(entry)
+    return entries
+
+
 def _entries_from_text(text: str) -> list[dict] | None:
     """Parse geometry entries, or None when the shape is unrecognized.
 
@@ -183,12 +230,30 @@ class SamSegmenter:
         text = extract_responses_text(data).strip()
         if not text:
             return []
-        entries = _entries_from_text(text)
+        entries = _native_entries(text)
+        if entries is None:
+            entries = _entries_from_text(text)
         if entries is None:
             raise RuntimeError(
                 "SAM response text did not match any known geometry shape; "
                 f"raw text (truncated): {text[:2000]}"
             )
+        for entry in entries:
+            space = entry.get("box_space")
+            if (
+                isinstance(space, list)
+                and len(space) == 2
+                and space[0] > 0
+                and space[1] > 0
+                and isinstance(entry.get("box"), list)
+            ):
+                raw = entry["box"]
+                entry["box"] = [
+                    raw[0] * width / space[0],
+                    raw[1] * height / space[1],
+                    raw[2] * width / space[0],
+                    raw[3] * height / space[1],
+                ]
         result: list[RawMask] = []
         for entry in entries:
             try:

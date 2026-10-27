@@ -368,6 +368,29 @@ def test_sam_drops_mismatched_and_malformed_rle(
     assert result[0].mask_rle == valid.mask_rle
 
 
+def test_sam_native_box_parses_with_space_scaling(
+    image: Image.Image, sam_http: dict
+) -> None:
+    native = (
+        "<0f>0<|box;x1=256;y1=256;x2=768;y2=768;w=1024;h=1024|>"
+        "<|mask;x=0;y=0;data=.UNPARSED.|>"
+    )
+    sam_http["payload"] = _responses_envelope(native)
+    result = SamSegmenter().segment(image, PROMPTS)
+    assert len(result) == 1
+    height, width = image.height, image.width
+    decoded = mask_api.decode(
+        {
+            "size": result[0].mask_rle["size"],
+            "counts": result[0].mask_rle["counts"].encode("ascii"),
+        }
+    )
+    assert decoded.shape == (height, width)
+    assert decoded.sum() > 0
+    text = json.dumps(result[0].mask_rle)
+    assert ".UNPARSED." not in text
+
+
 def test_sam_malformed_mask_never_reaches_disk_cache(
     image: Image.Image, sam_http: dict, tmp_path: Path
 ) -> None:
