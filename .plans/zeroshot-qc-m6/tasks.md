@@ -27,9 +27,10 @@ Skill rules for every implementer on this run (all loaded by the orchestrator �
 - [x] Add debounced rules textarea that re-posts image + rules and aborts stale in-flight requests via the existing `AbortSignal` (clearing restores profile rules — empty `rules` is omitted/`None`); designed empty states (no image, zero detections)
 
 ## Profiles + Eval + Synthetic pages
-- [ ] Build `Profiles.tsx`: list, edit with PUT, SOP import via from-sop draft with save-as-new confirmation
-- [ ] Build `Eval.tsx`: run list, per-category metrics table, ablation bar chart, clickable failure examples (read-only)
-- [ ] Build `Synthetic.tsx`: gallery grouped by category and defect type from `data/synth/`
+- [x] Add synth gallery `GET` endpoint in `routers/synth.py` enumerating `data/synth/` as grouped `{category, defect, image_url, mask_url|null}` pairs via `/files/...` (skip `_reference.png`, tolerate missing masks) + typed api.ts client + TestClient coverage (see check-4.md; `Synthetic.tsx` blocked on this)
+- [x] Build `Profiles.tsx`: list, edit with PUT, SOP import via from-sop draft with save-as-new confirmation (existence-check via `getProfile`/`listProfiles` before PUT since `save_profile` overwrites silently; confirm before overwrite); designed empty state (no profiles)
+- [x] Build `Eval.tsx`: run list, per-category metrics table, per-category F1 bar chart for the selected run from the same summary (see check-4.md), clickable failure examples via nullable `image_url` with null/missing-dataset handling (read-only); designed empty states (no runs, no image)
+- [x] Build `Synthetic.tsx`: gallery grouped by category and defect type via the new gallery endpoint (not `/files/` listing — none exists); designed empty state (no synth images)
 
 ## Verification
 - [ ] Walkthrough against live dev servers: upload → verdict → rule flip with timings; profiles round-trip; eval table/chart/failures; gallery grouping (record exact URLs and steps)

@@ -286,3 +286,48 @@ def test_cli_parity_identical_verdicts(
     body = resp.json()
     assert body["verdict"]["verdict"] == cli_verdict
     assert len(body["detections"]) == len(cli_detections)
+
+
+def _seed_synth(data_dir: Path) -> None:
+    synth = data_dir / "synth"
+    (synth / "bottle").mkdir(parents=True)
+    (synth / "bottle" / "_reference.png").write_bytes(_png_bytes())
+    dent = synth / "bottle" / "dent"
+    dent.mkdir()
+    (dent / "000.png").write_bytes(_png_bytes())
+    (dent / "000_mask.png").write_bytes(_png_bytes())
+    scratch = synth / "bottle" / "scratch"
+    scratch.mkdir()
+    (scratch / "000.png").write_bytes(_png_bytes())  # no mask sibling
+
+
+def test_synth_gallery_grouping_reference_skip_and_missing_mask(
+    isolated: dict,
+) -> None:
+    _seed_synth(isolated["data"])
+    resp = client.get("/api/synth/gallery")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body == [
+        {
+            "category": "bottle",
+            "defect": "dent",
+            "image_url": "/files/synth/bottle/dent/000.png",
+            "mask_url": "/files/synth/bottle/dent/000_mask.png",
+        },
+        {
+            "category": "bottle",
+            "defect": "scratch",
+            "image_url": "/files/synth/bottle/scratch/000.png",
+            "mask_url": None,
+        },
+    ]
+    assert all(entry["image_url"] != "/files/synth/bottle/_reference.png" for entry in body)
+    # Mask-only files never appear as gallery images.
+    assert all(not entry["image_url"].endswith("_mask.png") for entry in body)
+
+
+def test_synth_gallery_empty_dir(isolated: dict) -> None:
+    resp = client.get("/api/synth/gallery")
+    assert resp.status_code == 200
+    assert resp.json() == []
