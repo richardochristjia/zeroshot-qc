@@ -28,9 +28,8 @@ __pycache__/
 venv/
 *.egg-info/
 
-# Depth patterns — bare names above match only at the context root, so
-# backend/-nested copies need explicit entries (M7: the image baked
-# backend/.venv, backend/.pytest_cache, and backend/tests/)
+# Bare names match only at the context root, so backend/-nested copies
+# need explicit entries.
 backend/__pycache__/
 backend/.pytest_cache/
 backend/.mypy_cache/
