@@ -29,7 +29,7 @@ import numpy as np
 from PIL import Image
 
 from app.config import settings
-from app.eval.dataset import DatasetError, sample_dataset
+from app.eval.dataset import DatasetError, sample_dataset, sample_synth_dataset
 from app.eval.fakes import ReferenceAwareJudge, ScriptedFixtureSegmenter
 from app.eval.metrics import fail_score, pixel_iou, summarize
 from app.pipeline.cache import CachedJudge, CachedSegmenter, DiskCache
@@ -39,6 +39,7 @@ from app.schemas import ProductProfile
 
 MODES = ("sam_only", "sam_judge", "sam_judge_ref")
 ADAPTER_CHOICES = ("real", "fake", "scripted")
+DATA_CHOICES = ("mvtec", "synth")
 
 EVAL_RULES = "FAIL any visible scratch, stain, or surface damage; PASS otherwise."
 
@@ -111,6 +112,7 @@ def run_eval(
     root: str | Path,
     categories: list[str] | None = None,
     mode: str = "sam_judge_ref",
+    source: str = "mvtec",
     seed: int = 0,
     n_good: int = 10,
     n_defective: int = 20,
@@ -125,8 +127,13 @@ def run_eval(
     """Run one ablation mode; write ``results.jsonl`` + ``summary.json``."""
     if mode not in MODES:
         raise ValueError(f"unknown mode {mode!r}: expected one of {MODES}")
+    if source not in DATA_CHOICES:
+        raise ValueError(f"unknown source {source!r}: expected one of {DATA_CHOICES}")
     root = Path(root)
-    samples = sample_dataset(root, categories, n_good, n_defective, seed)
+    if source == "synth":
+        samples = sample_synth_dataset(root, categories, n_good, n_defective, seed)
+    else:
+        samples = sample_dataset(root, categories, n_good, n_defective, seed)
     cache = DiskCache(cache_dir)
     segmenter, judge = _resolve_adapters(
         adapter, cache, segmenter_inner, judge_inner
@@ -186,6 +193,7 @@ def run_eval(
     summary = {
         "run_id": run_id,
         "mode": mode,
+        "source": source,
         "adapter": adapter,
         "seed": seed,
         "categories": [sample.category for sample in samples],
@@ -234,8 +242,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--n-good", type=int, default=10)
     parser.add_argument("--n-defective", type=int, default=20)
     parser.add_argument("--adapter", choices=ADAPTER_CHOICES, default="scripted")
+    parser.add_argument("--data", choices=DATA_CHOICES, default="mvtec")
     parser.add_argument("--rules", default=EVAL_RULES)
     parser.add_argument("--mvtec-dir", default=settings.mvtec_dir)
+    parser.add_argument(
+        "--synth-dir", default=str(Path(settings.data_dir) / "synth")
+    )
     parser.add_argument(
         "--cache-dir", default=str(Path(settings.data_dir) / "cache")
     )
@@ -249,9 +261,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     try:
         _, summary = run_eval(
-            root=args.mvtec_dir,
+            root=args.synth_dir if args.data == "synth" else args.mvtec_dir,
             categories=args.categories,
             mode=args.mode,
+            source=args.data,
             seed=args.seed,
             n_good=args.n_good,
             n_defective=args.n_defective,
