@@ -21,9 +21,9 @@ Spec: `plan.md` in this folder. Tier: `tier.md` in this folder. Base: `main` (M6
 - [x] Full `pytest` green; `tsc` + `vite build` clean
 
 ## Verification
-- [ ] Container probes all pass (health, inspect, overlay fetch, traversal block, 404s)
-- [ ] Bundle + Dockerfile greps clean; README commands followed verbatim up to the credential boundary
-- [ ] Record Updates: append the 2 deploy entries from plan.md Record Updates — first (1) review the complete implementation; (2a) if it matches, write those exact entries into `.agents/RECORD.md`; (2b) if it diverged, write nothing and surface the divergence in the final summary instead
+- [x] Container probes confirmed: reuse Phase-2 green evidence (23f70da) + verify tree-clean for code/wiring since; re-run only the 5 probes (health, fake inspect, overlay fetch, traversal block, unknown-profile 404) if image/container still available, else confirm-and-note
+- [x] Bundle grep (`sk-`/Bearer/key patterns over fresh prod `frontend/dist/`, read hits per false-positive warning) + Dockerfile grep (no `COPY .env`, no key patterns) clean; README reader-test result from Phase 3 confirmed standing (no README change since)
+- [x] Record Updates: append the 2 deploy entries from plan.md Record Updates — first (1) review the complete implementation; (2a) if it matches, write those exact entries into `.agents/RECORD.md`; (2b) if it diverged, write nothing and surface the divergence in the final summary instead
 
 ## Manual checks
 - [ ] manual: run the documented Modal/Vercel push commands with your logins and confirm the public URL in a private window

@@ -10,3 +10,5 @@
 - Three manual gates (M1-AC6 real-keys smoke, M2-AC5 CLI on 3 real MVTec images, M6-G0 second-device walkthrough) cannot be settled keyless/in-run; they survive only as handoff items. Check: human runs before submission.
 - PUT-overwrite guard (M6-I1) and CLI same-stem naming (M2-F2) each need a user product call (409/no-create rule; hash-suffix vs smoke-style counter) that this run must not invent. Check: owner rules at handoff; handoff list carries both.
 - Overlay-bbox-in-pixels assumption (M6-I2) settles only when a non-pixel segmenter lands; current segmenters all return pixels. Check: re-probe overlay placement against the first non-pixel segmenter.
+- Whether the Phase-2 Docker image/container still exists for a confirmatory re-probe cannot be settled by reading. Check: `docker images` / `docker ps -a` at Verification; if gone, Phase-2 evidence + clean tree stands without re-run.
+- The Phase-3 gallery `(synth)` RECORD entry and the 2 pending `(deploy)` entries are independent; approving one never implies the other. Check: Verification reviews the deploy implementation before appending.
