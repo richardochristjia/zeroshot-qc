@@ -1,23 +1,32 @@
 """FastAPI application entry point. Health endpoint lives here in M1."""
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from fastapi.responses import FileResponse
 
-from app.adapters.muse_spark import JudgeValidationError, MuseSparkJudge
+from app.adapters.muse_spark import MuseSparkJudge
 from app.config import settings
-from app.schemas import ProductProfile
+from app.routers.eval import router as eval_router
+from app.routers.inspect import router as inspect_router
+from app.routers.profiles import router as profiles_router
+from app.routers.synth import router as synth_router
 
 app = FastAPI()
 
-
-class SopDraftRequest(BaseModel):
-    sop_text: str = Field(min_length=1)
-    category_name: str = Field(min_length=1)
+app.include_router(profiles_router)
+app.include_router(inspect_router)
+app.include_router(eval_router)
+app.include_router(synth_router)
 
 
 def _get_sop_judge() -> MuseSparkJudge:
-    """Indirection so tests can substitute a fake without touching HTTP."""
+    """Indirection so tests can substitute a fake without touching HTTP.
+
+    The profiles router calls this factory lazily at request time, so
+    patching ``app.main._get_sop_judge`` still substitutes the judge.
+    """
     return MuseSparkJudge()
 
 _origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
@@ -30,17 +39,31 @@ app.add_middleware(
 )
 
 
-@app.post("/api/profiles/from-sop", response_model=ProductProfile)
-def profiles_from_sop(body: SopDraftRequest) -> ProductProfile:
-    """Draft a profile from an SOP paragraph (M5). Never saves anything.
+@app.get("/files/{rel_path:path}")
+def serve_data_file(rel_path: str) -> FileResponse:
+    """Serve a file from ``data/``; traversal attempts are 404.
 
-    Two consecutive validation failures surface as 422, mirroring the
-    judge's error shape.
+    The data dir resolves per request (tests monkeypatch
+    ``settings.data_dir``), so a ``StaticFiles`` mount fixed at import
+    time would serve a stale directory. Explicit guard first: any
+    ``.``/``..`` segment, absolute path, or backslash is rejected
+    before touching the filesystem. A ``resolve()`` + containment
+    backstop then covers encoded variants and symlinks.
     """
-    try:
-        return _get_sop_judge().sop_to_profile(body.sop_text, body.category_name)
-    except JudgeValidationError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if (
+        not rel_path
+        or rel_path.startswith("/")
+        or "\\" in rel_path
+        or any(seg in (".", "..") for seg in rel_path.split("/"))
+    ):
+        raise HTTPException(status_code=404, detail="not found")
+    data_dir = Path(settings.data_dir).resolve()
+    candidate = (data_dir / rel_path).resolve()
+    if candidate != data_dir and data_dir not in candidate.parents:
+        raise HTTPException(status_code=404, detail="not found")
+    if not candidate.is_file():
+        raise HTTPException(status_code=404, detail="not found")
+    return FileResponse(candidate)
 
 
 @app.get("/api/health")
