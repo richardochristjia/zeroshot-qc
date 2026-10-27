@@ -13,10 +13,12 @@ Spec: `plan.md` in this folder. Tier: `tier.md` in this folder. Base: `main` (M6
 - [x] Production `npm run build` (tsc + vite) clean with `VITE_API_URL` set, rebuilding stale `frontend/dist/`; bundle grep shows no secret patterns; CORS proven with an `Origin`-header fetch matching `CORS_ORIGINS`
 
 ## Polish sweep
-- [ ] Triage every carried-open item from M1–M6 falsify/gap reports (fix-if-small-and-proven with a test, else carry with owner into the handoff list)
-- [ ] Resolve the gallery Record entry (approve and write, or reject with reason in the summary)
-- [ ] Rewrite README run/deploy sections with exact push commands; record the submission checklist state
-- [ ] Full `pytest` green; `tsc` + `vite build` clean
+- [x] Triage carried-open items per `check-3.md` inventory (13 carry + 1 docs fix; M1-RECORD item already done, M3/M4 carry nothing)
+- [x] Docs-only fix: document synth `n_defective` per-defect-type (vs MVTec total) semantics in `docs/EVAL_NOTES.md`
+- [x] Carry list: wrote all 13 carry items with owners into docs/HANDOFF.md (new; no handoff list existed) (code debt: M1-LO2, M2-F2 naming call, M2-LO unification, M6-St2/St3/St4, M6-I1 rule call, M6-I2, M6-I3, M5/M3 consider leftovers; manual: M1-AC6 real-smoke, M2-AC5 CLI MVTec, M6-G0 second-device)
+- [x] Resolve the gallery Record entry (approve and write, or reject with reason in the summary) → APPROVED + written (verified live: 200, 11 grouped entries)
+- [x] Rewrite README run/deploy sections with exact push commands; record the submission checklist state
+- [x] Full `pytest` green; `tsc` + `vite build` clean
 
 ## Verification
 - [ ] Container probes all pass (health, inspect, overlay fetch, traversal block, 404s)

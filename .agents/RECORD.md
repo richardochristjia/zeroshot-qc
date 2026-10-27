@@ -61,3 +61,4 @@ Entries are added or amended **only with human approval**.
 - (frontend) The Inspect page currently re-runs only the judge when rules change, reusing cached segmentation.
 - (frontend) The Eval page currently displays existing runs and never launches new ones.
 - (frontend) Image upload is currently file-based without webcam capture.
+- (synth) The synthetic gallery is currently served by GET /api/synth/gallery enumerating data/synth/ pairs with /files/ URLs.
