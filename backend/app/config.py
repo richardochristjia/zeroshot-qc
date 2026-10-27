@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     sam_model_id: str = ""
     judge_model_id: str = ""
     image_model_id: str = ""
+    use_fake_adapters: bool = False
     data_dir: str = "./data"
     mvtec_dir: str = "./data/mvtec"
     cors_origins: str = "http://localhost:5173"
