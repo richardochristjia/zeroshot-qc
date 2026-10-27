@@ -29,10 +29,21 @@ def build_modal_asgi(app_obj=app):
             "Install it with `pip install modal` and run `modal setup` "
             "before deploying modal_app.py."
         )
-    modal_app = modal.App("zeroshot-qc")
-    return modal_app.function(image=modal.Image.debian_slim())(modal.asgi_app()(lambda: app_obj))
+    return modal_app.function(image=modal_image)(modal.asgi_app()(lambda: app_obj))
 
 
-asgi_app = None
 if modal is not None:
-    asgi_app = build_modal_asgi()
+    # Module scope so `modal deploy modal_app.py` discovers the App.
+    modal_app = modal.App("zeroshot-qc")
+    modal_image = modal.Image.debian_slim().pip_install_from_requirements(
+        "backend/requirements.txt"
+    )
+
+    @modal_app.function(image=modal_image)
+    @modal.asgi_app()
+    def asgi_app():
+        return app
+else:
+    modal_app = None
+    modal_image = None
+    asgi_app = None
