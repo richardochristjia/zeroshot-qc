@@ -129,32 +129,12 @@ export interface EvalRunDetail {
   results: EvalResultRow[];
 }
 
-export interface SynthPair {
-  imageUrl: string;
-  maskUrl: string | null;
-}
-
 /** One `GET /api/synth/gallery` entry (`routers/synth.py`). */
 export interface SynthGalleryItem {
   category: string;
   defect: string;
   imageUrl: string;
   maskUrl: string | null;
-}
-
-/** `POST /api/synth/generate` response (`routers/synth.py:63-77`). */
-export interface SynthGenerateResponse {
-  profileId: string;
-  defect: string;
-  count: number;
-  pairs: SynthPair[];
-}
-
-export interface SynthGenerateRequest {
-  profileId: string;
-  defect: string;
-  n: number;
-  seed?: number;
 }
 
 /** `POST /api/profiles/from-sop` body (`routers/profiles.py:22-24`). */
@@ -485,26 +465,6 @@ function parseSynthGalleryItem(value: unknown, index: number): SynthGalleryItem 
   };
 }
 
-function parseSynthGenerateResponse(value: unknown): SynthGenerateResponse {
-  const path = "SynthGenerateResponse";
-  if (!isRecord(value)) fail(path);
-  return {
-    profileId: reqString(value, "profile_id", path),
-    defect: reqString(value, "defect", path),
-    count: reqNumber(value, "count", path),
-    pairs: reqArray(value, "pairs", path).map((p, i) => {
-      if (!isRecord(p)) fail(`${path}.pairs[${i}]`);
-      return {
-        imageUrl: reqString(p, "image_url", `${path}.pairs[${i}]`),
-        maskUrl:
-          p["mask_url"] == null
-            ? null
-            : reqString(p, "mask_url", `${path}.pairs[${i}]`),
-      };
-    }),
-  };
-}
-
 // ---------------------------------------------------------------------------
 // Transport.
 // ---------------------------------------------------------------------------
@@ -707,25 +667,6 @@ export async function getEvalRun(
   return parseEvalRunDetail(data);
 }
 
-/** POST /api/synth/generate: generate `n` synthetic pairs. Throws
- * {@link RequestValidationError} on `n < 1`, {@link NotFoundError} on
- * unknown profile.
- *
- * Gallery listing lives in {@link listSyntheticGallery} below. */
-export async function generateSynthetic(
-  request: SynthGenerateRequest,
-  signal?: AbortSignal,
-): Promise<SynthGenerateResponse> {
-  const body: Record<string, string | number> = {
-    profile_id: request.profileId,
-    defect: request.defect,
-    n: request.n,
-    seed: request.seed ?? 0,
-  };
-  const data = await postJson("/api/synth/generate", body, signal);
-  return parseSynthGenerateResponse(data);
-}
-
 /** GET /api/synth/gallery: every `{category, defect, image_url,
  * mask_url|null}` pair under `data/synth/` (`routers/synth.py`);
  * category-level `_reference.png` files are skipped server-side and
@@ -737,18 +678,4 @@ export async function listSyntheticGallery(
   const data = await getJson("/api/synth/gallery", signal);
   if (!Array.isArray(data)) fail("SynthGalleryItem[]");
   return data.map((item, i) => parseSynthGalleryItem(item, i));
-}
-
-/** Serialize a profile back to the backend's snake_case body shape
- * (for callers that build the PUT payload themselves). */
-export function toProfileBody(profile: ProductProfile): Record<string, unknown> {
-  return {
-    id: profile.id,
-    name: profile.name,
-    defect_prompts: profile.defectPrompts,
-    rules: profile.rules,
-    mm_per_px: profile.mmPerPx,
-    min_score: profile.minScore,
-    reference_image: profile.referenceImage,
-  };
 }

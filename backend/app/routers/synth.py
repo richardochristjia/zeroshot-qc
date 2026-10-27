@@ -11,6 +11,7 @@ URLs served from ``data/synth/`` (mask null when the diff/exact mask is
 empty). Unknown profile → 404, ``n < 1`` → 422. Implemented in M6 Routers.
 """
 
+import re
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -22,6 +23,11 @@ from app.config import settings
 from app.synth.generate import generate_pairs
 
 router = APIRouter()
+
+# No separators or dots: `..` traversal and absolute paths cannot spell
+# a match, so the joined `root / profile_id / defect` path always stays
+# under `data/synth/`.
+_NAME_RE = re.compile(r"[A-Za-z0-9_-]+")
 
 
 def _get_image_generator() -> ImageGenerator:
@@ -87,8 +93,14 @@ def generate_synth(body: _GenerateBody) -> dict:
     Names mirror ``generate_pairs``; the generator comes from
     ``_get_image_generator`` (fake by default, real via monkeypatch
     only — never a request param). ``n < 1`` → 422, unknown
-    profile → 404.
+    profile → 404. ``profile_id``/``defect`` outside
+    ``[A-Za-z0-9_-]+`` → 422 before any file is written.
     """
+    for field, value in (("profile_id", body.profile_id), ("defect", body.defect)):
+        if not _NAME_RE.fullmatch(value):
+            raise HTTPException(
+                status_code=422, detail=f"invalid {field} {value!r}"
+            )
     if body.n < 1:
         raise HTTPException(
             status_code=422, detail=f"--n must be >= 1, got {body.n}"
