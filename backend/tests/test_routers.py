@@ -331,3 +331,97 @@ def test_synth_gallery_empty_dir(isolated: dict) -> None:
     resp = client.get("/api/synth/gallery")
     assert resp.status_code == 200
     assert resp.json() == []
+
+
+def test_synth_generate_happy_n_and_unknown_profile(isolated: dict) -> None:
+    resp = client.post(
+        "/api/synth/generate",
+        json={"profile_id": "screw", "defect": "scratch", "n": 1},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["profile_id"] == "screw"
+    assert body["defect"] == "scratch"
+    assert body["count"] == 1
+    assert len(body["pairs"]) == 1
+    assert (isolated["data"] / "synth" / "screw" / "scratch" / "000.png").is_file()
+
+    bad_n = client.post(
+        "/api/synth/generate",
+        json={"profile_id": "screw", "defect": "scratch", "n": 0},
+    )
+    assert bad_n.status_code == 422
+
+    unknown = client.post(
+        "/api/synth/generate",
+        json={"profile_id": "no-such", "defect": "scratch", "n": 1},
+    )
+    assert unknown.status_code == 404
+
+
+def test_synth_generate_traversal_rejected_without_writes(
+    isolated: dict,
+) -> None:
+    before = sorted(p.relative_to(isolated["data"]) for p in isolated["data"].rglob("*"))
+    for payload in (
+        {"profile_id": "screw", "defect": "../escape-probe", "n": 1},
+        {"profile_id": "screw", "defect": "/abs", "n": 1},
+        {"profile_id": "../evil", "defect": "scratch", "n": 1},
+    ):
+        resp = client.post("/api/synth/generate", json=payload)
+        assert resp.status_code in (404, 422)
+    after = sorted(p.relative_to(isolated["data"]) for p in isolated["data"].rglob("*"))
+    assert after == before
+
+
+def test_put_absolute_reference_image_rejected(isolated: dict) -> None:
+    one = client.get("/api/profiles/screw").json()
+    before = (isolated["profiles"] / "screw.json").read_bytes()
+    for evil in ("/etc/passwd", "../../outside.png", "a\\b.png"):
+        resp = client.put(
+            "/api/profiles/screw",
+            json={**one, "reference_image": evil},
+        )
+        assert resp.status_code == 422
+    assert (isolated["profiles"] / "screw.json").read_bytes() == before
+
+
+def test_put_invalid_path_id_is_404(isolated: dict) -> None:
+    one = client.get("/api/profiles/screw").json()
+    body = {**one, "id": "bad!id"}
+    resp = client.put("/api/profiles/bad!id", json=body)
+    assert resp.status_code == 404
+    assert not (isolated["profiles"] / "bad!id.json").exists()
+
+
+def test_files_missing_backslash_absolute_are_404(isolated: dict) -> None:
+    assert client.get("/files/does-not-exist.png").status_code == 404
+    assert client.get("/files/a%5Cb.png").status_code == 404
+    assert client.get("/files//etc/passwd").status_code == 404
+
+
+def test_from_sop_double_judge_failure_is_422(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class BoomSopJudge:
+        def sop_to_profile(self, sop_text: str, category_name: str):  # type: ignore[no-untyped-def]
+            raise JudgeValidationError("judge output failed validation twice")
+
+    monkeypatch.setattr(main_module, "_get_sop_judge", lambda: BoomSopJudge())
+    resp = client.post(
+        "/api/profiles/from-sop",
+        json={"sop_text": "some sop", "category_name": "gadget"},
+    )
+    assert resp.status_code == 422
+
+
+def test_inspect_undecodable_image_is_422(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _use_fakes(monkeypatch)
+    resp = client.post(
+        "/api/inspect",
+        files={"image": ("part.png", b"not an image", "image/png")},
+        data={"profile_id": "screw"},
+    )
+    assert resp.status_code == 422
