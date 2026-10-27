@@ -1,11 +1,7 @@
-"""Modal hosting wrapper (M7). Thin wrapper — no app logic lives here.
+"""Modal hosting wrapper (M7): serve the container's FastAPI ``app`` via Modal ASGI.
 
-Imports the same FastAPI ``app`` object the container serves
-(``backend/app/main.py``) and exposes it through Modal's ASGI construct
-when the ``modal`` package is installed. Import-validates without
-``modal`` installed: the ``modal`` import is guarded, and a clear error
-is raised only on the deploy path (calling ``build_modal_asgi`` /
-accessing ``asgi_app`` without ``modal``).
+No app logic lives here. The ``modal`` import is guarded so this module
+imports without ``modal`` installed; only the deploy path raises without it.
 """
 
 import os
@@ -13,7 +9,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend"))
 
-from app.main import app  # noqa: E402  (same object the container serves)
+from app.main import app  # noqa: E402
 
 try:
     import modal  # type: ignore[import-not-found]
