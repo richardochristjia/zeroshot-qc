@@ -134,6 +134,14 @@ export interface SynthPair {
   maskUrl: string | null;
 }
 
+/** One `GET /api/synth/gallery` entry (`routers/synth.py`). */
+export interface SynthGalleryItem {
+  category: string;
+  defect: string;
+  imageUrl: string;
+  maskUrl: string | null;
+}
+
 /** `POST /api/synth/generate` response (`routers/synth.py:63-77`). */
 export interface SynthGenerateResponse {
   profileId: string;
@@ -463,6 +471,20 @@ function parseEvalRunDetail(value: unknown): EvalRunDetail {
   };
 }
 
+function parseSynthGalleryItem(value: unknown, index: number): SynthGalleryItem {
+  const path = `SynthGallery[${index}]`;
+  if (!isRecord(value)) fail(path);
+  return {
+    category: reqString(value, "category", path),
+    defect: reqString(value, "defect", path),
+    imageUrl: reqString(value, "image_url", path),
+    maskUrl:
+      value["mask_url"] == null
+        ? null
+        : reqString(value, "mask_url", path),
+  };
+}
+
 function parseSynthGenerateResponse(value: unknown): SynthGenerateResponse {
   const path = "SynthGenerateResponse";
   if (!isRecord(value)) fail(path);
@@ -689,11 +711,7 @@ export async function getEvalRun(
  * {@link RequestValidationError} on `n < 1`, {@link NotFoundError} on
  * unknown profile.
  *
- * NOTE: there is deliberately no gallery-listing function. The backend
- * exposes no synth list endpoint and `/files/` serves files only (no
- * directory listing, `main.py:serve_data_file`), so the Synthetic page
- * cannot enumerate `data/synth/` pairs through this client — that needs
- * a backend change tracked as discovered work, not invented here. */
+ * Gallery listing lives in {@link listSyntheticGallery} below. */
 export async function generateSynthetic(
   request: SynthGenerateRequest,
   signal?: AbortSignal,
@@ -706,6 +724,19 @@ export async function generateSynthetic(
   };
   const data = await postJson("/api/synth/generate", body, signal);
   return parseSynthGenerateResponse(data);
+}
+
+/** GET /api/synth/gallery: every `{category, defect, image_url,
+ * mask_url|null}` pair under `data/synth/` (`routers/synth.py`);
+ * category-level `_reference.png` files are skipped server-side and
+ * missing masks arrive as `null`. Returns `[]` when no synth images
+ * exist. */
+export async function listSyntheticGallery(
+  signal?: AbortSignal,
+): Promise<SynthGalleryItem[]> {
+  const data = await getJson("/api/synth/gallery", signal);
+  if (!Array.isArray(data)) fail("SynthGalleryItem[]");
+  return data.map((item, i) => parseSynthGalleryItem(item, i));
 }
 
 /** Serialize a profile back to the backend's snake_case body shape

@@ -36,6 +36,50 @@ class _GenerateBody(BaseModel):
     seed: int = 0
 
 
+@router.get("/api/synth/gallery")
+def list_synth_gallery() -> list[dict]:
+    """Enumerate ``data/synth/`` pairs as grouped gallery entries.
+
+    Read-only: walks ``data/synth/<category>/<defect>/NNN.png`` files,
+    skipping category-level ``_reference.png`` files, and pairs each
+    image with an optional ``<stem>_mask.png`` sibling (``mask_url``
+    null when absent). Missing or empty ``data/synth/`` returns ``[]``.
+    """
+    gallery: list[dict] = []
+    synth_dir = Path(settings.data_dir) / "synth"
+    if not synth_dir.is_dir():
+        return gallery
+    for category_dir in sorted(synth_dir.iterdir()):
+        if not category_dir.is_dir():
+            continue
+        for defect_dir in sorted(category_dir.iterdir()):
+            if not defect_dir.is_dir():
+                continue
+            for image_path in sorted(defect_dir.glob("*.png")):
+                if image_path.name.endswith("_mask.png"):
+                    continue
+                if image_path.name == "_reference.png":
+                    continue
+                mask_path = image_path.with_name(f"{image_path.stem}_mask.png")
+                gallery.append(
+                    {
+                        "category": category_dir.name,
+                        "defect": defect_dir.name,
+                        "image_url": (
+                            f"/files/synth/{category_dir.name}"
+                            f"/{defect_dir.name}/{image_path.name}"
+                        ),
+                        "mask_url": (
+                            f"/files/synth/{category_dir.name}"
+                            f"/{defect_dir.name}/{mask_path.name}"
+                            if mask_path.is_file()
+                            else None
+                        ),
+                    }
+                )
+    return gallery
+
+
 @router.post("/api/synth/generate")
 def generate_synth(body: _GenerateBody) -> dict:
     """Generate ``n`` synthetic pairs; files land under ``data/synth/``.
