@@ -468,11 +468,8 @@ function parseSynthGalleryItem(value: unknown, index: number): SynthGalleryItem 
 }
 
 // ---------------------------------------------------------------------------
-// Backend origin wiring (M7 deploy): build-time `VITE_API_URL` with the
-// trailing slash stripped once, so `/api/...` joins never double-slash.
-// Empty/unset (dev) keeps same-origin relative URLs for the Vite proxy.
-// `import.meta.env` values arrive untyped, so the raw value is narrowed
-// from `unknown` here at the boundary and trusted as `string` below.
+// Backend origin (M7 deploy): build-time `VITE_API_URL`, trailing slash
+// stripped once. Empty/unset (dev) keeps same-origin relative URLs.
 // ---------------------------------------------------------------------------
 
 export function normalizeApiBase(rawBase: unknown): string {
@@ -480,19 +477,15 @@ export function normalizeApiBase(rawBase: unknown): string {
   return rawBase.replace(/\/+$/, "");
 }
 
-const API_BASE: string = normalizeApiBase(import.meta.env.VITE_API_URL);
+const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL);
 
 /** Join a server-absolute path onto the configured backend origin. */
 function apiUrl(path: string): string {
   return `${API_BASE}${path}`;
 }
 
-/** Resolve a backend file URL for `img src` (M7 deploy).
- *
- * Server-relative `/files/...` URLs (what the backend emits) are joined
- * onto the backend origin so images load when the frontend is served from
- * a separate Vercel origin. Already-absolute URLs (`http(s):`, `blob:`
- * upload previews, `data:`) pass through untouched. */
+/** Resolve a backend `/files/...` URL for `img src`; absolute, blob:, and
+ * data: URLs pass through untouched (cross-origin Vercel frontend). */
 export function resolveFileUrl(url: string): string {
   if (
     url.startsWith("blob:") ||
@@ -502,7 +495,7 @@ export function resolveFileUrl(url: string): string {
   ) {
     return url;
   }
-  return `${API_BASE}${url}`;
+  return apiUrl(url);
 }
 
 // ---------------------------------------------------------------------------
