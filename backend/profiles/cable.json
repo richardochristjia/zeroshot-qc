@@ -1,0 +1,12 @@
+{
+  "defect_prompts": [
+    "bent cable wire",
+    "cut cable insulation",
+    "missing cable wire"
+  ],
+  "id": "cable",
+  "mm_per_px": null,
+  "name": "Cable",
+  "reference_image": null,
+  "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec cable SOP. Draft: FAIL a cable with any bent, cut, or missing wire; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
+}

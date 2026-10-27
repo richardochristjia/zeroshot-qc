@@ -1,0 +1,12 @@
+{
+  "defect_prompts": [
+    "bent grid wire",
+    "broken grid wire",
+    "glue on grid"
+  ],
+  "id": "grid",
+  "mm_per_px": null,
+  "name": "Grid",
+  "reference_image": null,
+  "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec grid SOP. Draft: FAIL a grid with any bent or broken wire or glue residue; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
+}

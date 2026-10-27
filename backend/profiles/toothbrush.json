@@ -1,0 +1,11 @@
+{
+  "defect_prompts": [
+    "defective toothbrush bristles",
+    "stained toothbrush head"
+  ],
+  "id": "toothbrush",
+  "mm_per_px": null,
+  "name": "Toothbrush",
+  "reference_image": null,
+  "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec toothbrush SOP. Draft: FAIL a toothbrush with defective bristles or stains; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
+}
