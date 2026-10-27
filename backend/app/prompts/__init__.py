@@ -12,9 +12,10 @@ import json
 import re
 from pathlib import Path
 
-from app.schemas import Detection, Verdict
+from app.schemas import Detection, ProductProfile, Verdict
 
 _JUDGE_TEMPLATE = Path(__file__).resolve().parent / "judge.md"
+_SOP_TEMPLATE = Path(__file__).resolve().parent / "sop_to_profile.md"
 
 
 def _format_mm(value: float | None) -> str:
@@ -36,6 +37,21 @@ def build_detections_table(detections: list[Detection]) -> str:
             f"{_format_mm(detection.length_mm)}"
         )
     return "\n".join(lines)
+
+
+def render_sop_prompt(sop_text: str, category_name: str) -> str:
+    """Render ``sop_to_profile.md`` with the profile schema and SOP text."""
+    template = _SOP_TEMPLATE.read_text(encoding="utf-8")
+    values = {
+        "{schema}": json.dumps(ProductProfile.model_json_schema(), sort_keys=True),
+        "{sop_text}": sop_text,
+        "{category_name}": category_name,
+    }
+    return re.sub(
+        r"\{schema\}|\{sop_text\}|\{category_name\}",
+        lambda match: values[match.group(0)],
+        template,
+    )
 
 
 def render_judge_prompt(rules: str, detections: list[Detection]) -> str:
