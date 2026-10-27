@@ -23,8 +23,8 @@ Skill rules for every implementer on this run (all loaded by the orchestrator �
 - [x] Implement typed `frontend/src/api.ts` client with boundary parsing: `InspectionResult`/`ProductProfile`/`Detection`/`Verdict` from `schemas.py`, plus router-defined shapes with no Pydantic model — eval `{"summary", "results"}` rows (keys per `run.py:179-213` + injected `image_url`, see check-2.md), synth `{profile_id, defect, count, pairs}` (see `routers/synth.py:63-77`), from-sop `{sop_text, category_name}`; typed errors for inspect 422s (judge failure + undecodable image), PUT id-mismatch 422, and 404s
 
 ## Inspect page
-- [ ] Build `Inspect.tsx`: profile picker, file upload, hoverable overlay detections, verdict card with per-ruling reasons
-- [ ] Add debounced rules textarea that re-posts image + rules and aborts stale in-flight requests; designed empty states (no image, zero detections)
+- [x] Build `Inspect.tsx`: profile picker, file upload, hoverable overlay detections (scale `bbox` pixels to rendered image size over the server overlay PNG), verdict card with per-ruling reasons
+- [x] Add debounced rules textarea that re-posts image + rules and aborts stale in-flight requests via the existing `AbortSignal` (clearing restores profile rules — empty `rules` is omitted/`None`); designed empty states (no image, zero detections)
 
 ## Profiles + Eval + Synthetic pages
 - [ ] Build `Profiles.tsx`: list, edit with PUT, SOP import via from-sop draft with save-as-new confirmation
