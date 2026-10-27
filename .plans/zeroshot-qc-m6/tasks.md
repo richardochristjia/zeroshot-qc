@@ -33,9 +33,9 @@ Skill rules for every implementer on this run (all loaded by the orchestrator �
 - [x] Build `Synthetic.tsx`: gallery grouped by category and defect type via the new gallery endpoint (not `/files/` listing — none exists); designed empty state (no synth images)
 
 ## Verification
-- [ ] Walkthrough against live dev servers: upload → verdict → rule flip with timings; profiles round-trip; eval table/chart/failures; gallery grouping (record exact URLs and steps)
-- [ ] `pytest` green; `tsc --noEmit` + `vite build` clean; grep guard: no secrets in `frontend/src`, no `data/` writes in git status
-- [ ] Record Updates: append the 5 api/frontend entries from the approved plan — first (1) review the complete implementation; (2a) if it matches, write those exact entries into `.agents/RECORD.md`; (2b) if it diverged, write nothing and surface the divergence in the final summary instead. (Note: Tier L spec carries the entries in plan.md Record Updates — use those verbatim.)
+- [x] Walkthrough against live dev servers: upload → verdict → rule flip with timings; profiles round-trip; eval table/chart/failures; gallery grouping (record exact URLs and steps)
+- [x] `pytest` green; `tsc --noEmit` + `vite build` clean; grep guard: no secrets in `frontend/src`, no `data/` writes in git status
+- [x] Record Updates: append the 5 api/frontend entries from the approved plan — first (1) review the complete implementation; (2a) if it matches, write those exact entries into `.agents/RECORD.md`; (2b) if it diverged, write nothing and surface the divergence in the final summary instead. (Note: Tier L spec carries the entries in plan.md Record Updates — use those verbatim.)
 
 ## Manual checks
 - [ ] manual: full walkthrough on a second device against the dev servers (upload, rule flip, SOP import, gallery)
