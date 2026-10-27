@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
-import { ApiError, listSyntheticGallery } from '../api.ts'
+import { ApiError, listSyntheticGallery, resolveFileUrl } from '../api.ts'
 import type { SynthGalleryItem } from '../api.ts'
 
 function errorDetail(err: unknown, fallback: string): string {
@@ -27,7 +27,7 @@ function PairCard({ item }: PairCardProps): JSX.Element {
         </div>
       ) : (
         <img
-          src={item.imageUrl}
+          src={resolveFileUrl(item.imageUrl)}
           alt={`${item.category} ${item.defect} synthetic image`}
           className="block w-full"
           onError={() => setImgBroken(true)}
@@ -43,7 +43,7 @@ function PairCard({ item }: PairCardProps): JSX.Element {
         </div>
       ) : (
         <img
-          src={item.maskUrl}
+          src={resolveFileUrl(item.maskUrl)}
           alt={`${item.category} ${item.defect} defect mask`}
           className="mt-2 block w-full"
           onError={() => setMaskBroken(true)}
