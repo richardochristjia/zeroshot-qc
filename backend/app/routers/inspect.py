@@ -1,14 +1,7 @@
 """Inspect router: POST /api/inspect (multipart image + profile_id + rules).
 
-Pinned decision (M6 check-1 appendix): fake/real adapter selection uses
-module-level factory indirection mirroring ``_get_sop_judge`` in
-``app/main.py`` — e.g. ``_get_segmenter()`` / ``_get_judge()`` calling
-``build_segmenter(False)`` / ``build_judge(False)`` from
-``app/pipeline/wiring.py`` sharing one ``DiskCache``. Default is real
-(fake=False), matching the CLI (``cli.py`` defaults to real, ``--fake``
-opts into fakes). No env var, settings flag, or ``fake`` request param:
-tests monkeypatch the factories to ``build_*(True)`` for CLI-parity
-(identical image + profile ⇒ identical verdicts). Implemented in M6 Routers.
+Adapters come from ``_get_segmenter()`` / ``_get_judge()`` (real by
+default, sharing one ``DiskCache``); tests monkeypatch the factories.
 """
 
 import io
@@ -85,9 +78,7 @@ class _TimedJudge:
         finally:
             self.elapsed_ms = int((time.perf_counter() - start) * 1000)
 
-    def sop_to_profile(
-        self, sop_text: str, category_name: str
-    ) -> ProductProfile:
+    def sop_to_profile(self, sop_text: str, category_name: str) -> ProductProfile:
         return self._inner.sop_to_profile(sop_text, category_name)
 
 
@@ -126,7 +117,7 @@ def inspect_image(
             profile,
             segmenter,  # type: ignore[arg-type]
             judge=judge,  # type: ignore[arg-type]
-            rules=(rules if rules else None),
+            rules=(rules or None),
         )
     except JudgeValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

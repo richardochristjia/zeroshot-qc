@@ -9,7 +9,9 @@ consistency rule (HANDOFF §7 step 8).
 """
 
 import json
+import os
 import re
+import tempfile
 import warnings
 from pathlib import Path
 
@@ -49,17 +51,7 @@ def load_profile(name: str) -> ProductProfile:
 
 
 def save_profile(profile: ProductProfile) -> Path:
-    """Atomically write ``profile`` to ``backend/profiles/<id>.json``.
-
-    The id is validated with the same ``[A-Za-z0-9_-]+`` guard as
-    ``load_profile`` so untrusted input cannot traverse. The write
-    goes to a temp file in ``PROFILES_DIR`` followed by ``os.replace``,
-    so a crash or validation failure never leaves a half-written file.
-    Returns the final path.
-    """
-    import os
-    import tempfile
-
+    """Atomically write ``profile`` to ``backend/profiles/<id>.json``."""
     if not _PROFILE_NAME_RE.fullmatch(profile.id):
         raise ValueError(f"unknown profile {profile.id!r}: invalid profile name")
     PROFILES_DIR.mkdir(parents=True, exist_ok=True)

@@ -1,14 +1,9 @@
-"""Synth router: POST /api/synth/generate reusing M5 ``generate_pairs``.
+"""Synth router: POST /api/synth/generate reusing ``generate_pairs``.
 
-Pinned contract (M6 check-1 appendix): sync JSON endpoint, body
-``{profile_id, defect, n, seed=0}`` (names mirror ``generate_pairs`` in
-``app/synth/generate.py``); generator via ``_get_image_generator()``
-factory defaulting to ``FakeImageGenerator`` (mirrors the synth CLI
-``--fake`` default-True), real adapter via monkeypatch only — never a
-request param. Response ``{profile_id, defect, count, pairs:
-[{image_url, mask_url|null}]}`` with ``/files/synth/{profile}/{defect}/``
-URLs served from ``data/synth/`` (mask null when the diff/exact mask is
-empty). Unknown profile → 404, ``n < 1`` → 422. Implemented in M6 Routers.
+Body ``{profile_id, defect, n, seed=0}``; generator via
+``_get_image_generator()`` (fake by default, real via monkeypatch).
+Response pairs carry ``/files/synth/...`` URLs (mask null when empty).
+Unknown profile → 404, ``n < 1`` → 422.
 """
 
 import re

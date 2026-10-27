@@ -41,12 +41,7 @@ class SopDraftRequest(BaseModel):
 
 
 def _get_sop_judge():
-    """Indirection so tests can substitute a fake without touching HTTP.
-
-    The factory lives on ``app.main`` (where M5 tests already patch
-    it); the import stays inside this function so router import never
-    cycles back through ``app.main``, which mounts this router.
-    """
+    """Delegate to ``app.main`` (import kept local to avoid a cycle)."""
     from app.main import _get_sop_judge as factory
 
     return factory()

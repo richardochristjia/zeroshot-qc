@@ -22,11 +22,7 @@ app.include_router(synth_router)
 
 
 def _get_sop_judge() -> MuseSparkJudge:
-    """Indirection so tests can substitute a fake without touching HTTP.
-
-    The profiles router calls this factory lazily at request time, so
-    patching ``app.main._get_sop_judge`` still substitutes the judge.
-    """
+    """Indirection so tests can substitute a fake without touching HTTP."""
     return MuseSparkJudge()
 
 _origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
@@ -41,15 +37,8 @@ app.add_middleware(
 
 @app.get("/files/{rel_path:path}")
 def serve_data_file(rel_path: str) -> FileResponse:
-    """Serve a file from ``data/``; traversal attempts are 404.
+    """Serve a file from ``data/``; traversal attempts are 404."""
 
-    The data dir resolves per request (tests monkeypatch
-    ``settings.data_dir``), so a ``StaticFiles`` mount fixed at import
-    time would serve a stale directory. Explicit guard first: any
-    ``.``/``..`` segment, absolute path, or backslash is rejected
-    before touching the filesystem. A ``resolve()`` + containment
-    backstop then covers encoded variants and symlinks.
-    """
     if (
         not rel_path
         or rel_path.startswith("/")
