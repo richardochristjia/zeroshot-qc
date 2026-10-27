@@ -102,6 +102,61 @@ def test_empty_diff_keeps_image_omits_mask_and_logs(tmp_path: Path, capsys) -> N
     assert "empty diff, omitting mask" in out
 
 
+def test_rerun_empty_diff_removes_stale_mask(tmp_path: Path) -> None:
+    from app.eval.dataset import load_synth_category
+
+    class PaintOnly:
+        def add_defect(self, good_image, defect_description, mask):
+            painted = good_image.convert("RGB").copy()
+            pixels = painted.load()
+            for y in range(6, 14):
+                for x in range(6, 14):
+                    pixels[x, y] = (255, 0, 0)
+            return painted
+
+    class Identity:
+        def add_defect(self, good_image, defect_description, mask):
+            return good_image.convert("RGB").copy()
+
+    generate_pairs(
+        "bottle", "scratch", 1, generator=PaintOnly(), out_root=tmp_path
+    )
+    assert (tmp_path / "bottle" / "scratch" / "000_mask.png").is_file()
+    pairs = generate_pairs(
+        "bottle", "scratch", 1, generator=Identity(), out_root=tmp_path
+    )
+    _, mask_path = pairs[0]
+    assert mask_path is None
+    assert not (tmp_path / "bottle" / "scratch" / "000_mask.png").exists()
+    _, items = load_synth_category(tmp_path, "bottle")
+    assert items[0].mask_path is None
+
+
+def test_all_black_exact_mask_omitted_and_unlinked(
+    tmp_path: Path, capsys
+) -> None:
+    class BlackMask:
+        def add_defect_with_mask(
+            self, good_image, defect_description, *, seed: str = ""
+        ):
+            image = good_image.convert("RGB").copy()
+            return image, Image.new("L", image.size, 0)
+
+    generate_pairs(
+        "bottle", "scratch", 1,
+        generator=FakeImageGenerator(), out_root=tmp_path,
+    )
+    assert (tmp_path / "bottle" / "scratch" / "000_mask.png").is_file()
+    pairs = generate_pairs(
+        "bottle", "scratch", 1, generator=BlackMask(), out_root=tmp_path
+    )
+    image_path, mask_path = pairs[0]
+    assert image_path.is_file()
+    assert mask_path is None
+    assert list(tmp_path.rglob("*_mask.png")) == []
+    assert "empty exact mask, omitting mask" in capsys.readouterr().out
+
+
 def test_diff_mask_finds_painted_shapes() -> None:
     good = Image.new("RGB", (48, 48), (128, 128, 128))
     bad = good.copy()
