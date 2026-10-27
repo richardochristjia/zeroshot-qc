@@ -48,6 +48,37 @@ def load_profile(name: str) -> ProductProfile:
     return ProductProfile.model_validate(data)
 
 
+def save_profile(profile: ProductProfile) -> Path:
+    """Atomically write ``profile`` to ``backend/profiles/<id>.json``.
+
+    The id is validated with the same ``[A-Za-z0-9_-]+`` guard as
+    ``load_profile`` so untrusted input cannot traverse. The write
+    goes to a temp file in ``PROFILES_DIR`` followed by ``os.replace``,
+    so a crash or validation failure never leaves a half-written file.
+    Returns the final path.
+    """
+    import os
+    import tempfile
+
+    if not _PROFILE_NAME_RE.fullmatch(profile.id):
+        raise ValueError(f"unknown profile {profile.id!r}: invalid profile name")
+    PROFILES_DIR.mkdir(parents=True, exist_ok=True)
+    path = PROFILES_DIR / f"{profile.id}.json"
+    payload = json.dumps(profile.model_dump(), indent=2, sort_keys=True) + "\n"
+    fd, tmp_name = tempfile.mkstemp(dir=PROFILES_DIR, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as tmp:
+            tmp.write(payload)
+        os.replace(tmp_name, path)
+    except BaseException:
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        raise
+    return path
+
+
 def _mask_iou(first: np.ndarray, second: np.ndarray) -> float:
     """IoU of two binary (H, W) masks; 0.0 when both are empty."""
     union = int(np.logical_or(first, second).sum())
