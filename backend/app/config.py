@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     sam_model_id: str = ""
     judge_model_id: str = ""
     image_model_id: str = ""
+    # Inspect-only: read solely by the inspect router (routers/inspect.py).
+    # synth / eval / from-sop keep their own adapter paths regardless.
+    use_fake_adapters: bool = False
     data_dir: str = "./data"
     mvtec_dir: str = "./data/mvtec"
     cors_origins: str = "http://localhost:5173"

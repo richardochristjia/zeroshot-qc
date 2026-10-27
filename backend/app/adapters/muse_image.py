@@ -1,11 +1,9 @@
 """Muse Image generator adapter via the Meta Model API (real HTTP).
 
-Present but unexercised in M1 (first exercised in M5). The Meta
-request/response mapping lives entirely in
-``MuseImageGenerator._add_defect_via_meta_api`` so it can be corrected
-in one place when the official Meta Model API docs arrive (HANDOFF §2);
-every uncertain detail there is marked TODO(meta-docs) and built only
-from the shared settings values.
+The request mapping follows the Meta docs pasted for the manual
+checks: one-off edits go to ``POST {base}/images/edits`` as multipart
+(image, optional mask, prompt, model); the reply is expected to carry
+base64 image bytes.
 """
 
 import base64
@@ -14,8 +12,34 @@ import io
 import httpx
 from PIL import Image
 
-from app.adapters.base import encode_image_b64, require_configured
+from app.adapters.base import require_configured
 from app.config import settings
+
+
+def _png_bytes(image: Image.Image) -> bytes:
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def _extract_image_b64(data: object) -> str:
+    """Find base64 image bytes in an images-endpoint reply.
+
+    Accepts a bare base64 string, a dict holding it under a common key,
+    or a ``{"data": [{"b64_json": ...}]}`` list shape.
+    """
+
+    if isinstance(data, str) and len(data) > 100:
+        return data
+    if isinstance(data, dict):
+        for key in ("b64_json", "image", "image_base64", "base64"):
+            value = data.get(key)
+            if isinstance(value, str) and len(value) > 100:
+                return value
+        items = data.get("data")
+        if isinstance(items, list) and items and isinstance(items[0], dict):
+            return _extract_image_b64(items[0])
+    return ""
 
 
 class MuseImageGenerator:
@@ -32,29 +56,23 @@ class MuseImageGenerator:
     def _add_defect_via_meta_api(
         self, good_image: Image.Image, defect_description: str, mask: Image.Image | None
     ) -> Image.Image:
-        # TODO(meta-docs): everything in this function is a placeholder
-        # mapping to be corrected against the official Meta Model API
-        # docs. Do not treat the endpoint, payload shape, auth scheme,
-        # image encoding, inpainting support, or response shape below
-        # as fact.
-        # TODO(meta-docs): endpoint path — the base URL from settings is
-        # used verbatim until the docs name the image-edit path.
-        url = settings.meta_api_base_url
-
-        # TODO(meta-docs): request payload shape and field names,
-        # including whether inpainting with `mask` is supported.
-        payload = {
-            "model": settings.image_model_id,
-            "image": encode_image_b64(good_image),
-            "mask": encode_image_b64(mask) if mask is not None else None,
-            "defect_description": defect_description,
-        }
+        # Single-shot edit per the Meta docs pasted for the manual
+        # checks (Muse Image one-off calls go to /v1/images/edits).
+        # Field names follow that endpoint's standard multipart shape.
+        url = settings.meta_api_base_url.rstrip("/") + "/images/edits"
+        files = {"image": ("image.png", _png_bytes(good_image), "image/png")}
+        if mask is not None:
+            files["mask"] = ("mask.png", _png_bytes(mask), "image/png")
+        form = {"model": settings.image_model_id, "prompt": defect_description}
         # TODO(meta-docs): auth scheme — bearer key header assumed.
         headers = {"Authorization": f"Bearer {settings.meta_api_key}"}
-        response = httpx.post(url, json=payload, headers=headers, timeout=60.0)
+        response = httpx.post(
+            url, files=files, data=form, headers=headers, timeout=180.0
+        )
         response.raise_for_status()
-        # TODO(meta-docs): response shape — base64 image text under an
-        # image key is assumed.
-        data = response.json()
-        image_b64 = data["image"] if isinstance(data, dict) else ""
-        return Image.open(io.BytesIO(base64.b64decode(image_b64)))
+        image_b64 = _extract_image_b64(response.json())
+        if not image_b64:
+            raise RuntimeError(
+                "image-edit response carried no recognizable base64 image."
+            )
+        return Image.open(io.BytesIO(base64.b64decode(image_b64))).convert("RGB")

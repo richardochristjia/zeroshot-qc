@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
-import { ApiError, getEvalRun, listEvalRuns } from '../api.ts'
+import { ApiError, getEvalRun, listEvalRuns, resolveFileUrl } from '../api.ts'
 import type {
   CategoryMetrics,
   EvalResultRow,
@@ -136,7 +136,7 @@ function FailureDetail({ row }: FailureDetailProps): JSX.Element {
         </div>
       ) : (
         <img
-          src={row.imageUrl}
+          src={resolveFileUrl(row.imageUrl)}
           alt={`${row.category} ${row.image}`}
           className="mt-3 block max-w-full"
           onError={() => setImgBroken(true)}

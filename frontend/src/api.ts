@@ -3,8 +3,10 @@
 Every backend call the four pages need flows through here. Boundary
 rule (write-typescript): `unknown` in, parsed domain types out — each
 parser validates the JSON payload at runtime and throws on mismatch,
-so pages never cast. No secrets here: same-origin relative URLs only
-(the Vite dev proxy forwards `/api` + `/files` to the backend).
+so pages never cast. No secrets here: every backend URL is built from
+`API_BASE` below — the build-time `VITE_API_URL` with the trailing slash
+stripped once, empty in dev so same-origin relative URLs flow through
+the Vite dev proxy (`/api` + `/files` → localhost:8000).
 */
 
 const JSON_HEADERS = { Accept: "application/json" };
@@ -466,6 +468,37 @@ function parseSynthGalleryItem(value: unknown, index: number): SynthGalleryItem 
 }
 
 // ---------------------------------------------------------------------------
+// Backend origin (M7 deploy): build-time `VITE_API_URL`, trailing slash
+// stripped once. Empty/unset (dev) keeps same-origin relative URLs.
+// ---------------------------------------------------------------------------
+
+export function normalizeApiBase(rawBase: unknown): string {
+  if (typeof rawBase !== "string") return "";
+  return rawBase.replace(/\/+$/, "");
+}
+
+const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL);
+
+/** Join a server-absolute path onto the configured backend origin. */
+function apiUrl(path: string): string {
+  return `${API_BASE}${path}`;
+}
+
+/** Resolve a backend `/files/...` URL for `img src`; absolute, blob:, and
+ * data: URLs pass through untouched (cross-origin Vercel frontend). */
+export function resolveFileUrl(url: string): string {
+  if (
+    url.startsWith("blob:") ||
+    url.startsWith("data:") ||
+    url.startsWith("http://") ||
+    url.startsWith("https://")
+  ) {
+    return url;
+  }
+  return apiUrl(url);
+}
+
+// ---------------------------------------------------------------------------
 // Transport.
 // ---------------------------------------------------------------------------
 
@@ -520,7 +553,7 @@ async function throwForStatus(
 }
 
 async function getJson(path: string, signal?: AbortSignal): Promise<unknown> {
-  const response = await fetch(path, { headers: JSON_HEADERS, signal });
+  const response = await fetch(apiUrl(path), { headers: JSON_HEADERS, signal });
   if (!response.ok) {
     await throwForStatus(response, "generic");
   }
@@ -533,7 +566,7 @@ async function postJson(
   body: Record<string, string | number>,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     method: "POST",
     headers: { ...JSON_HEADERS, "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -569,7 +602,7 @@ export async function inspectImage(params: InspectParams): Promise<InspectionRes
   if (params.rules !== undefined && params.rules !== "") {
     form.append("rules", params.rules);
   }
-  const response = await fetch("/api/inspect", {
+  const response = await fetch(apiUrl("/api/inspect"), {
     method: "POST",
     body: form,
     signal: params.signal,
@@ -608,7 +641,7 @@ export async function putProfile(
   signal?: AbortSignal,
 ): Promise<ProductProfile> {
   const response = await fetch(
-    `/api/profiles/${encodeURIComponent(profile.id)}`,
+    apiUrl(`/api/profiles/${encodeURIComponent(profile.id)}`),
     {
       method: "PUT",
       headers: { ...JSON_HEADERS, "Content-Type": "application/json" },

@@ -1,0 +1,59 @@
+# Secrets — never bake into layers
+.env
+.env.*
+*.key
+*.pem
+*.p12
+secrets/
+
+# Data — mounted at run time via DATA_DIR, never baked in
+data/
+
+# Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+
+# Local/agent state
+.lavish/
+
+# Python caches and envs
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Bare names match only at the context root, so backend/-nested copies
+# need explicit entries.
+backend/__pycache__/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.venv/
+backend/venv/
+backend/tests/
+backend/.env
+backend/.env.*
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.venv/
+**/venv/
+**/tests/
+**/.env
+**/.env.*
+
+# VCS, plans, docs scratch
+.git/
+.plans/
+.agents/
+docs/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
