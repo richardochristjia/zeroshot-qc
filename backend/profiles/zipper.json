@@ -1,0 +1,12 @@
+{
+  "defect_prompts": [
+    "broken zipper teeth",
+    "rough zipper fabric",
+    "squeezed zipper"
+  ],
+  "id": "zipper",
+  "mm_per_px": null,
+  "name": "Zipper",
+  "reference_image": null,
+  "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec zipper SOP. Draft: FAIL a zipper with broken teeth, roughness, or squeezing; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
+}

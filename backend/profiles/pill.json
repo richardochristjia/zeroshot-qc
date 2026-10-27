@@ -1,0 +1,12 @@
+{
+  "defect_prompts": [
+    "cracked pill",
+    "contaminated pill",
+    "faulty pill imprint"
+  ],
+  "id": "pill",
+  "mm_per_px": null,
+  "name": "Pill",
+  "reference_image": null,
+  "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec pill SOP. Draft: FAIL a pill with any crack, contamination, or faulty imprint; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
+}

@@ -1,0 +1,12 @@
+{
+  "defect_prompts": [
+    "bent transistor lead",
+    "cut transistor lead",
+    "damaged transistor case"
+  ],
+  "id": "transistor",
+  "mm_per_px": null,
+  "name": "Transistor",
+  "reference_image": null,
+  "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec transistor SOP. Draft: FAIL a transistor with any bent or cut lead or case damage; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
+}
