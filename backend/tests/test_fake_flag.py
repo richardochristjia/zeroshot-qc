@@ -63,6 +63,18 @@ def test_flag_off_default_is_real_construction(
     assert judge._model_id != "fake-judge"
 
 
+def test_env_var_binds_to_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    """USE_FAKE_ADAPTERS env var drives Settings (the container probe path)."""
+    from app.config import Settings
+
+    monkeypatch.delenv("USE_FAKE_ADAPTERS", raising=False)
+    assert Settings().use_fake_adapters is False
+    monkeypatch.setenv("USE_FAKE_ADAPTERS", "true")
+    assert Settings().use_fake_adapters is True
+    monkeypatch.setenv("USE_FAKE_ADAPTERS", "false")
+    assert Settings().use_fake_adapters is False
+
+
 def test_flag_on_serves_fake_inspect(
     monkeypatch: pytest.MonkeyPatch, isolated: dict
 ) -> None:

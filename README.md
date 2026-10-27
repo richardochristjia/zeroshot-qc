@@ -87,7 +87,7 @@ docker run --rm -p 8000:8000 \
   zeroshot-qc
 ```
 
-`USE_FAKE_ADAPTERS=true` serves the fake segmenter/judge (no keys needed); unset it defaults to the real adapters. Prove the container:
+`USE_FAKE_ADAPTERS=true` serves the fake segmenter/judge for `/api/inspect` only (no keys needed); synth, eval, and from-sop keep their own adapter paths regardless. Unset it defaults to the real adapters. Prove the container:
 
 ```sh
 curl localhost:8000/api/health
@@ -95,9 +95,14 @@ curl -i -H 'Origin: http://localhost:5173' localhost:8000/api/health  # access-c
 curl -o /dev/null -w '%{http_code}\n' localhost:8000/files/../outside.txt  # 404 traversal block
 ```
 
-Fake inspect through the container (profile `screw` ships inside the image; any PNG/JPG works):
+Fake inspect through the container (profile `screw` ships inside the image; any PNG/JPG works — substitute your own file for `probe.png` if you have one):
 
 ```sh
+python3 -c "import struct,zlib
+def chunk(t,d): return struct.pack('>I',len(d))+t+d+struct.pack('>I',zlib.crc32(t+d)&0xffffffff)
+ihdr=struct.pack('>IIBBBBB',8,8,8,2,0,0,0)
+raw=b''.join(b'\x00'+bytes([200,200,200]*8) for _ in range(8))
+open('/tmp/zqc-data/probe.png','wb').write(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',ihdr)+chunk(b'IDAT',zlib.compress(raw))+chunk(b'IEND',b''))"
 curl -s -F 'image=@/tmp/zqc-data/probe.png;type=image/png' \
   -F 'profile_id=screw' localhost:8000/api/inspect | head -c 300
 ```
