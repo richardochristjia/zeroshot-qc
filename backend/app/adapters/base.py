@@ -33,6 +33,29 @@ def require_configured(*, model_id: str, model_field: str, adapter: str) -> None
         )
 
 
+def extract_responses_text(data: object) -> str:
+    """Concatenate output text from a Responses API envelope.
+
+    Handles message items shaped ``{"content": [{"text": ...}]}`` and
+    ignores anything else; returns "" when no text is present.
+    """
+
+    texts: list[str] = []
+    if isinstance(data, dict):
+        output = data.get("output")
+        if isinstance(output, list):
+            for item in output:
+                if not isinstance(item, dict):
+                    continue
+                content = item.get("content")
+                if not isinstance(content, list):
+                    continue
+                for part in content:
+                    if isinstance(part, dict) and isinstance(part.get("text"), str):
+                        texts.append(part["text"])
+    return "\n".join(texts)
+
+
 class Segmenter(Protocol):
     def segment(self, image: Image.Image, prompts: list[str]) -> list[RawMask]:
         """Return one RawMask per instance found, for every prompt."""

@@ -4,6 +4,7 @@ forcing, reference handling, and judge-cache behavior on rule edits.
 Run: cd backend && .venv/bin/python -m pytest -q
 """
 
+import json
 from pathlib import Path
 
 import httpx
@@ -171,6 +172,26 @@ class _StubResponse:
         return self._payload
 
 
+def _responses_envelope(payload: dict) -> dict:
+    return {
+        "output": [
+            {
+                "type": "message",
+                "content": [{"type": "output_text", "text": json.dumps(payload)}],
+            }
+        ]
+    }
+
+
+def _request_text(call_json: dict) -> str:
+    parts = call_json.get("input", [{}])[0].get("content", [])
+    return "\n".join(
+        part.get("text", "")
+        for part in parts
+        if isinstance(part, dict) and part.get("type") == "input_text"
+    )
+
+
 @pytest.fixture
 def configured_judge(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "meta_api_key", "test-key")
@@ -205,14 +226,14 @@ def test_malformed_first_response_retries_once_then_validates(
 
     def _stub(*args, **kwargs):  # type: ignore[no-untyped-def]
         calls.append(kwargs.get("json") or {})
-        return _StubResponse(payloads[len(calls) - 1])
+        return _StubResponse(_responses_envelope(payloads[len(calls) - 1]))
 
     monkeypatch.setattr(httpx, "post", _stub)
     verdict = MuseSparkJudge().judge(image, image, None, [], profile)
     assert verdict == Verdict.model_validate(_valid_payload())
     assert len(calls) == 2
-    assert "failed validation" in calls[1]["prompt"]
-    assert STRICT_RULES in calls[0]["prompt"]
+    assert "failed validation" in _request_text(calls[1])
+    assert STRICT_RULES in _request_text(calls[0])
 
 
 def test_malformed_twice_raises_judge_validation_error(
@@ -225,7 +246,7 @@ def test_malformed_twice_raises_judge_validation_error(
 
     def _stub(*args, **kwargs):  # type: ignore[no-untyped-def]
         calls.append(kwargs)
-        return _StubResponse(_malformed_payload())
+        return _StubResponse(_responses_envelope(_malformed_payload()))
 
     monkeypatch.setattr(httpx, "post", _stub)
     with pytest.raises(JudgeValidationError, match="failed Verdict validation"):

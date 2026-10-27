@@ -198,6 +198,14 @@ class _StubResponse:
         return self._payload
 
 
+def _responses_envelope(text: str) -> dict:
+    return {
+        "output": [
+            {"type": "message", "content": [{"type": "output_text", "text": text}]}
+        ]
+    }
+
+
 def _configure_all(monkeypatch: pytest.MonkeyPatch, base_url: str) -> None:
     monkeypatch.setattr(settings, "meta_api_key", "test-key")
     monkeypatch.setattr(settings, "meta_api_base_url", base_url)
@@ -268,16 +276,20 @@ def test_https_base_url_reaches_stubbed_http(
     def _stub(*args, **kwargs):  # type: ignore[no-untyped-def]
         calls.append((args, kwargs))
         if adapter_name == "sam":
-            return _StubResponse({"masks": []})
+            return _StubResponse(_responses_envelope("[]"))
         if adapter_name == "judge":
             return _StubResponse(
-                {
-                    "verdict": "PASS",
-                    "confidence": 0.5,
-                    "rulings": [],
-                    "missed_defects": [],
-                    "summary": "ok",
-                }
+                _responses_envelope(
+                    json.dumps(
+                        {
+                            "verdict": "PASS",
+                            "confidence": 0.5,
+                            "rulings": [],
+                            "missed_defects": [],
+                            "summary": "ok",
+                        }
+                    )
+                )
             )
         buffer = io.BytesIO()
         Image.new("RGB", (2, 2), color=(10, 20, 30)).save(buffer, format="PNG")
@@ -288,6 +300,10 @@ def test_https_base_url_reaches_stubbed_http(
     monkeypatch.setattr(httpx, "post", _stub)
     result = _call_adapter(adapter_name, image, profile)
     assert len(calls) == 1
+    expected_path = (
+        "/images/edits" if adapter_name == "image" else "/responses"
+    )
+    assert calls[0][0][0] == f"https://example.test/meta{expected_path}"
     if adapter_name == "sam":
         assert result == []
     elif adapter_name == "judge":
@@ -316,33 +332,37 @@ def test_sam_drops_mismatched_and_malformed_rle(
     donor = FakeSegmenter().segment(
         Image.new("RGB", (200, 200), color=(120, 120, 120)), PROMPTS
     )[0]
-    sam_http["payload"] = {
-        "masks": [
+    sam_http["payload"] = _responses_envelope(
+        json.dumps(
             {
-                "label": valid.label,
-                "score": valid.score,
-                "mask_rle": valid.mask_rle,
-            },
-            {
-                "label": "scratch",
-                "score": 0.9,
-                "mask_rle": donor.mask_rle,
-            },
-            {
-                "label": "crack",
-                "score": 0.9,
-                "mask_rle": {"size": [IMAGE_H, IMAGE_W], "counts": 12345},
-            },
-            {
-                "label": "dent",
-                "score": 0.9,
-                "mask_rle": {
-                    "size": [IMAGE_H, IMAGE_W],
-                    "counts": "x" * 20000,
-                },
-            },
-        ]
-    }
+                "masks": [
+                    {
+                        "label": valid.label,
+                        "score": valid.score,
+                        "mask_rle": valid.mask_rle,
+                    },
+                    {
+                        "label": "scratch",
+                        "score": 0.9,
+                        "mask_rle": donor.mask_rle,
+                    },
+                    {
+                        "label": "crack",
+                        "score": 0.9,
+                        "mask_rle": {"size": [IMAGE_H, IMAGE_W], "counts": 12345},
+                    },
+                    {
+                        "label": "dent",
+                        "score": 0.9,
+                        "mask_rle": {
+                            "size": [IMAGE_H, IMAGE_W],
+                            "counts": "x" * 20000,
+                        },
+                    },
+                ]
+            }
+        )
+    )
     result = SamSegmenter().segment(image, PROMPTS)
     assert [m.label for m in result] == [valid.label]
     assert result[0].mask_rle == valid.mask_rle
@@ -354,11 +374,15 @@ def test_sam_malformed_mask_never_reaches_disk_cache(
     donor = FakeSegmenter().segment(
         Image.new("RGB", (200, 200), color=(120, 120, 120)), PROMPTS
     )[0]
-    sam_http["payload"] = {
-        "masks": [
-            {"label": "scratch", "score": 0.9, "mask_rle": donor.mask_rle}
-        ]
-    }
+    sam_http["payload"] = _responses_envelope(
+        json.dumps(
+            {
+                "masks": [
+                    {"label": "scratch", "score": 0.9, "mask_rle": donor.mask_rle}
+                ]
+            }
+        )
+    )
     cache_dir = tmp_path / "cache"
     cached = CachedSegmenter(SamSegmenter(), "sam-test", DiskCache(cache_dir))
     assert cached.segment(image, PROMPTS) == []
