@@ -56,3 +56,8 @@ Entries are added or amended **only with human approval**.
 - (synth) Synth generation currently writes deterministic image+mask pairs under data/synth/{profile}/{defect}/, storing exact generator masks verbatim and deriving missing ones by image-diff threshold.
 - (eval) Eval currently accepts --data synth to score synthetic pairs through the same sampler, metrics, and ablation modes as MVTec.
 - (profiles) New profiles are currently draftable from an SOP paragraph via POST /api/profiles/from-sop, which persists nothing and returns 422 when validation fails twice.
+- (api) Inspection requests are currently served by FastAPI routers with images served from data/ under /files/.
+- (frontend) The web app currently offers Inspect, Profiles, Eval, and Synthetic pages against the backend API.
+- (frontend) The Inspect page currently re-runs only the judge when rules change, reusing cached segmentation.
+- (frontend) The Eval page currently displays existing runs and never launches new ones.
+- (frontend) Image upload is currently file-based without webcam capture.
