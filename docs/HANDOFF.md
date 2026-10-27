@@ -68,5 +68,8 @@ M3/M4 (nothing carried).
 - M2-AC5 — CLI on 3 real MVTec images (never run). Next: human runs the
   CLI against 3 real MVTec images.
 - M6-G0 — second-device walkthrough (upload, rule flip, SOP import,
-  gallery from another device on the LAN). Next: human walkthrough before
-  submission.
+  gallery from another device on the LAN). DONE 2026-10-27: verdict updates
+  on rules edit without re-upload (segment serves from cache; ~0.25 s local
+  key hashing on large photos, no second SAM call); real-model judge ~8-10 s
+  per call, so "fast" applies to fake adapters only. Profiles/Edit/SOP
+  round-trip, Eval table/chart/failures, Synthetic gallery all confirmed.
