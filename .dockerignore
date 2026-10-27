@@ -28,6 +28,26 @@ __pycache__/
 venv/
 *.egg-info/
 
+# Depth patterns — bare names above match only at the context root, so
+# backend/-nested copies need explicit entries (M7: the image baked
+# backend/.venv, backend/.pytest_cache, and backend/tests/)
+backend/__pycache__/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.venv/
+backend/venv/
+backend/tests/
+backend/.env
+backend/.env.*
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.venv/
+**/venv/
+**/tests/
+**/.env
+**/.env.*
+
 # VCS, plans, docs scratch
 .git/
 .plans/
