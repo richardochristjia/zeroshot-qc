@@ -127,18 +127,55 @@ class FakeJudge:
 
 
 class FakeImageGenerator:
-    """Deterministic same-size image with a hash-seeded mark."""
+    """Seeded visible shapes with exact masks (M5).
+
+    ``add_defect`` keeps the ``ImageGenerator`` contract (image only);
+    ``add_defect_with_mask`` additionally returns the exact defect mask
+    (white shape on black, same size as the image) so the synth
+    generator can store it verbatim instead of deriving one by diff.
+    Same inputs always give the same outputs. No config, no network.
+    """
 
     def add_defect(
         self, good_image: Image.Image, defect_description: str, mask: Image.Image | None
     ) -> Image.Image:
-        result = good_image.copy()
-        width, height = result.size
-        per_input = hashlib.sha256(
-            good_image.tobytes() + b"\x00" + defect_description.encode("utf-8")
+        image, _ = self.add_defect_with_mask(good_image, defect_description)
+        return image
+
+    def add_defect_with_mask(
+        self, good_image: Image.Image, defect_description: str, *, seed: str = ""
+    ) -> tuple[Image.Image, Image.Image]:
+        base = good_image.convert("RGB").copy()
+        width, height = base.size
+        digest = hashlib.sha256(
+            b"\x00".join(
+                (
+                    base.tobytes(),
+                    defect_description.encode("utf-8"),
+                    seed.encode("utf-8"),
+                )
+            )
         ).digest()
-        if result.mode in ("RGB", "RGBA") and width >= 2 and height >= 2:
-            x0, y0, box_w, box_h = _seeded_box(width, height, per_input)
-            draw = ImageDraw.Draw(result)
-            draw.rectangle([x0, y0, x0 + box_w - 1, y0 + box_h - 1], fill=(255, 0, 0))
-        return result
+        box_w = max(4, min(width, 4 + digest[0] % (max(4, width // 3 + 1))))
+        box_h = max(4, min(height, 4 + digest[1] % (max(4, height // 3 + 1))))
+        x0 = digest[2] % max(1, width - box_w + 1) if width > box_w else 0
+        y0 = digest[3] % max(1, height - box_h + 1) if height > box_h else 0
+        x1, y1 = x0 + box_w - 1, y0 + box_h - 1
+        shape = digest[4] % 3  # 0: rectangle, 1: ellipse, 2: diagonal bar
+        paint = (255, 0, 0)
+        result = base.copy()
+        mask = Image.new("L", (width, height), 0)
+        if shape == 0:
+            ImageDraw.Draw(result).rectangle([x0, y0, x1, y1], fill=paint)
+            ImageDraw.Draw(mask).rectangle([x0, y0, x1, y1], fill=255)
+        elif shape == 1:
+            ImageDraw.Draw(result).ellipse([x0, y0, x1, y1], fill=paint)
+            ImageDraw.Draw(mask).ellipse([x0, y0, x1, y1], fill=255)
+        else:
+            ImageDraw.Draw(result).line(
+                [x0, y0, x1, y1], fill=paint, width=max(1, min(box_w, box_h) // 3)
+            )
+            ImageDraw.Draw(mask).line(
+                [x0, y0, x1, y1], fill=255, width=max(1, min(box_w, box_h) // 3)
+            )
+        return result, mask

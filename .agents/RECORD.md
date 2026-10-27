@@ -53,3 +53,6 @@ Entries are added or amended **only with human approval**.
 - (eval) Eval currently samples 10 good plus 20 defective images per category with a fixed seed and scores precision, recall, F1, accuracy, AUROC over the fail score, and pixel IoU on defectives.
 - (eval) Ablation modes currently differ only in judge wiring: any-detection FAIL without a judge, judge without a reference image, and judge with the category reference image.
 - (eval) Eval runs currently persist per-image results.jsonl plus a summary.json of per-category and overall metrics under data/runs/{run_id}.
+- (synth) Synth generation currently writes deterministic image+mask pairs under data/synth/{profile}/{defect}/, storing exact generator masks verbatim and deriving missing ones by image-diff threshold.
+- (eval) Eval currently accepts --data synth to score synthetic pairs through the same sampler, metrics, and ablation modes as MVTec.
+- (profiles) New profiles are currently draftable from an SOP paragraph via POST /api/profiles/from-sop, which persists nothing and returns 422 when validation fails twice.

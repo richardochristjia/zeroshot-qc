@@ -53,6 +53,24 @@ Per category: 2 train-good, 10 test-good, 20 test `scratch` defects
   A layout mismatch surfaces as the guidance error; fix the loader
   when real data lands.
 
+## Synthetic images (M5, `data/synth/`)
+
+`python -m app.synth.generate --profile bottle --defect scratch --n 10`
+writes `data/synth/{profile}/_reference.png` plus
+`data/synth/{profile}/{defect}/{i:03d}.png` and `{i:03d}_mask.png`
+pairs (gitignored, never commit). `--fake` (the default) paints seeded
+shapes offline with exact masks; `--no-fake` calls the real Muse Image
+adapter. Generators without exact masks fall back to a grayscale
+image-diff threshold (logged per image); an empty diff keeps the image
+and omits the mask.
+
+`python -m app.eval.run --data synth` reads that layout through the
+same sampler, metrics, and ablations (`--mode`, `--adapter`,
+`--seed` unchanged; `--synth-dir` selects the root). Every synth item
+is defective, so expect recall near 1.0 and precision set by the
+false-positive rate — AUROC is uninformative single-class (0.5 by
+construction) and IoU measures mask overlap against the stored masks.
+
 ## Manual rerun (real MVTec — human steps)
 
 1. Download MVTec AD (CC BY-NC-SA 4.0, non-commercial) into `data/`

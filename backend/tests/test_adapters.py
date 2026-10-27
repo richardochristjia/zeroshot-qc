@@ -177,9 +177,14 @@ def test_sam_empty_model_id_alone_raises_without_http(
     assert no_http == []
 
 
-def test_sop_to_profile_is_m5_stub() -> None:
-    with pytest.raises(NotImplementedError):
+def test_sop_not_configured_raises_without_http(
+    empty_settings: None, no_http: list
+) -> None:
+    # M5 implements the former NotImplementedError stub: unconfigured
+    # now means AdapterNotConfiguredError before any HTTP, like judge.
+    with pytest.raises(AdapterNotConfiguredError):
         MuseSparkJudge().sop_to_profile("Some SOP text.", "bottle")
+    assert no_http == []
 
 
 class _StubResponse:

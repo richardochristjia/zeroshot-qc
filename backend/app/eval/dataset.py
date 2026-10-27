@@ -149,6 +149,129 @@ def sample_category(
     )
 
 
+def list_synth_categories(root: str | Path) -> list[str]:
+    """Profile names: subdirs with defect-type image folders (M5 synth layout)."""
+    root = Path(root)
+    if not root.is_dir():
+        return []
+    names = []
+    for child in root.iterdir():
+        if not child.is_dir() or child.name.startswith("_"):
+            continue
+        if any(
+            subdir.is_dir() and _iter_images(subdir)
+            for subdir in child.iterdir()
+        ):
+            names.append(child.name)
+    return sorted(names)
+
+
+def load_synth_category(
+    root: str | Path, profile: str
+) -> tuple[Path, list[EvalItem]]:
+    """Load one synth profile's reference plus every defective pair (M5).
+
+    Layout (written by ``app.synth.generate``)::
+
+        <root>/<profile>/_reference.png
+        <root>/<profile>/<defect_type>/{stem}.png
+        <root>/<profile>/<defect_type>/{stem}_mask.png
+    """
+    root = Path(root)
+    reference = root / profile / "_reference.png"
+    if not reference.is_file():
+        raise DatasetError(
+            f"synthetic profile {profile!r}: no reference image at "
+            f"{reference} (expected the synth layout "
+            f"<root>/<profile>/_reference.png plus "
+            f"<root>/<profile>/<defect>/*.png from app.synth.generate)"
+        )
+    items: list[EvalItem] = []
+    profile_dir = root / profile
+    for child in sorted(profile_dir.iterdir()):
+        if not child.is_dir():
+            continue
+        for image_path in _iter_images(child):
+            if image_path.stem.endswith("_mask"):
+                continue
+            mask_path = child / f"{image_path.stem}_mask{image_path.suffix}"
+            items.append(
+                EvalItem(
+                    profile,
+                    image_path,
+                    "defective",
+                    child.name,
+                    mask_path if mask_path.is_file() else None,
+                )
+            )
+    if not items:
+        raise DatasetError(
+            f"synthetic profile {profile!r}: no defect images under {profile_dir}"
+        )
+    return reference, items
+
+
+def sample_synth_category(
+    root: str | Path,
+    profile: str,
+    n_defective: int = 20,
+    seed: int = 0,
+) -> CategorySample:
+    """Sample one synth profile: up to ``n_defective`` images per defect type.
+
+    The RNG is seeded per ``(seed, profile, defect_type)`` so the sample
+    is deterministic. Every item is defective: synth pairs carry no
+    good images, so there is no ``n_good`` to honor.
+    """
+    reference, items = load_synth_category(root, profile)
+    by_defect: dict[str, list[EvalItem]] = {}
+    for item in items:
+        by_defect.setdefault(item.defect_type or "defect", []).append(item)
+    sampled: list[EvalItem] = []
+    for defect_type in sorted(by_defect):
+        pool = by_defect[defect_type]
+        rng = random.Random(f"{seed}/{profile}/{defect_type}")
+        rng.shuffle(pool)
+        sampled.extend(pool[:n_defective])
+    return CategorySample(profile, reference, sampled)
+
+
+def sample_synth_dataset(
+    root: str | Path,
+    categories: list[str] | None = None,
+    n_good: int = 10,
+    n_defective: int = 20,
+    seed: int = 0,
+) -> list[CategorySample]:
+    """Sample every requested synth profile (default: all under ``root``).
+
+    Mirrors :func:`sample_dataset`'s signature (``n_good`` is accepted
+    and ignored — synth pairs are all defective) so the eval runner can
+    swap sources without reshaping the call.
+    """
+    del n_good  # synth pairs are all defective; nothing good to sample
+    root = Path(root)
+    if categories is None:
+        categories = list_synth_categories(root)
+    if not categories:
+        raise DatasetError(
+            f"no synthetic profiles found under {root} — generate some with "
+            f"python -m app.synth.generate --profile <name> --defect <text> "
+            f"--n <k> so that <root>/<profile>/_reference.png and "
+            f"<root>/<profile>/<defect>/*.png exist, or point --synth-dir "
+            f"at a directory that has them"
+        )
+    unknown = [name for name in categories if not (root / name).is_dir()]
+    if unknown:
+        raise DatasetError(
+            f"unknown synthetic profiles {unknown}: no such directory under "
+            f"{root} (available: {list_synth_categories(root)})"
+        )
+    return [
+        sample_synth_category(root, name, n_defective, seed) for name in categories
+    ]
+
+
 def sample_dataset(
     root: str | Path,
     categories: list[str] | None = None,
