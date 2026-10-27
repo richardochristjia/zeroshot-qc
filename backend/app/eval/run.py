@@ -190,6 +190,15 @@ def run_eval(
                 }
             )
 
+    if source == "synth":
+        # Synth pairs are all defective (n_defective is per defect type),
+        # so the requested counts misdescribe the sample: report actuals.
+        summary_good = sum(1 for record in records if record["label"] == "good")
+        summary_defective = sum(
+            1 for record in records if record["label"] == "defective"
+        )
+    else:
+        summary_good, summary_defective = n_good, n_defective
     summary = {
         "run_id": run_id,
         "mode": mode,
@@ -197,8 +206,8 @@ def run_eval(
         "adapter": adapter,
         "seed": seed,
         "categories": [sample.category for sample in samples],
-        "n_good": n_good,
-        "n_defective": n_defective,
+        "n_good": summary_good,
+        "n_defective": summary_defective,
         "rules": rules,
         "metrics": summarize(records),
     }

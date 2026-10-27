@@ -110,23 +110,30 @@ def generate_pairs(
     pairs: list[tuple[Path, Path | None]] = []
     for index in range(n):
         item_seed = f"{seed}/{index}"
-        mask_path: Path | None = defect_dir / f"{index:03d}_mask.png"
+        mask_file: Path = defect_dir / f"{index:03d}_mask.png"
+        mask_path: Path | None = mask_file
         image_path = defect_dir / f"{index:03d}.png"
         if hasattr(generator, "add_defect_with_mask"):
             image, mask_image = generator.add_defect_with_mask(
                 good, defect, seed=item_seed
             )
-            mask_image.save(mask_path)
             print(f"{image_path}: mask=exact")
+            if not bool((np.asarray(mask_image.convert("L")) > 0).any()):
+                print(f"{image_path}: empty exact mask, omitting mask")
+                mask_file.unlink(missing_ok=True)
+                mask_path = None
+            else:
+                mask_image.save(mask_file)
         else:
             image = generator.add_defect(good, defect, None)
             mask = diff_mask(good, image, threshold)
             print(f"{image_path}: mask=diff(threshold={threshold})")
             if not bool(mask.any()):
                 print(f"{image_path}: empty diff, omitting mask")
+                mask_file.unlink(missing_ok=True)
                 mask_path = None
             else:
-                Image.fromarray((mask * 255).astype(np.uint8)).save(mask_path)
+                Image.fromarray((mask * 255).astype(np.uint8)).save(mask_file)
         image.save(image_path)
         pairs.append((image_path, mask_path))
     return pairs

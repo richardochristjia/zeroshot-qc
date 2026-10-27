@@ -153,6 +153,42 @@ def test_modes_differ_only_in_judge_wiring(tmp_path: Path) -> None:
     assert judge.calls > 0
 
 
+def test_synth_summary_counts_match_record_labels(tmp_path: Path) -> None:
+    from app.adapters.fakes import FakeImageGenerator
+    from app.synth.generate import generate_pairs
+
+    synth_root = tmp_path / "synth"
+    for defect in ("scratch", "dent"):
+        generate_pairs(
+            "bottle", defect, 3,
+            generator=FakeImageGenerator(), out_root=synth_root,
+        )
+    records, summary = run_eval(
+        root=synth_root,
+        mode="sam_only",
+        source="synth",
+        n_good=10,
+        n_defective=3,
+        adapter="scripted",
+        cache_dir=tmp_path / "cache",
+        out_dir=tmp_path / "runs",
+        run_id="synth-counts",
+    )
+    assert len(records) == 6  # 2 defect types x n_defective=3, all defective
+    actual_good = sum(1 for record in records if record["label"] == "good")
+    actual_defective = sum(
+        1 for record in records if record["label"] == "defective"
+    )
+    assert (actual_good, actual_defective) == (0, 6)
+    assert summary["n_good"] == actual_good
+    assert summary["n_defective"] == actual_defective
+    stored = json.loads(
+        (tmp_path / "runs" / "synth-counts" / "summary.json").read_text()
+    )
+    assert stored["n_good"] == actual_good
+    assert stored["n_defective"] == actual_defective
+
+
 def test_changed_rules_cause_judge_cache_miss(tmp_path: Path) -> None:
     judge = CountingJudge()
     kwargs = dict(
