@@ -1,18 +1,9 @@
 """Eval router: run list + run detail (read-only, never launches runs).
 
-``GET /api/eval/runs`` returns the ``summary.json`` of every run
-directory under ``data/runs/``, skipping entries without one (flat
-overlay PNGs and helper dirs such as ``runs/inspect/`` hold no
-summary). ``GET /api/eval/runs/{run_id}`` returns
-``{"summary": ..., "results": [...]}``; unknown ids (including
-traversal attempts outside ``[A-Za-z0-9_-]+``) are 404.
-
-Pre-M6 ``summary.json`` files lack the ``source`` key current
-``app/eval/run.py`` writes, so detail defaults it to ``"mvtec"``.
-``results.jsonl`` rows carry no stored overlays — only a
-dataset-relative ``image`` path — so detail builds
-``image_url`` (``/files/<source>/<image>``) from each record path;
-absolute or escaping paths get ``image_url`` null instead of a URL.
+List returns each run dir's ``summary.json`` (entries without one are
+skipped); detail returns ``{"summary", "results"}`` with per-row
+``image_url`` built from the dataset-relative path (null when the
+path is absolute or escapes). ``source`` defaults to ``"mvtec"``.
 """
 
 import json
