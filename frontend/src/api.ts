@@ -475,7 +475,7 @@ function parseSynthGalleryItem(value: unknown, index: number): SynthGalleryItem 
 // from `unknown` here at the boundary and trusted as `string` below.
 // ---------------------------------------------------------------------------
 
-function normalizeApiBase(rawBase: unknown): string {
+export function normalizeApiBase(rawBase: unknown): string {
   if (typeof rawBase !== "string") return "";
   return rawBase.replace(/\/+$/, "");
 }
