@@ -98,3 +98,21 @@ which caps the total defective images per category.
   Recorded as a silent pass on a defective part.
 - Segmenter habit across all three: object-level boxes or silence, never
   defect-level localization (first-draft prompt wrapper, unoptimized).
+- Rules steerability (cable `cut_outer_insulation/000`, same photo):
+  placeholder draft rule PASS (0.95); strict wording FAIL (0.95) via missed
+  defect with a precise cut description; lenient wording FAIL (0.90), calling
+  the cut large and obvious. Verdict follows wording; the earlier PASS was the
+  rule's fault.
+
+## Real MVTec eval (2026-10-27, 5 categories x 30, real adapters, seed 0)
+
+- `sam_only`: F1 0.000 everywhere. No boxes, no catches.
+- `sam_judge`: F1 0.872 overall (carpet/grid 1.000, cable 0.625 on recall 0.500).
+- `sam_judge_ref`: F1 0.919 overall (capsule 0.976, cable 0.778, recall 0.910).
+- Reading: the judge carries the system through the missed-defect path; the
+  reference adds recall; the segmenter adds nothing on these categories.
+  IoU 0.000 throughout (no masks proposed).
+- Real synth (bottle/scratch x5, real Muse Image): 4 of 5 carry visible
+  scratches with aligned masks; 1 returned clean (empty-diff path keeps the
+  image, omits the mask). Real SOP draft for bottle returns usable prompts
+  and rules, unsaved.
