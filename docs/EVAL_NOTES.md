@@ -85,3 +85,16 @@ which caps the total defective images per category.
    per category, reference-vs-no-reference deltas, and every
    prompt/profile change they motivate. Real-data patterns go below
    this line; do not edit the fixture section above.
+
+## Real MVTec patterns (2026-10-27, single-image probes, real SAM 3.1 + Muse Spark)
+
+- Bottle `broken_large/000`: SAM proposed nothing; judge FAIL (0.99) via
+  missed defects, citing broken glass on the mouth rim. Safety net worked.
+- Cable `cut_outer_insulation/000`: SAM proposed nothing; judge PASS (0.95).
+  Owner confirms the PASS was correct under the rule (sheath notch, not a
+  wire defect) — the test pick, not the judge, was wrong for wire coverage.
+- Screw `scratch_head/000` (major visible head scratch, human-confirmed):
+  SAM returned one whole-screw box, no localized box; judge PASS (0.85).
+  Recorded as a silent pass on a defective part.
+- Segmenter habit across all three: object-level boxes or silence, never
+  defect-level localization (first-draft prompt wrapper, unoptimized).
