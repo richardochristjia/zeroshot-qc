@@ -50,3 +50,6 @@ Entries are added or amended **only with human approval**.
 - (judge) Inspection currently judges detections against plain-English rules and a reference image, retrying once on schema failure.
 - (judge) A rules override currently replaces the profile rules for a single inspection run only.
 - (pipeline) A FAIL verdict is currently forced in code when any ruling cites a violated rule or any missed defect exists.
+- (eval) Eval currently samples 10 good plus 20 defective images per category with a fixed seed and scores precision, recall, F1, accuracy, AUROC over the fail score, and pixel IoU on defectives.
+- (eval) Ablation modes currently differ only in judge wiring: any-detection FAIL without a judge, judge without a reference image, and judge with the category reference image.
+- (eval) Eval runs currently persist per-image results.jsonl plus a summary.json of per-category and overall metrics under data/runs/{run_id}.

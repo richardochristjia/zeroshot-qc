@@ -1,0 +1,12 @@
+{
+  "defect_prompts": [
+    "hole in wood",
+    "liquid stain on wood",
+    "scratch on wood"
+  ],
+  "id": "wood",
+  "mm_per_px": null,
+  "name": "Wood",
+  "reference_image": null,
+  "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec wood SOP. Draft: FAIL wood with any hole, liquid stain, or scratch; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
+}
