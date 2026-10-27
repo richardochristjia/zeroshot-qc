@@ -19,8 +19,8 @@ Skill rules for every implementer on this run (all loaded by the orchestrator �
 - [x] Create `backend/tests/test_routers.py` (happy path, judge-only cache hit on new rules, 422 paths, 404 paths, traversal blocked, CLI parity of verdicts)
 
 ## Scaffold
-- [ ] Scaffold `frontend/` (Vite + React + TS + Tailwind, dev proxy to backend); record exact dependency versions
-- [ ] Implement typed `frontend/src/api.ts` client for the §8 shapes with boundary parsing
+- [x] Scaffold `frontend/` (Vite + React + TS + Tailwind — record exact versions incl. Tailwind major, which fixes the scaffold path; dev proxy for `/api` + `/files` → `http://localhost:8000`, matching default CORS `http://localhost:5173`) — versions: Tailwind v4.3.3 (v4 Vite-plugin path, `@import "tailwindcss"`, no PostCSS config); react 19.3.1, react-dom 19.3.1, react-router-dom 7.18.4, vite 8.3.5, typescript 6.0.3, @vitejs/plugin-react 6.1.2; routes `/` `/profiles` `/eval` `/synthetic` + nav; `npm run build` green; lockfile `frontend/package-lock.json` present
+- [x] Implement typed `frontend/src/api.ts` client with boundary parsing: `InspectionResult`/`ProductProfile`/`Detection`/`Verdict` from `schemas.py`, plus router-defined shapes with no Pydantic model — eval `{"summary", "results"}` rows (keys per `run.py:179-213` + injected `image_url`, see check-2.md), synth `{profile_id, defect, count, pairs}` (see `routers/synth.py:63-77`), from-sop `{sop_text, category_name}`; typed errors for inspect 422s (judge failure + undecodable image), PUT id-mismatch 422, and 404s
 
 ## Inspect page
 - [ ] Build `Inspect.tsx`: profile picker, file upload, hoverable overlay detections, verdict card with per-ruling reasons

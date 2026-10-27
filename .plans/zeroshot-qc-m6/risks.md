@@ -1,3 +1,6 @@
 # ZeroShot QC — M6 risks (Phase 1 code check)
 
 - Starlette `StaticFiles` may normalize or pass through `..` segments in `/files/...` paths on its own; the traversal test must prove the block with the real mounted app, adding an explicit guard if the framework alone 404s unreliably.
+- The Tailwind major version resolved at scaffold time (v3 vs v4) changes the scaffold path and config files; if the newest major breaks the Vite plugin setup, pin the last-known-good major and note it. Check: `npm run build` output after scaffold.
+- Pre-M6 `summary.json` files may lack keys current `run.py:202-213` writes beyond `source` (e.g. `metrics` shape from `summarize`), so Eval page types must tolerate missing keys on old runs. Check: open an old run dir under `data/runs/` in the Eval walkthrough, or seed one fixture without those keys. (Settled in api.ts: `EvalRunSummary` optional-keys-with-defaults parsing.)
+- No synth gallery-list endpoint exists (`routers/synth.py` has only `POST /api/synth/generate`; `/files/` serves files, no directory listing per `main.py:serve_data_file`), so the Synthetic page cannot enumerate `data/synth/` pairs through `api.ts` — discovered work for the Synthetic phase (new list endpoint or build-time manifest). Check: Synthetic walkthrough against live `data/synth/`.
