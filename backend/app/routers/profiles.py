@@ -19,6 +19,22 @@ from app.schemas import ProductProfile
 router = APIRouter()
 
 
+def _is_unsafe_reference(value: str) -> bool:
+    """True when a profile ``reference_image`` could escape the repo.
+
+    Absolute paths (posix or drive-letter) would let a PUT point the
+    profile at any on-disk file, which ``load_good_image`` and the
+    inspect path then read and forward to the external judge. ``..``
+    segments and backslashes are rejected with the same guard the
+    ``/files`` endpoint uses.
+    """
+    if value.startswith("/") or "\\" in value:
+        return True
+    if len(value) >= 2 and value[1] == ":":
+        return True
+    return any(seg in (".", "..") for seg in value.split("/"))
+
+
 class SopDraftRequest(BaseModel):
     sop_text: str = Field(min_length=1)
     category_name: str = Field(min_length=1)
@@ -70,6 +86,11 @@ def put_profile(profile_id: str, body: ProductProfile) -> ProductProfile:
         raise HTTPException(
             status_code=422,
             detail=f"body id {body.id!r} does not match path id {profile_id!r}",
+        )
+    if body.reference_image and _is_unsafe_reference(body.reference_image):
+        raise HTTPException(
+            status_code=422,
+            detail="reference_image must be a relative path without '..' segments",
         )
     try:
         save_profile(body)
