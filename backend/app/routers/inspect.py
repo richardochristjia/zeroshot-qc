@@ -27,17 +27,27 @@ router = APIRouter()
 def _get_segmenter(
     cache: DiskCache | None = None,
 ) -> CachedSegmenter:
-    """Real cached segmenter; tests monkeypatch this to ``build_*(True)``."""
+    """Cached segmenter; fake when ``USE_FAKE_ADAPTERS`` is set.
+
+    Tests monkeypatch this to ``build_*(True)``; a running container
+    cannot be monkeypatched, so it reads the env-gated settings flag
+    instead (default real, byte-identical when unset).
+    """
     if cache is None:
         cache = DiskCache(Path(settings.data_dir) / "cache")
-    return build_segmenter(False, cache)
+    return build_segmenter(settings.use_fake_adapters, cache)
 
 
 def _get_judge(cache: DiskCache | None = None) -> CachedJudge:
-    """Real cached judge; tests monkeypatch this to ``build_*(True)``."""
+    """Cached judge; fake when ``USE_FAKE_ADAPTERS`` is set.
+
+    Tests monkeypatch this to ``build_*(True)``; a running container
+    cannot be monkeypatched, so it reads the env-gated settings flag
+    instead (default real, byte-identical when unset).
+    """
     if cache is None:
         cache = DiskCache(Path(settings.data_dir) / "cache")
-    return build_judge(False, cache)
+    return build_judge(settings.use_fake_adapters, cache)
 
 
 class _TimedSegmenter:

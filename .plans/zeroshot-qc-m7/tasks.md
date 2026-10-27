@@ -8,8 +8,9 @@ Spec: `plan.md` in this folder. Tier: `tier.md` in this folder. Base: `main` (M6
 - [x] Write `vercel.json` + `VITE_API_URL` wiring in `frontend/src/api.ts` with dev-proxy fallback and slash normalization, plus exported file-URL resolver applied at page img-src sites (Inspect/Eval/Synthetic) per check-1.md
 
 ## Local verification
-- [ ] `docker build` clean; run container against a throwaway host dir and prove health + fake inspect + overlay fetch + `/files` traversal block through the container port
-- [ ] Production `vite build` clean; bundle grep shows no secret patterns; CORS proven with an `Origin`-header fetch
+- [x] Add env-gated fake-adapter flag for container probes (default real; wire to `build_*(fake)` in `backend/app/routers/inspect.py:27-40` — monkeypatch in `backend/tests/test_routers.py:57-64` cannot reach a running container)
+- [x] Start Docker daemon if still down (down at check-2); `docker build` clean; run with `-v <throwaway>:/data -e DATA_DIR=/data -e CORS_ORIGINS=<probe-origin>` and prove health shape + fake multipart inspect (profile `screw`) + overlay fetch + `/files` traversal block per `backend/tests/test_routers.py` patterns
+- [x] Production `npm run build` (tsc + vite) clean with `VITE_API_URL` set, rebuilding stale `frontend/dist/`; bundle grep shows no secret patterns; CORS proven with an `Origin`-header fetch matching `CORS_ORIGINS`
 
 ## Polish sweep
 - [ ] Triage every carried-open item from M1–M6 falsify/gap reports (fix-if-small-and-proven with a test, else carry with owner into the handoff list)

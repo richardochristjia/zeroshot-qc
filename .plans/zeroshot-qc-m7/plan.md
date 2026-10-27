@@ -92,3 +92,7 @@ Entries only (Record exists). Append after verifying against the build:
 - (deploy) The backend currently ships as a Python 3.11 container running uvicorn with configuration by environment.
 - (deploy) The frontend currently builds to static assets targeting the backend through a build-time API URL.
 ```
+
+## Divergence notes
+
+The plan's container fake-inspect probe is unreachable without an env-gated fake flag: `_get_segmenter`/`_get_judge` default to real adapters (`backend/app/routers/inspect.py`) and fakes exist only via in-process monkeypatch (`backend/tests/test_routers.py`), which cannot reach a running container. Added `USE_FAKE_ADAPTERS` (`use_fake_adapters: bool = False` in `backend/app/config.py`), consulted by the router getters so a container started with the env var serves fake inspect; default unset/false keeps the real path byte-identical. Full pytest stays green (166 passed).
