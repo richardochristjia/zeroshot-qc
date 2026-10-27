@@ -13,3 +13,127 @@ Extract the archive into the repo-root `data/mvtec/` directory (the default `MVT
 Verify with `cd backend && python scripts/smoke.py --fake` (needs no dataset or keys). The real run, `cd backend && python scripts/smoke.py`, additionally needs the dataset present plus `.env` keys (see `.env.example`).
 
 `data/` is gitignored — never commit images, cache, or keys.
+
+## Prerequisites
+
+- Python 3.11 (`python3.11 --version`; pinned in `.python-version`)
+- Node 18+ (`node --version`) with npm
+- Docker with the daemon running (`docker info` must succeed)
+- No API keys are needed for a fake-adapter local run. Real SAM 3.1 / Muse Spark / Muse Image calls need the keys below.
+
+## Setup
+
+```sh
+cp .env.example .env
+```
+
+Fill in `.env` (all 8 keys; empty values keep local/fake defaults):
+
+| Key | What it is |
+|---|---|
+| `META_API_KEY` | Meta Model API key |
+| `META_API_BASE_URL` | Meta Model API base URL |
+| `SAM_MODEL_ID` | SAM 3.1 model id (from Meta docs) |
+| `JUDGE_MODEL_ID` | Muse Spark model id (from Meta docs) |
+| `IMAGE_MODEL_ID` | Muse Image model id (from Meta docs) |
+| `DATA_DIR` | Data dir (`./data` local; `/data` in the container) |
+| `MVTEC_DIR` | MVTec AD location (`./data/mvtec`) |
+| `CORS_ORIGINS` | Allowed browser origins, comma-separated (`http://localhost:5173` local) |
+
+## Run locally
+
+Backend (from `backend/`, serves on `:8000`):
+
+```sh
+cd backend
+python3.11 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/uvicorn app.main:app --port 8000
+curl localhost:8000/api/health
+```
+
+(Skip the first two lines if `.venv` already exists.) Use the venv's
+`uvicorn` — a system-wide `uvicorn` may resolve mismatched packages.
+
+Frontend (dev proxy: same-origin `/api` + `/files` → `localhost:8000`, so no `VITE_API_URL` is needed in dev):
+
+```sh
+cd frontend
+npm ci
+npm run dev
+```
+
+Open http://localhost:5173. The backend must be running on `:8000` alongside it.
+
+Production frontend build (needs `VITE_API_URL` — the backend origin; trailing slashes are stripped once in `frontend/src/api.ts`):
+
+```sh
+cd frontend
+VITE_API_URL=http://localhost:8000 npm run build
+```
+
+## Run with Docker
+
+Image layout: `python:3.11-slim`, installs `backend/requirements.txt`, copies `backend/`, serves `uvicorn app.main:app` on `8000` (see `Dockerfile`). Configuration is environment-only — `.env`, keys, and `data/` are excluded by `.dockerignore` and never baked into layers. `DATA_DIR=/data` is the in-container default; mount a host dir there at run time.
+
+```sh
+docker build -t zeroshot-qc .
+mkdir -p /tmp/zqc-data
+docker run --rm -p 8000:8000 \
+  -v /tmp/zqc-data:/data \
+  -e DATA_DIR=/data \
+  -e CORS_ORIGINS=http://localhost:5173 \
+  -e USE_FAKE_ADAPTERS=true \
+  zeroshot-qc
+```
+
+`USE_FAKE_ADAPTERS=true` serves the fake segmenter/judge (no keys needed); unset it defaults to the real adapters. Prove the container:
+
+```sh
+curl localhost:8000/api/health
+curl -i -H 'Origin: http://localhost:5173' localhost:8000/api/health  # access-control-allow-origin echoed
+curl -o /dev/null -w '%{http_code}\n' localhost:8000/files/../outside.txt  # 404 traversal block
+```
+
+Fake inspect through the container (profile `screw` ships inside the image; any PNG/JPG works):
+
+```sh
+curl -s -F 'image=@/tmp/zqc-data/probe.png;type=image/png' \
+  -F 'profile_id=screw' localhost:8000/api/inspect | head -c 300
+```
+
+## Push to a public URL (human steps — need YOUR logins; never run by automation)
+
+Backend → Modal:
+
+```sh
+pip install modal
+modal setup
+modal deploy modal_app.py
+```
+
+`modal_app.py` (repo root) imports the same `app` object the container serves (`backend/app/main.py`); it contains no app logic. Note the backend URL it prints — that is the `VITE_API_URL` below.
+
+Frontend → Vercel (from the repo root; `vercel.json` already sets the build command and output dir):
+
+```sh
+npm i -g vercel
+vercel login
+vercel env add VITE_API_URL production
+vercel --prod
+```
+
+When `vercel env add` prompts, paste the Modal backend URL (e.g. `https://<you>--zeroshot-qc.modal.run`). Then confirm the public URL in a private browser window. If the installed CLIs spell a flag differently, follow their `--help` — these commands were written without the CLIs present.
+
+## Submission checklist state (M7)
+
+Source: the hackathon `ROADMAP.md` submission checklist. State as of this README rewrite:
+
+- [ ] Public URL works in a private window — NOT DONE. Commands above; needs human `modal deploy` + `vercel --prod` with human logins.
+- [ ] Demo video uploaded and link tested — NOT DONE. Out of scope for this repo change.
+- [~] README: problem, architecture diagram, models used, metrics table, how to run — PARTIAL. Run/deploy rewritten here (verified below); problem + models at the top of this file; MVTec license below; eval numbers live in `docs/EVAL_NOTES.md`. Still missing: an architecture diagram and a metrics table in this file.
+- [x] MVTec AD license noted (CC BY-NC-SA 4.0, non-commercial) — DONE (`Data & licensing` above).
+- [x] No API keys in the repo — DONE (`.env` and `data/` gitignored; `.dockerignore` keeps both out of the image; `frontend/dist/` bundle grep clean per the M7 Phase 2 verification).
+- [ ] Submitted before 5 PM ET Nov 4 — NOT DONE. Submission-day step.
+
+Reader test (this section was verified verbatim up to the credential boundary): `cp .env.example .env`, backend venv `uvicorn` + `/api/health`, frontend `npm run dev` + page/proxy fetch, `docker build` + `docker run` with the flags above + health/CORS-trace/traversal/inspect probes, `VITE_API_URL=... npm run build`. Stopped at `modal setup` / `vercel login`: neither CLI is installed here, and both need human credentials — those two commands were not run.
