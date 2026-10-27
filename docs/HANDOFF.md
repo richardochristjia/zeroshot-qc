@@ -20,7 +20,12 @@ M3/M4 (nothing carried).
   `{stem}_overlay.png` vs smoke's collision scheme). Owner: user (naming
   call). Next: user picks the convention; suggested: smoke's suffix scheme
   (`backend/scripts/smoke.py:183-206`). Do not fix without that call (M7
-  AC3: config/wiring only).
+  AC3: config/wiring only). Live 2026-10-27: all three manual CLI runs
+  saved `000_overlay.png`, so each erased the last (only the screw overlay
+  survived); smoke discovery also picked `ground_truth/*_mask.png` and
+  synth `_reference.png` instead of photos on a full MVTec tree. Fix covers
+  both: skip masks/reference in discovery and use unique per-input overlay
+  names.
 - M2-LO — `inspect_image`/CLI unification: disk-loader
   (`pipeline/inspect.py:216`) has no production caller while the router
   (`routers/inspect.py:96`) hand-rolls the same path. Owner: future-work.
