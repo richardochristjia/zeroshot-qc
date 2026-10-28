@@ -1,4 +1,4 @@
-import { NavLink, Route, Routes } from 'react-router-dom'
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { HealthDot } from './components/HealthDot.tsx'
 import { Icon, IconSprite, type IconName } from './components/Icon.tsx'
@@ -16,6 +16,7 @@ const links: { to: string; label: string; icon: IconName }[] = [
 ]
 
 export default function App() {
+  const { pathname } = useLocation()
   return (
     <>
       <IconSprite />
@@ -56,12 +57,14 @@ export default function App() {
         </div>
       </header>
       <main className="mx-auto max-w-[1360px] px-5 pb-16 pt-5 max-[640px]:px-3">
+        <motion.div key={pathname} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
         <Routes>
           <Route path="/" element={<Inspect />} />
           <Route path="/profiles" element={<Profiles />} />
           <Route path="/eval" element={<Eval />} />
           <Route path="/synthetic" element={<Synthetic />} />
         </Routes>
+        </motion.div>
       </main>
     </>
   )

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { DragEvent, JSX } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { ApiError, inspectImage, listProfiles, resolveFileUrl } from '../api.ts'
 import type { Detection, DefectRuling, InspectionResult, ProductProfile } from '../api.ts'
 import { Alert } from '../components/Alert.tsx'
@@ -35,7 +36,10 @@ function DetectionBox({ detection, index, real, highlighted, naturalWidth, natur
   const pos = boxPercent(detection.bbox, naturalWidth, naturalHeight)
   if (pos === null) return null
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
       tabIndex={0}
       aria-label={`${index}: ${detection.label}, ${real ? 'defect' : 'cleared'}`}
       onPointerEnter={() => onHover(detection.id)}
@@ -50,7 +54,7 @@ function DetectionBox({ detection, index, real, highlighted, naturalWidth, natur
       >
         {index}
       </span>
-    </div>
+    </motion.div>
   )
 }
 
@@ -260,7 +264,13 @@ export default function Inspect(): JSX.Element {
         </div>
       </PageHeader>
 
-      {error !== null && <Alert className="mb-4">{error}</Alert>}
+      <AnimatePresence>
+        {error !== null && (
+          <motion.div key="err" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="mb-4">
+            <Alert>{error}</Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {file === null ? (
         <div className="grid gap-4 grid-cols-[minmax(0,1.35fr)_minmax(320px,1fr)] max-[1000px]:grid-cols-1">
@@ -382,10 +392,17 @@ export default function Inspect(): JSX.Element {
 
           <Panel aria-label="Verdict">
             <PanelHeader title={<><Icon name="list" />Verdict</>} />
+            <AnimatePresence mode="wait" initial={false}>
             {verdict === null || result === null ? (
               <p className="p-4 text-sm text-ink-2">Press Inspect to get a verdict with per-detection reasons.</p>
             ) : (
-              <>
+              <motion.div
+                key={result.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+              >
                 <div className="border-b border-line p-4">
                   <div className="flex items-baseline gap-3">
                     <VerdictBadge verdict={verdict.verdict} />
@@ -407,8 +424,11 @@ export default function Inspect(): JSX.Element {
                       const n = di >= 0 ? di + 1 : pos + 1
                       const label = det?.label ?? ruling.detectionId
                       return (
-                        <li
+                        <motion.li
                           key={ruling.detectionId}
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.2, ease: 'easeOut', delay: pos * 0.04 }}
                           tabIndex={0}
                           aria-label={`${n}: ${label}, ${ruling.isRealDefect ? 'defect' : 'cleared'}`}
                           onPointerEnter={() => setHoveredId(ruling.detectionId)}
@@ -443,7 +463,7 @@ export default function Inspect(): JSX.Element {
                               <p className="mt-1 text-xs text-ink-3">Rule cited: {ruling.ruleViolated}</p>
                             )}
                           </div>
-                        </li>
+                        </motion.li>
                       )
                     })}
                   </ol>
@@ -461,8 +481,9 @@ export default function Inspect(): JSX.Element {
                     </div>
                   ))}
                 </dl>
-              </>
+              </motion.div>
             )}
+            </AnimatePresence>
             <div className="border-t border-line p-3.5">
               <Field
                 label={<span className="inline-flex items-center gap-1.5"><Icon name="pencil" />Rules override</span>}
