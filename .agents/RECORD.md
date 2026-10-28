@@ -65,3 +65,6 @@ Entries are added or amended **only with human approval**.
 - (deploy) The backend currently ships as a Python 3.11 container running uvicorn with configuration by environment.
 - (deploy) The frontend currently builds to static assets targeting the backend through a build-time API URL.
 - (deploy) The app currently runs as backend and frontend containers via a single docker compose file.
+- (frontend) The web app currently themes light and dark from one set of design tokens, following the system colour scheme unless the user picks a theme.
+- (frontend) The web app currently self-hosts its typefaces and requests no third-party fonts.
+- (frontend) The web app currently shows backend reachability in its top bar from GET /api/health.
