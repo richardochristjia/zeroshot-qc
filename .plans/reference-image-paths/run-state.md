@@ -13,3 +13,6 @@ outcome: no must-fix findings to falsify
 ## Fix
 status: skipped
 outcome: no must-fix findings
+## Verify
+status: done
+outcome: pytest 192, vitest 25, build + oxlint clean; AC1-7 ticked; RECORD entry written; commits 2769d5e, 58f4809
