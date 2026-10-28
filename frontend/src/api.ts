@@ -712,3 +712,16 @@ export async function listSyntheticGallery(
   if (!Array.isArray(data)) fail("SynthGalleryItem[]");
   return data.map((item, i) => parseSynthGalleryItem(item, i));
 }
+
+/** GET /api/health. Never throws except for AbortError: any failure is 'down'. */
+export async function getHealth(signal?: AbortSignal): Promise<"ok" | "down"> {
+  try {
+    const data = await getJson("/api/health", signal);
+    return typeof data === "object" && data !== null && (data as { status?: unknown }).status === "ok"
+      ? "ok"
+      : "down";
+  } catch (err: unknown) {
+    if (err instanceof DOMException && err.name === "AbortError") throw err;
+    return "down";
+  }
+}
