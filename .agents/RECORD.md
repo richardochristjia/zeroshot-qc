@@ -71,3 +71,4 @@ Entries are added or amended **only with human approval**.
 - (frontend) The Eval page currently opens a failure example's image in a modal dialog with previous and next navigation.
 - (frontend) The Eval page currently selects the run with the highest overall F1 when it loads.
 - (frontend) The Eval page currently shows failure examples as a thumbnail grid filterable by failure kind and category.
+- (profiles) Profile reference_image paths are currently resolved relative to the data directory and served to the frontend under /files/.
