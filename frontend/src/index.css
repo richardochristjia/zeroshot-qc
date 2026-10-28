@@ -1,28 +1,103 @@
 @import "tailwindcss";
 
+/* Layer 1: primitives */
 :root {
-  color-scheme: light dark;
+  --stone-50: #f6f5f1; --stone-100: #efede7; --stone-200: #e2dfd7; --stone-300: #cfcbc1; --stone-500: #7a776f; --stone-600: #57554f; --stone-900: #18181a;
+  --night-950: #111214; --night-900: #18191c; --night-850: #1e1f23; --night-700: #2d2f34; --night-500: #5d6068; --night-300: #a3a6ad; --night-100: #ebeae6;
+  --navy-700: #1e3a5f; --navy-300: #9dbce3;
+  --green-700: #11704e; --green-300: #63caa1;
+  --red-700: #b3261e; --red-400: #ff5c50;
+  --amber-600: #b86e00; --amber-300: #f3b852;
+  --blue-600: #2f5d8a; --blue-300: #7fa9d6;
+  --r-sm: 4px; --r-md: 6px; --dur: 160ms;
 }
 
-body {
-  margin: 0;
-  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
-  background-color: #fafafa;
-  color: #1a1a1a;
+/* Layer 2: semantic, light */
+:root,
+:root[data-theme="light"] {
+  --ground: var(--stone-50); --surface: #fff; --sunken: var(--stone-100);
+  --ink: var(--stone-900); --ink-2: var(--stone-600); --ink-3: var(--stone-500);
+  --line: var(--stone-200); --line-strong: var(--stone-300);
+  --accent: var(--navy-700); --on-accent: #fff;
+  --pass: var(--green-700); --fail: var(--red-700); --on-fail: #fff; --detect: var(--amber-600); --data: var(--blue-600);
+  --pass-tint: color-mix(in srgb, var(--green-700) 9%, transparent);
+  --fail-tint: color-mix(in srgb, var(--red-700) 8%, transparent);
+  --focus: var(--navy-700);
+  color-scheme: light;
 }
 
+/* Layer 3: dark (OS preference unless the user forced light, or forced dark) */
 @media (prefers-color-scheme: dark) {
-  body {
-    background-color: #16171d;
-    color: #e5e7eb;
+  :root:not([data-theme="light"]) {
+  --ground: var(--night-950); --surface: var(--night-900); --sunken: var(--night-850);
+  --ink: var(--night-100); --ink-2: var(--night-300); --ink-3: #8b8e95;
+  --line: var(--night-700); --line-strong: #3a3c42;
+  --accent: var(--navy-300); --on-accent: var(--night-950);
+  --pass: var(--green-300); --fail: var(--red-400); --on-fail: var(--night-950); --detect: var(--amber-300); --data: var(--blue-300);
+  --pass-tint: color-mix(in srgb, var(--green-300) 12%, transparent);
+  --fail-tint: color-mix(in srgb, var(--red-400) 16%, transparent);
+  --focus: var(--navy-300);
+  color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --ground: var(--night-950); --surface: var(--night-900); --sunken: var(--night-850);
+  --ink: var(--night-100); --ink-2: var(--night-300); --ink-3: #8b8e95;
+  --line: var(--night-700); --line-strong: #3a3c42;
+  --accent: var(--navy-300); --on-accent: var(--night-950);
+  --pass: var(--green-300); --fail: var(--red-400); --on-fail: var(--night-950); --detect: var(--amber-300); --data: var(--blue-300);
+  --pass-tint: color-mix(in srgb, var(--green-300) 12%, transparent);
+  --fail-tint: color-mix(in srgb, var(--red-400) 16%, transparent);
+  --focus: var(--navy-300);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-pass: var(--pass);
+  --color-fail: var(--fail);
+  --color-on-fail: var(--on-fail);
+  --color-detect: var(--detect);
+  --color-data: var(--data);
+  --color-pass-tint: var(--pass-tint);
+  --color-fail-tint: var(--fail-tint);
+  --color-focus: var(--focus);
+  --font-sans: "Fira Sans", system-ui, sans-serif;
+  --font-mono: "Fira Code", ui-monospace, monospace;
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+}
+
+@layer base {
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.5 var(--font-sans); -webkit-font-smoothing: antialiased; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 13px; font-weight: 600; margin: 0; color: var(--ink-2); }
+  button, select, input, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+}
+
+.num, .mono { font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--font-mono); font-size: 13px; }
+.ic { width: 16px; height: 16px; flex: none; }
+
+/* Form control look shared by Field, selects and inputs. */
+.ctl { min-height: 36px; width: 100%; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--surface); padding: 6px 10px; font-size: 14px; color: var(--ink); }
+textarea.ctl { resize: vertical; line-height: 1.45; }
+
+/* Touch targets: 44px on coarse pointers. */
+@media (pointer: coarse) {
+  .btn, .ctl { min-height: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
