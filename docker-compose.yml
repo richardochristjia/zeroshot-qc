@@ -1,0 +1,43 @@
+# Single-command local run: backend + frontend.
+#
+# Setup:
+#   cp .env.example .env   # compose fails without .env (env_file below)
+# and make sure CORS_ORIGINS in .env lists the composed frontend origin,
+# e.g. CORS_ORIGINS=http://localhost:5173,http://localhost:8080
+#
+# Run:
+#   docker compose up --build
+#
+# Frontend: http://localhost:8080 (VITE_API_URL bakes in at build time;
+# changing the backend origin needs `docker compose build frontend`).
+# Backend:  http://localhost:8000
+#
+# Stop the Vite/uvicorn dev servers first if host :8000 is taken.
+# Data persists in the zqc-data volume across `down`/`up`
+# (`down -v` deletes it). Seed data comes only from the volume —
+# data/ is gitignored and never baked into the image.
+
+services:
+  backend:
+    build: .
+    env_file:
+      - .env
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - zqc-data:/data
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  zqc-data:
