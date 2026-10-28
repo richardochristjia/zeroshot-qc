@@ -1,0 +1,3 @@
+- Bare `.venv/bin/pytest` fails collection (ModuleNotFoundError: app) before and after this change; `.venv/bin/python -m pytest` passes (192). Check: run it from backend/ with a clean checkout.
+- backend/profiles refs now need the dataset at settings.data_dir (repo-root ./data); backend/data/mvtec duplicate is no longer read by inspect.
+- Profiles went null -> set: any environment without the dataset under data_dir now hits `could not open reference image` for profiles that previously ran with no reference (inspect.py:124 area).
