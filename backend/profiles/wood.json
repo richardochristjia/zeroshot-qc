@@ -7,6 +7,6 @@
   "id": "wood",
   "mm_per_px": null,
   "name": "Wood",
-  "reference_image": null,
+  "reference_image": "mvtec/wood/train/good/000.png",
   "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec wood SOP. Draft: FAIL wood with any hole, liquid stain, or scratch; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
 }

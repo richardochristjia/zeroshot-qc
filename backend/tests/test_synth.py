@@ -5,10 +5,14 @@ Run: cd backend && .venv/bin/python -m pytest -q
 
 from pathlib import Path
 
+import pytest
+
 import numpy as np
 from PIL import Image
 
 from app.adapters.fakes import FakeImageGenerator
+from app.config import settings
+from app.synth import generate as gen
 from app.synth.generate import diff_mask, generate_pairs
 
 
@@ -169,3 +173,20 @@ def test_diff_mask_finds_painted_shapes() -> None:
     expected[10:20, 10:20] = True
     assert (mask == expected).all()
     assert not bool(diff_mask(good, good.copy()).any())
+
+
+def test_load_good_image_uses_relative_profile_reference(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "mvtec").mkdir()
+    Image.new("RGB", (7, 5), color=(1, 2, 3)).save(tmp_path / "mvtec" / "g.png")
+    profiles = tmp_path / "profiles"
+    profiles.mkdir()
+    (profiles / "p.json").write_text(
+        '{"id": "p", "name": "P", "defect_prompts": ["x"], "rules": "r",'
+        ' "reference_image": "mvtec/g.png"}'
+    )
+    monkeypatch.setattr(settings, "data_dir", str(tmp_path))
+    monkeypatch.setattr(gen, "PROFILES_DIR", profiles)
+    image, _ = gen.load_good_image("p")
+    assert image.size == (7, 5)

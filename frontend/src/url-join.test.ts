@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { normalizeApiBase, resolveFileUrl } from "./api.ts";
+import { normalizeApiBase, referenceImageUrl, resolveFileUrl } from "./api.ts";
 
 describe("normalizeApiBase", () => {
   it("strips a single trailing slash", () => {
@@ -60,5 +60,14 @@ describe("resolveFileUrl", () => {
     vi.stubEnv("VITE_API_URL", "");
     const mod = await import("./api.ts");
     expect(mod.resolveFileUrl("/files/a.png")).toBe("/files/a.png");
+  });
+});
+
+describe("referenceImageUrl", () => {
+  it("maps a data-relative path to the /files route", () => {
+    expect(referenceImageUrl("mvtec/a.png")).toBe(
+      resolveFileUrl("/files/mvtec/a.png"),
+    );
+    expect(referenceImageUrl("mvtec/a.png")).toMatch(/\/files\/mvtec\/a\.png$/);
   });
 });

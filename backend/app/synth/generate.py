@@ -35,6 +35,7 @@ from PIL import Image
 from app.adapters.fakes import FakeImageGenerator
 from app.adapters.muse_image import MuseImageGenerator
 from app.config import settings
+from app.pipeline.inspect import resolve_reference_path
 from app.schemas import ProductProfile
 
 APP_DIR = Path(__file__).resolve().parent.parent
@@ -60,9 +61,7 @@ def load_good_image(profile_id: str) -> tuple[Image.Image, ProductProfile]:
             f"(available: {sorted(p.stem for p in PROFILES_DIR.glob('*.json'))})"
         ) from exc
     if profile.reference_image:
-        candidate = Path(profile.reference_image)
-        if not candidate.is_absolute():
-            candidate = BACKEND_DIR.parent / candidate
+        candidate = resolve_reference_path(profile.reference_image)
         if candidate.is_file():
             with Image.open(candidate) as raw:
                 return raw.convert("RGB").copy(), profile

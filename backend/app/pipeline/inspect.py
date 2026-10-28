@@ -20,6 +20,7 @@ from PIL import Image
 from pycocotools import mask as mask_api
 
 from app.adapters.base import Judge, Segmenter
+from app.config import settings
 from app.pipeline.measure import decode_rle_for_image, measure_mask
 from app.pipeline.overlay import make_overlay
 from app.schemas import Detection, ProductProfile, RawMask, Verdict
@@ -112,10 +113,16 @@ def _decode_valid_masks(
     return valid
 
 
+def resolve_reference_path(path: str) -> Path:
+    """Absolute paths pass through; relative ones resolve under data_dir."""
+    candidate = Path(path)
+    return candidate if candidate.is_absolute() else Path(settings.data_dir) / candidate
+
+
 def _load_reference_image(path: str) -> Image.Image:
     """Load a known-good reference image; missing files are a caller error."""
     try:
-        with Image.open(path) as raw:
+        with Image.open(resolve_reference_path(path)) as raw:
             return raw.convert("RGB").copy()
     except Exception as exc:
         raise ValueError(f"could not open reference image {path}: {exc}") from exc

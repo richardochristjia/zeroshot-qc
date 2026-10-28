@@ -8,6 +8,6 @@
   "id": "leather",
   "mm_per_px": null,
   "name": "Leather",
-  "reference_image": null,
+  "reference_image": "mvtec/leather/train/good/000.png",
   "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec leather SOP. Draft: FAIL leather with any cut, fold, glue, or color stain; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
 }

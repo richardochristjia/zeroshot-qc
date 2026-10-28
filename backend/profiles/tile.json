@@ -8,6 +8,6 @@
   "id": "tile",
   "mm_per_px": null,
   "name": "Tile",
-  "reference_image": null,
+  "reference_image": "mvtec/tile/train/good/000.png",
   "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec tile SOP. Draft: FAIL a tile with any crack, glue strip, gray stroke, or oil stain; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
 }

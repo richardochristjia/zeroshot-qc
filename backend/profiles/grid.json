@@ -7,6 +7,6 @@
   "id": "grid",
   "mm_per_px": null,
   "name": "Grid",
-  "reference_image": null,
+  "reference_image": "mvtec/grid/train/good/000.png",
   "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec grid SOP. Draft: FAIL a grid with any bent or broken wire or glue residue; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
 }
