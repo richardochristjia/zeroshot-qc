@@ -10,6 +10,11 @@ import { Alert } from '../components/Alert.tsx'
 import { EmptyState } from '../components/EmptyState.tsx'
 import { PageHeader } from '../components/PageHeader.tsx'
 import { Panel, PanelHeader } from '../components/Panel.tsx'
+import { ConfusionMatrix } from '../components/ConfusionMatrix.tsx'
+import { FailureGrid } from '../components/FailureGrid.tsx'
+import { Icon } from '../components/Icon.tsx'
+import { bestOtherDelta, filterFailures, pickDefaultRun, runTag, shadeLevel } from '../eval-view.ts'
+import type { FailureKind } from '../eval-view.ts'
 
 const GLOSSARY: Record<string, string> = {
   F1: 'Balance of precision and recall in one number, from 0 to 1. Higher is better.',
@@ -40,10 +45,6 @@ function errorDetail(err: unknown, fallback: string): string {
   return fallback
 }
 
-function isFailure(row: EvalResultRow): boolean {
-  return (row.label === 'good' && row.verdict === 'FAIL') || (row.label === 'defective' && row.verdict === 'PASS')
-}
-
 const MODE_NAMES: Record<string, string> = {
   sam_only: 'SAM only',
   sam_judge: 'SAM + judge',
@@ -72,15 +73,34 @@ function Bar({ value, height, tone }: { value: number | null; height: number; to
   )
 }
 
-function Kpi({ label, value, accent = false }: { label: string; value: number | null; accent?: boolean }): JSX.Element {
+function Delta({ value }: { value: number | null }): JSX.Element | null {
+  if (value === null) return null
+  const text = Math.abs(value).toFixed(3)
+  if (text === '0.000') return <div className="num text-xs text-ink-3">= 0.000</div>
+  return value > 0 ? (
+    <div className="num text-xs text-pass">▲ +{text}</div>
+  ) : (
+    <div className="num text-xs text-fail">▼ −{text}</div>
+  )
+}
+
+function Kpi({ label, value, delta, accent = false }: { label: string; value: number | null; delta: number | null; accent?: boolean }): JSX.Element {
   return (
     <div>
       <dt className="text-xs text-ink-3"><Term term={label} /></dt>
       <dd className="mt-0.5 text-[26px] font-medium leading-tight">
         <Metric value={value} className={accent ? 'text-data' : ''} />
       </dd>
+      <Delta value={delta} />
     </div>
   )
+}
+
+const SHADE_PCT = [0, 8, 16, 26, 38]
+
+function shade(value: number | null): string | undefined {
+  const level = shadeLevel(value)
+  return level === null || level === 0 ? undefined : `color-mix(in srgb, var(--data) ${SHADE_PCT[level]}%, transparent)`
 }
 
 function MetricsTable({ perCategory }: { perCategory: Record<string, CategoryMetrics> }): JSX.Element {
@@ -92,7 +112,6 @@ function MetricsTable({ perCategory }: { perCategory: Record<string, CategoryMet
         <thead>
           <tr className="border-b border-line-strong text-xs text-ink-3">
             <th className="py-2 pr-3 text-left font-medium">Category</th>
-            <th className="w-[28%] px-3 py-2 text-left font-medium min-[641px]:w-[32%]"><Term term="F1" /></th>
             <th className={`${th} pl-3`}><Term term="F1" /></th>
             <th className={`${th} pl-3`}><Term term="Precision" /></th>
             <th className={`${th} pl-3`}><Term term="Recall" /></th>
@@ -105,15 +124,11 @@ function MetricsTable({ perCategory }: { perCategory: Record<string, CategoryMet
             return (
               <tr key={name} className="border-b border-line last:border-b-0">
                 <td className="py-2 pr-3 font-medium">{name}</td>
-                <td className="px-3 py-2">
-                  <div role="img" aria-label={`F1 for ${name}: ${m.f1.toFixed(3)}`}>
-                    <Bar value={m.f1} height={6} tone="data" />
-                  </div>
-                </td>
-                <td className="py-2 pl-3 text-right"><Metric value={m.f1} /></td>
-                <td className="py-2 pl-3 text-right"><Metric value={m.precision} /></td>
-                <td className="py-2 pl-3 text-right"><Metric value={m.recall} /></td>
-                <td className="py-2 pl-3 text-right"><Metric value={m.auroc} /></td>
+                {[m.f1, m.precision, m.recall, m.auroc].map((v, i) => (
+                  <td key={i} className="px-3 py-2 text-right" style={{ background: shade(v) }}>
+                    <Metric value={v} className="text-ink" />
+                  </td>
+                ))}
               </tr>
             )
           })}
@@ -171,13 +186,15 @@ export default function Eval(): JSX.Element {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedFailure, setSelectedFailure] = useState<number>(-1)
+  const [kindFilter, setKindFilter] = useState<FailureKind | ''>('')
+  const [categoryFilter, setCategoryFilter] = useState<string>('')
 
   useEffect(() => {
     const controller = new AbortController()
     listEvalRuns(controller.signal)
       .then((loaded) => {
         setRuns(loaded)
-        if (loaded.length > 0) setSelectedId(loaded[0].runId)
+        if (loaded.length > 0) setSelectedId(pickDefaultRun(loaded))
         setLoading(false)
       })
       .catch((err: unknown) => {
@@ -207,13 +224,19 @@ export default function Eval(): JSX.Element {
   const selectRun = (id: string): void => {
     setSelectedId(id)
     setSelectedFailure(-1)
+    setKindFilter('')
+    setCategoryFilter('')
   }
 
   const current = detail !== null && detail.summary.runId === selectedId ? detail : null
   const detailLoading = selectedId !== '' && current === null && failedId !== selectedId
   const summary = current?.summary ?? null
   const metrics = summary?.metrics ?? null
-  const failures: EvalResultRow[] = current === null ? [] : current.results.filter(isFailure)
+  const allFailures = current === null ? [] : filterFailures(current.results, '', '')
+  // Sorted by category so dialog Prev/Next follows the grouped grid order.
+  const failures: EvalResultRow[] = filterFailures(allFailures, kindFilter, categoryFilter).sort((a, b) =>
+    a.category.localeCompare(b.category),
+  )
   const activeFailure = selectedFailure >= 0 && selectedFailure < failures.length ? failures[selectedFailure] : null
 
   const ablation: EvalRunSummary[] = []
@@ -226,6 +249,7 @@ export default function Eval(): JSX.Element {
       ablation.push(run)
     }
   }
+  const bestId = pickDefaultRun(ablation)
   const nImages = summary === null ? null : (summary.nGood ?? 0) + (summary.nDefective ?? 0)
 
   return (
@@ -259,7 +283,10 @@ export default function Eval(): JSX.Element {
                     >
                       <span className="min-w-0">
                         <span className="block truncate font-medium text-ink">{modeName(run.mode)}</span>
-                        <span className="block truncate font-mono text-xs text-ink-3">{run.runId}</span>
+                        <span className="block truncate font-mono text-xs text-ink-3">{runTag(run.runId, run.mode)}</span>
+                        <span className="mt-1 block w-24">
+                          <Bar value={f1} height={4} tone="data" />
+                        </span>
                       </span>
                       <Metric value={f1} className="shrink-0" />
                     </button>
@@ -274,6 +301,35 @@ export default function Eval(): JSX.Element {
               <EmptyState title={detailLoading ? 'Loading run detail…' : 'Run detail unavailable'} />
             ) : (
               <>
+                {ablation.length >= 2 && (
+                  <Panel>
+                    <PanelHeader title={<>Ablation · same seed, same N images <InfoTip term="Ablation" text={GLOSSARY.Ablation} /></>} />
+                    <p className="px-3.5 pt-3 text-[13px] text-ink-3">
+                      F1 for the same images under SAM only, + judge and + reference.
+                    </p>
+                    <ul className="flex flex-col gap-2.5 p-3.5">
+                      {ablation.map((run) => {
+                        const f1 = run.metrics?.overall.f1 ?? null
+                        return (
+                          <li key={run.runId} className="grid grid-cols-[minmax(0,12rem)_minmax(0,1fr)_3.5rem] items-center gap-3 text-sm">
+                            <span className="truncate">
+                              {modeName(run.mode)}
+                              {run.runId === bestId && (
+                                <span className="ml-2 inline-flex items-center gap-1 rounded-sm bg-pass-tint px-1.5 text-xs font-medium text-pass">
+                                  <Icon name="check" className="size-3" />
+                                  Best
+                                </span>
+                              )}
+                            </span>
+                            <Bar value={f1} height={10} tone={run.runId === summary.runId ? 'data' : 'muted'} />
+                            <Metric value={f1} className="text-right" />
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </Panel>
+                )}
+
                 <Panel>
                   <PanelHeader
                     title={
@@ -298,68 +354,49 @@ export default function Eval(): JSX.Element {
                         How well this run separated good from defective images. FAIL means flagged as defective.
                       </p>
                       <dl className="grid grid-cols-3 gap-4 min-[1001px]:grid-cols-5">
-                        <Kpi label="F1" value={metrics.overall.f1} accent />
-                        <Kpi label="Precision" value={metrics.overall.precision} />
-                        <Kpi label="Recall" value={metrics.overall.recall} />
-                        <Kpi label="AUROC" value={metrics.overall.auroc} />
-                        <Kpi label="Accuracy" value={metrics.overall.accuracy} />
+                        <Kpi label="F1" value={metrics.overall.f1} delta={bestOtherDelta(summary, ablation, 'f1')} accent />
+                        <Kpi label="Precision" value={metrics.overall.precision} delta={bestOtherDelta(summary, ablation, 'precision')} />
+                        <Kpi label="Recall" value={metrics.overall.recall} delta={bestOtherDelta(summary, ablation, 'recall')} />
+                        <Kpi label="AUROC" value={metrics.overall.auroc} delta={bestOtherDelta(summary, ablation, 'auroc')} />
+                        <Kpi label="Accuracy" value={metrics.overall.accuracy} delta={bestOtherDelta(summary, ablation, 'accuracy')} />
                       </dl>
-                      <p className="num text-[13px] text-ink-2">
-                        <Term term="True fail" /> {metrics.overall.tp} · <Term term="True pass" /> {metrics.overall.tn} ·{' '}
-                        <Term term="False fail" /> {metrics.overall.fp} · <Term term="Missed" /> {metrics.overall.fn}
-                      </p>
+                      <ConfusionMatrix
+                        counts={metrics.overall}
+                        term={(name) => (
+                          <Term term={name} />
+                        )}
+                      />
                       <MetricsTable perCategory={metrics.perCategory} />
                     </div>
                   )}
                 </Panel>
 
-                {ablation.length >= 2 && (
-                  <Panel>
-                    <PanelHeader title={<>Ablation · same seed, same N images <InfoTip term="Ablation" text={GLOSSARY.Ablation} /></>} />
-                    <p className="px-3.5 pt-3 text-[13px] text-ink-3">
-                      F1 for the same images under SAM only, + judge and + reference.
-                    </p>
-                    <ul className="flex flex-col gap-2.5 p-3.5">
-                      {ablation.map((run) => {
-                        const f1 = run.metrics?.overall.f1 ?? null
-                        return (
-                          <li key={run.runId} className="grid grid-cols-[minmax(0,12rem)_minmax(0,1fr)_3.5rem] items-center gap-3 text-sm">
-                            <span className="truncate">{modeName(run.mode)}</span>
-                            <Bar value={f1} height={10} tone={run.runId === summary.runId ? 'data' : 'muted'} />
-                            <Metric value={f1} className="text-right" />
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  </Panel>
-                )}
-
                 <Panel>
-                  <PanelHeader title={`Failure examples (${failures.length})`} />
+                  <PanelHeader title={`Failure examples (${allFailures.length})`} />
                   <p className="px-3.5 pt-3 text-[13px] text-ink-3">
                     Images where the verdict disagreed with the label. Select one to open it.
                   </p>
-                  {failures.length === 0 ? (
+                  {allFailures.length === 0 ? (
                     <div className="p-3.5">
                       <EmptyState icon="check" title="No failures in this run — every verdict matches its label." />
                     </div>
                   ) : (
                     <>
-                      <ul>
-                        {failures.map((row, index) => (
-                          <li key={`${row.category}-${row.image}-${index}`} className="border-b border-line last:border-b-0">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedFailure(index)}
-                              aria-current={index === selectedFailure ? 'true' : undefined}
-                              className={`w-full px-3.5 py-2 text-left text-sm ${index === selectedFailure ? 'bg-sunken' : 'hover:bg-sunken'}`}
-                            >
-                              {row.category} · {row.image} — label {row.label}, verdict {row.verdict}
-                              {row.imageUrl === null && ' (no image)'}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
+                      <FailureGrid
+                        rows={allFailures}
+                        kind={kindFilter}
+                        category={categoryFilter}
+                        onKind={(k) => {
+                          setKindFilter(k)
+                          setSelectedFailure(-1)
+                        }}
+                        onCategory={(c) => {
+                          setCategoryFilter(c)
+                          setSelectedFailure(-1)
+                        }}
+                        filtered={failures}
+                        onOpen={setSelectedFailure}
+                      />
                       <Dialog
                         open={activeFailure !== null}
                         title={activeFailure === null ? '' : `Failure ${selectedFailure + 1} of ${failures.length}`}
