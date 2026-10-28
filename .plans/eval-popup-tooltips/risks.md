@@ -1,0 +1,2 @@
+- Escape inside an open InfoTip stops propagation so the dialog stays open; native dialog Esc may still close both on some browsers (frontend/src/components/InfoTip.tsx). Check: open a tip in the popup, press Esc.
+- Dialog/InfoTip behaviour (focus return, backdrop click, tip clipping, flip-above) has no DOM tests. Check: manual task in tasks.md.

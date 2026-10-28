@@ -2,10 +2,38 @@ import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import { ApiError, getEvalRun, listEvalRuns, resolveFileUrl } from '../api.ts'
 import type { CategoryMetrics, EvalResultRow, EvalRunDetail, EvalRunSummary } from '../api.ts'
+import { Dialog } from '../components/Dialog.tsx'
+import { InfoTip } from '../components/InfoTip.tsx'
+import { Button } from '../components/Button.tsx'
+import { stepIndex } from '../step.ts'
 import { Alert } from '../components/Alert.tsx'
 import { EmptyState } from '../components/EmptyState.tsx'
 import { PageHeader } from '../components/PageHeader.tsx'
 import { Panel, PanelHeader } from '../components/Panel.tsx'
+
+const GLOSSARY: Record<string, string> = {
+  F1: 'Balance of precision and recall in one number, from 0 to 1. Higher is better.',
+  Precision: 'Of the images flagged FAIL (defective), the share that really were defective.',
+  Recall: 'Of the truly defective images, the share that were flagged FAIL.',
+  AUROC: 'How well the confidence score ranks defective images above good ones. 0.5 is chance, 1 is perfect.',
+  Accuracy: 'Share of all images where the verdict matched the label.',
+  'True fail': 'Defective image correctly flagged FAIL.',
+  'True pass': 'Good image correctly passed.',
+  'False fail': 'Good image wrongly flagged FAIL (false alarm).',
+  Missed: 'Defective image wrongly passed (a defect that slipped through).',
+  Ablation: 'Same images scored three ways: SAM only (segmentation alone), + judge (a model reviews each detection), + reference (the judge also compares against a known-good image).',
+  IoU: 'Overlap between the detected region and the true defect mask, from 0 to 1.',
+  confidence: 'How sure the system is that the image is defective.',
+}
+
+function Term({ term, children }: { term: string; children?: string }): JSX.Element {
+  return (
+    <span className="inline-flex items-center gap-1">
+      {children ?? term}
+      <InfoTip term={term} text={GLOSSARY[term]} />
+    </span>
+  )
+}
 
 function errorDetail(err: unknown, fallback: string): string {
   if (err instanceof ApiError) return err.detail
@@ -47,7 +75,7 @@ function Bar({ value, height, tone }: { value: number | null; height: number; to
 function Kpi({ label, value, accent = false }: { label: string; value: number | null; accent?: boolean }): JSX.Element {
   return (
     <div>
-      <dt className="text-xs text-ink-3">{label}</dt>
+      <dt className="text-xs text-ink-3"><Term term={label} /></dt>
       <dd className="mt-0.5 text-[26px] font-medium leading-tight">
         <Metric value={value} className={accent ? 'text-data' : ''} />
       </dd>
@@ -64,11 +92,11 @@ function MetricsTable({ perCategory }: { perCategory: Record<string, CategoryMet
         <thead>
           <tr className="border-b border-line-strong text-xs text-ink-3">
             <th className="py-2 pr-3 text-left font-medium">Category</th>
-            <th className="w-[28%] px-3 py-2 text-left font-medium min-[641px]:w-[32%]">F1</th>
-            <th className={`${th} pl-3`}>F1</th>
-            <th className={`${th} pl-3`}>Precision</th>
-            <th className={`${th} pl-3`}>Recall</th>
-            <th className={`${th} pl-3`}>AUROC</th>
+            <th className="w-[28%] px-3 py-2 text-left font-medium min-[641px]:w-[32%]"><Term term="F1" /></th>
+            <th className={`${th} pl-3`}><Term term="F1" /></th>
+            <th className={`${th} pl-3`}><Term term="Precision" /></th>
+            <th className={`${th} pl-3`}><Term term="Recall" /></th>
+            <th className={`${th} pl-3`}><Term term="AUROC" /></th>
           </tr>
         </thead>
         <tbody>
@@ -99,15 +127,21 @@ function FailureDetail({ row }: { row: EvalResultRow }): JSX.Element {
   // Parent keys this component by row, so the broken flag resets per row.
   const [imgBroken, setImgBroken] = useState<boolean>(false)
   return (
-    <div className="border-t border-line p-3.5">
+    <div className="p-3.5">
       <p className="text-sm font-medium">
         {row.category} · {row.image}
       </p>
       <p className="mt-1 text-[13px] text-ink-2">
         Label {row.label}, verdict {row.verdict}
         {row.defectType !== '' && `, defect ${row.defectType}`}
-        {` · confidence ${(row.confidence * 100).toFixed(1)}% · ${row.nDetections} detections`}
-        {row.iou !== null && ` · IoU ${row.iou.toFixed(3)}`}
+        {' · '}
+        <Term term="confidence" /> {(row.confidence * 100).toFixed(1)}% · {row.nDetections} detections
+        {row.iou !== null && (
+          <>
+            {' · '}
+            <Term term="IoU" /> {row.iou.toFixed(3)}
+          </>
+        )}
       </p>
       {row.imageUrl === null ? (
         <EmptyState icon="file" title="No image for this row" className="mt-3">
@@ -260,6 +294,9 @@ export default function Eval(): JSX.Element {
                     </div>
                   ) : (
                     <div className="flex flex-col gap-4 p-3.5">
+                      <p className="text-[13px] text-ink-3">
+                        How well this run separated good from defective images. FAIL means flagged as defective.
+                      </p>
                       <dl className="grid grid-cols-3 gap-4 min-[1001px]:grid-cols-5">
                         <Kpi label="F1" value={metrics.overall.f1} accent />
                         <Kpi label="Precision" value={metrics.overall.precision} />
@@ -268,8 +305,8 @@ export default function Eval(): JSX.Element {
                         <Kpi label="Accuracy" value={metrics.overall.accuracy} />
                       </dl>
                       <p className="num text-[13px] text-ink-2">
-                        True fail {metrics.overall.tp} · True pass {metrics.overall.tn} · False fail {metrics.overall.fp} ·
-                        Missed {metrics.overall.fn}
+                        <Term term="True fail" /> {metrics.overall.tp} · <Term term="True pass" /> {metrics.overall.tn} ·{' '}
+                        <Term term="False fail" /> {metrics.overall.fp} · <Term term="Missed" /> {metrics.overall.fn}
                       </p>
                       <MetricsTable perCategory={metrics.perCategory} />
                     </div>
@@ -278,7 +315,10 @@ export default function Eval(): JSX.Element {
 
                 {ablation.length >= 2 && (
                   <Panel>
-                    <PanelHeader title="Ablation · same seed, same N images" />
+                    <PanelHeader title={<>Ablation · same seed, same N images <InfoTip term="Ablation" text={GLOSSARY.Ablation} /></>} />
+                    <p className="px-3.5 pt-3 text-[13px] text-ink-3">
+                      F1 for the same images under SAM only, + judge and + reference.
+                    </p>
                     <ul className="flex flex-col gap-2.5 p-3.5">
                       {ablation.map((run) => {
                         const f1 = run.metrics?.overall.f1 ?? null
@@ -296,6 +336,9 @@ export default function Eval(): JSX.Element {
 
                 <Panel>
                   <PanelHeader title={`Failure examples (${failures.length})`} />
+                  <p className="px-3.5 pt-3 text-[13px] text-ink-3">
+                    Images where the verdict disagreed with the label. Select one to open it.
+                  </p>
                   {failures.length === 0 ? (
                     <div className="p-3.5">
                       <EmptyState icon="check" title="No failures in this run — every verdict matches its label." />
@@ -317,13 +360,32 @@ export default function Eval(): JSX.Element {
                           </li>
                         ))}
                       </ul>
-                      {activeFailure !== null ? (
-                        <FailureDetail key={`${activeFailure.category}-${activeFailure.image}`} row={activeFailure} />
-                      ) : (
-                        <div className="border-t border-line p-3.5">
-                          <EmptyState icon="eye" title="Select a failure above to view its image." />
-                        </div>
-                      )}
+                      <Dialog
+                        open={activeFailure !== null}
+                        title={activeFailure === null ? '' : `Failure ${selectedFailure + 1} of ${failures.length}`}
+                        onClose={() => setSelectedFailure(-1)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'ArrowLeft') setSelectedFailure(stepIndex(selectedFailure, -1, failures.length))
+                          else if (e.key === 'ArrowRight') setSelectedFailure(stepIndex(selectedFailure, 1, failures.length))
+                        }}
+                      >
+                        {activeFailure !== null && (
+                          <>
+                            <FailureDetail key={`${activeFailure.category}-${activeFailure.image}`} row={activeFailure} />
+                            <div className="flex justify-between border-t border-line px-3.5 py-2.5">
+                              <Button disabled={selectedFailure <= 0} onClick={() => setSelectedFailure(selectedFailure - 1)}>
+                                Prev
+                              </Button>
+                              <Button
+                                disabled={selectedFailure >= failures.length - 1}
+                                onClick={() => setSelectedFailure(selectedFailure + 1)}
+                              >
+                                Next
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </Dialog>
                     </>
                   )}
                 </Panel>
