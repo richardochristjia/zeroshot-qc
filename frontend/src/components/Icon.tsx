@@ -1,4 +1,4 @@
-export type IconName = 'scan' | 'sliders' | 'chart' | 'sparkles' | 'check' | 'x' | 'alert' | 'clock' | 'pencil' | 'upload' | 'save' | 'file' | 'refresh' | 'sun' | 'moon' | 'monitor' | 'layers' | 'list' | 'eye' | 'gauge'
+export type IconName = 'scan' | 'sliders' | 'chart' | 'sparkles' | 'check' | 'x' | 'alert' | 'clock' | 'pencil' | 'upload' | 'save' | 'file' | 'refresh' | 'sun' | 'moon' | 'monitor' | 'layers' | 'list' | 'eye' | 'gauge' | 'info'
 
 /** Mount once near the app root; <Icon> references these symbols. */
 export function IconSprite() {
@@ -24,6 +24,7 @@ export function IconSprite() {
       <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
       <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
       <symbol id="i-gauge" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0z"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
     </svg>
   )
 }
