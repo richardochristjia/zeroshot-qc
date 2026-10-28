@@ -69,3 +69,5 @@ Entries are added or amended **only with human approval**.
 - (frontend) The web app currently self-hosts its typefaces and requests no third-party fonts.
 - (frontend) The web app currently shows backend reachability in its top bar from GET /api/health.
 - (frontend) The Eval page currently opens a failure example's image in a modal dialog with previous and next navigation.
+- (frontend) The Eval page currently selects the run with the highest overall F1 when it loads.
+- (frontend) The Eval page currently shows failure examples as a thumbnail grid filterable by failure kind and category.

@@ -23,7 +23,7 @@
 - [x] AC5: 2×2 confusion grid; exactly one F1 column
 - [x] AC6: KPI deltas only when non-null
 - [x] AC7: no new raw colour literals in `frontend/src` diff
-- [ ] Record Updates: (1) review the complete implementation; (2a) if it matches plan.md's Record Updates, append those exact entries to `.agents/RECORD.md`; (2b) if it diverged, do not write a wrong entry — surface the divergence in the final summary
+- [x] Record Updates: (1) review the complete implementation; (2a) if it matches plan.md's Record Updates, append those exact entries to `.agents/RECORD.md`; (2b) if it diverged, do not write a wrong entry — surface the divergence in the final summary
 
 ## Manual checks
 - [ ] manual: with real runs, open `/eval` in light, dark and 390px width; best run selected, grid visible, chips filter, card opens dialog with ←/→ over filtered set, weak categories shaded lighter
