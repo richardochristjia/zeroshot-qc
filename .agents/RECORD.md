@@ -64,3 +64,4 @@ Entries are added or amended **only with human approval**.
 - (synth) The synthetic gallery is currently served by GET /api/synth/gallery enumerating data/synth/ pairs with /files/ URLs.
 - (deploy) The backend currently ships as a Python 3.11 container running uvicorn with configuration by environment.
 - (deploy) The frontend currently builds to static assets targeting the backend through a build-time API URL.
+- (deploy) The app currently runs as backend and frontend containers via a single docker compose file.
