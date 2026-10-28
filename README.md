@@ -107,6 +107,25 @@ curl -s -F 'image=@/tmp/zqc-data/probe.png;type=image/png' \
   -F 'profile_id=screw' localhost:8000/api/inspect | head -c 300
 ```
 
+## Run everything with a single command
+
+`docker-compose.yml` (repo root) runs the whole app prod-like: backend on `8000`, nginx frontend on `8080`.
+
+```sh
+cp .env.example .env   # required: compose reads .env and fails without it
+docker compose up --build
+```
+
+Then open `http://localhost:8080` (backend health: `curl localhost:8000/api/health`).
+
+Notes:
+
+- `.env` must list the composed frontend origin in `CORS_ORIGINS`, e.g. `CORS_ORIGINS=http://localhost:5173,http://localhost:8080`, or the page's API calls fail.
+- Keyless demo: set `USE_FAKE_ADAPTERS=true` in `.env`, then the fake `/api/inspect` probe above works through compose unchanged.
+- `VITE_API_URL` bakes into the frontend at build time (default `http://localhost:8000`); changing the backend origin needs `docker compose build frontend`, not just `up`.
+- Data persists in the `zqc-data` volume across `down`/`up` (`down -v` deletes it).
+- Stop the dev servers (`uvicorn :8000`, Vite) first if the host ports are taken.
+
 ## Push to a public URL (human steps — need YOUR logins; never run by automation)
 
 Backend → Modal:
