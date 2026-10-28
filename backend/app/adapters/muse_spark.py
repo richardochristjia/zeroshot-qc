@@ -1,10 +1,9 @@
 """Muse Spark judge adapter via the Meta Model API (real HTTP).
 
-Only ``judge`` is implemented in M1. The Meta request/response mapping
-for it lives entirely in ``MuseSparkJudge._judge_via_meta_api`` so it
-can be corrected in one place when the official Meta Model API docs
-arrive (HANDOFF §2); every uncertain detail there is marked
-TODO(meta-docs) and built only from the shared settings values.
+The Meta request/response mapping for ``judge`` lives entirely in
+``MuseSparkJudge._judge_via_meta_api``: Responses API, bearer key,
+images as base64 PNG data URLs. Confirmed against the live API
+(2026-10-27 inspect walkthrough, 2026-10-28 SOP draft).
 M5: ``sop_to_profile`` drafts a profile with the judge's retry-once
 validation pattern via ``prompts/sop_to_profile.md``.
 
@@ -175,19 +174,11 @@ class MuseSparkJudge:
         profile: ProductProfile,
         prompt: str,
     ) -> object:
-        # TODO(meta-docs): everything in this function is a placeholder
-        # mapping to be corrected against the official Meta Model API
-        # docs. Do not treat the endpoint, payload shape, auth scheme,
-        # image encoding, structured-output mode, or response shape
-        # below as fact.
-        # TODO(meta-docs): endpoint path — the base URL from settings is
-        # used verbatim until the docs name the judge path.
         url = settings.meta_api_base_url.rstrip("/") + "/responses"
         images = [image, overlay]
         if reference is not None:
             images.append(reference)
         payload = _responses_payload(settings.judge_model_id, prompt, images)
-        # TODO(meta-docs): auth scheme — bearer key header assumed.
         headers = {"Authorization": f"Bearer {settings.meta_api_key}"}
         response = httpx.post(url, json=payload, headers=headers, timeout=120.0)
         response.raise_for_status()

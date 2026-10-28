@@ -60,6 +60,14 @@ M3/M4 (nothing carried).
   empty-id backfill, M5 `_`-prefixed defect-dir discovery mismatch
   (`dataset.py:159` vs `191-193`).
 
+- Synth diff mask on real Muse Image output — the model redraws the
+  whole frame (900×900 in, 1600×1600 WebP out), so the rim shifts and
+  `diff_mask` (`synth/generate.py:78`) marks the outer ring as defect
+  (live 2026-10-28: bottle/scratch mask 10.3% coverage, ring included).
+  Owner: future-work. Next: pass a `mask` to `/images/edits` to bound
+  the edit, or register the images before diffing; needed before real
+  synth masks feed any IoU scoring.
+
 ## Manual checks (owner: user — keyless/in-run unsettlable)
 
 - M1-AC6 — real-keys smoke readout (Meta docs + keys + MVTec dataset was
@@ -73,3 +81,9 @@ M3/M4 (nothing carried).
   key hashing on large photos, no second SAM call); real-model judge ~8-10 s
   per call, so "fast" applies to fake adapters only. Profiles/Edit/SOP
   round-trip, Eval table/chart/failures, Synthetic gallery all confirmed.
+- M5 — real Muse Image + SOP draft. DONE 2026-10-28: CLI
+  `--no-fake` edit returned `data[0].b64_json` (WebP) over bearer auth;
+  "Draft from SOP" with the real judge kept every mm limit and the
+  scuff exception. Meta mapping confirmed, `TODO(meta-docs)` removed.
+  Note: the Synthetic page always uses the fake generator
+  (`routers/synth.py:28`); real generation is CLI-only.

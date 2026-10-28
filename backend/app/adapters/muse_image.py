@@ -64,7 +64,6 @@ class MuseImageGenerator:
         if mask is not None:
             files["mask"] = ("mask.png", _png_bytes(mask), "image/png")
         form = {"model": settings.image_model_id, "prompt": defect_description}
-        # TODO(meta-docs): auth scheme — bearer key header assumed.
         headers = {"Authorization": f"Bearer {settings.meta_api_key}"}
         response = httpx.post(
             url, files=files, data=form, headers=headers, timeout=180.0
