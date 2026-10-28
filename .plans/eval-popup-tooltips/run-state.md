@@ -18,3 +18,15 @@ outcome: no must-fix findings
 status: skipped
 outcome: no must-fix findings
 
+## Verify
+status: done
+outcome: build/lint/test pass; RECORD entry written; commit 3f6ce84
+
+## Push and PR
+status: done
+outcome: https://github.com/richardochristjia/zeroshot-qc/pull/10
+
+## CI status
+status: done
+outcome: no checks configured
+
