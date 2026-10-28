@@ -20,7 +20,7 @@ export default function App() {
   return (
     <>
       <IconSprite />
-      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-6 border-b border-line bg-surface px-5 max-[640px]:px-3">
+      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-6 border-b border-line bg-surface px-5 max-[640px]:px-4">
         <div className="flex h-[52px] items-center gap-2 whitespace-nowrap text-[15px] font-semibold">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.8" aria-hidden="true">
             <circle cx="12" cy="12" r="8" />
@@ -56,7 +56,7 @@ export default function App() {
           <ThemeSwitch />
         </div>
       </header>
-      <main className="mx-auto max-w-[1360px] px-5 pb-16 pt-5 max-[640px]:px-3">
+      <main className="mx-auto max-w-[1360px] px-5 pb-16 pt-5 max-[640px]:px-4">
         <motion.div key={pathname} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
         <Routes>
           <Route path="/" element={<Inspect />} />
