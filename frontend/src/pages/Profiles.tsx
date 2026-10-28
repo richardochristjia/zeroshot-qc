@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import type { JSX } from 'react'
 import {
   ApiError,
@@ -8,7 +9,15 @@ import {
   listProfiles,
   putProfile,
 } from '../api.ts'
+import { resolveFileUrl } from '../api.ts'
 import type { ProductProfile } from '../api.ts'
+import { Alert } from '../components/Alert.tsx'
+import { Button } from '../components/Button.tsx'
+import { EmptyState } from '../components/EmptyState.tsx'
+import { Field } from '../components/Field.tsx'
+import { PageHeader } from '../components/PageHeader.tsx'
+import { Icon } from '../components/Icon.tsx'
+import { Panel, PanelHeader } from '../components/Panel.tsx'
 
 type LoadStatus = 'loading' | 'ready'
 
@@ -53,10 +62,11 @@ export default function Profiles(): JSX.Element {
   const [sopNotice, setSopNotice] = useState<string | null>(null)
   const [existingProfile, setExistingProfile] = useState<ProductProfile | null>(null)
   const [overwriteArmed, setOverwriteArmed] = useState<boolean>(false)
+  const sopPanelRef = useRef<HTMLDivElement>(null)
+  const sopCategoryRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const controller = new AbortController()
-    setLoadStatus('loading')
     listProfiles(controller.signal)
       .then((loaded) => {
         setProfiles(loaded)
@@ -194,6 +204,11 @@ export default function Profiles(): JSX.Element {
       .finally(() => setSopBusy(false))
   }
 
+  const jumpToSop = (): void => {
+    sopPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    sopCategoryRef.current?.focus({ preventScroll: true })
+  }
+
   const handleRefresh = (): void => {
     setError(null)
     refreshList()
@@ -209,290 +224,292 @@ export default function Profiles(): JSX.Element {
       })
   }
 
+  const loaded = profiles.find((profile) => profile.id === selectedId) ?? null
+  const dirty = draft !== null && loaded !== null && JSON.stringify(draft) !== JSON.stringify(loaded)
+  const fade = { initial: { opacity: 0, y: -4 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0 }, transition: { duration: 0.15 } }
+
   return (
     <section aria-label="Profiles">
-      <h1 className="text-xl font-semibold">Profiles</h1>
-      <p className="mt-2 text-sm">List, edit, and import product profiles.</p>
+      <PageHeader title="Profiles" subtitle="What each product is checked for, and the rules the judge applies.">
+        <Button icon="file" onClick={jumpToSop}>
+          Draft from SOP
+        </Button>
+      </PageHeader>
 
-      {error !== null && (
-        <p role="alert" className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-          {error}
-        </p>
-      )}
-      {notice !== null && (
-        <p role="status" className="mt-3 rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">
-          {notice}
-        </p>
-      )}
+      <AnimatePresence>
+        {error !== null && (
+          <motion.div key="err" {...fade} className="mb-4">
+            <Alert>{error}</Alert>
+          </motion.div>
+        )}
+        {notice !== null && (
+          <motion.div key="notice" {...fade} className="mb-4">
+            <Alert kind="notice">{notice}</Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {loadStatus === 'loading' ? (
-        <p role="status" className="mt-6 text-sm text-neutral-500">
-          Loading profiles…
-        </p>
+        <EmptyState title="Loading profiles…" />
       ) : profiles.length === 0 ? (
-        <div className="mt-6 rounded border border-dashed border-neutral-300 px-4 py-10 text-center">
-          <p className="text-sm font-medium text-neutral-700">No profiles yet.</p>
-          <p className="mx-auto mt-1 max-w-md text-sm text-neutral-500">
-            Import your first profile from an SOP paragraph below, or add a profile JSON
-            file to the backend profiles directory and press Reload.
-          </p>
-          <button
-            type="button"
-            onClick={handleRefresh}
-            className="mt-4 rounded border border-neutral-300 bg-white px-4 py-1.5 text-sm font-medium"
-          >
-            Reload
-          </button>
-        </div>
+        <EmptyState
+          icon="sliders"
+          title="No profiles yet."
+          action={
+            <Button icon="refresh" onClick={handleRefresh}>
+              Reload
+            </Button>
+          }
+        >
+          Import your first profile from an SOP paragraph below, or add a profile JSON file to the backend
+          profiles directory and press Reload.
+        </EmptyState>
       ) : (
-        <div className="mt-6 grid gap-6 lg:grid-cols-[240px_1fr]">
-          <div>
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">All profiles</h2>
-              <button
-                type="button"
-                onClick={handleRefresh}
-                className="rounded border border-neutral-300 bg-white px-2 py-0.5 text-xs font-medium"
-              >
+        <div className="grid items-start gap-4 min-[1001px]:grid-cols-[260px_minmax(0,1fr)]">
+          <Panel>
+            <PanelHeader title={`${profiles.length} ${profiles.length === 1 ? 'profile' : 'profiles'}`}>
+              <Button variant="ghost" icon="refresh" onClick={handleRefresh} className="!min-h-8 !px-2">
                 Reload
-              </button>
-            </div>
-            <ul className="mt-2 space-y-1">
+              </Button>
+            </PanelHeader>
+            <ul>
               {profiles.map((profile) => (
-                <li key={profile.id}>
+                <li key={profile.id} className="border-b border-line last:border-b-0">
                   <button
                     type="button"
                     onClick={() => selectProfile(profile.id)}
                     aria-current={profile.id === selectedId ? 'true' : undefined}
-                    className={`block w-full rounded border px-3 py-2 text-left text-sm ${
-                      profile.id === selectedId
-                        ? 'border-neutral-900 bg-neutral-900 text-white'
-                        : 'border-neutral-300 bg-white hover:border-neutral-500'
+                    className={`flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left text-sm ${
+                      profile.id === selectedId ? 'bg-sunken' : 'hover:bg-sunken'
                     }`}
                   >
-                    <span className="block font-medium">{profile.name}</span>
-                    <span className={`block text-xs ${profile.id === selectedId ? 'text-neutral-300' : 'text-neutral-500'}`}>
-                      {profile.id}
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-ink">{profile.name}</span>
+                      <span className="block truncate font-mono text-xs text-ink-3">{profile.id}</span>
                     </span>
+                    <span className="num shrink-0 text-xs text-ink-3">{profile.defectPrompts.length} prompts</span>
                   </button>
                 </li>
               ))}
             </ul>
-          </div>
+          </Panel>
 
-          <div>
-            <h2 className="text-sm font-semibold">Edit profile</h2>
+          <Panel>
             {draft === null ? (
-              <p className="mt-2 text-sm text-neutral-500">
-                Select a profile on the left to edit it.
-              </p>
+              <div className="p-3.5">
+                <EmptyState icon="sliders" title="Select a profile">
+                  Pick a profile on the left to edit it.
+                </EmptyState>
+              </div>
             ) : (
-              <div className="mt-2 rounded border border-neutral-300 px-4 py-3">
-                <p className="text-xs text-neutral-500">
-                  Editing <span className="font-mono font-medium">{draft.id}</span> — ids
-                  are fixed; saving writes via PUT.
-                </p>
-                <label className="mt-3 flex flex-col gap-1 text-sm font-medium">
-                  Name
-                  <input
-                    type="text"
-                    value={draft.name}
-                    onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm font-normal"
-                  />
-                </label>
-                <label className="mt-3 flex flex-col gap-1 text-sm font-medium">
-                  Defect prompts <span className="font-normal text-neutral-500">(one per line)</span>
-                  <textarea
-                    value={promptsToText(draft.defectPrompts)}
-                    onChange={(event) =>
-                      setDraft({ ...draft, defectPrompts: textToPrompts(event.target.value) })
-                    }
-                    rows={4}
-                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm font-normal"
-                  />
-                </label>
-                <label className="mt-3 flex flex-col gap-1 text-sm font-medium">
-                  Rules
-                  <textarea
-                    value={draft.rules}
-                    onChange={(event) => setDraft({ ...draft, rules: event.target.value })}
-                    rows={4}
-                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm font-normal"
-                  />
-                </label>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <label className="flex flex-col gap-1 text-sm font-medium">
-                    mm per px <span className="font-normal text-neutral-500">(blank = none)</span>
+              <>
+                <PanelHeader title={draft.name || 'Untitled'}>
+                  <span className="text-xs text-ink-3">
+                    <span className="font-mono">{draft.id}</span> · Ids are fixed once created
+                  </span>
+                </PanelHeader>
+                <div className="flex flex-col gap-4 p-3.5">
+                  <Field label="Name">
                     <input
                       type="text"
-                      inputMode="decimal"
-                      value={draft.mmPerPx === null ? '' : String(draft.mmPerPx)}
-                      onChange={(event) =>
-                        setDraft({ ...draft, mmPerPx: parseNullableNumber(event.target.value) })
-                      }
-                      className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm font-normal"
+                      className="ctl"
+                      value={draft.name}
+                      onChange={(event) => setDraft({ ...draft, name: event.target.value })}
                     />
-                  </label>
-                  <label className="flex flex-col gap-1 text-sm font-medium">
-                    Min score
-                    <input
-                      type="number"
-                      step="0.05"
-                      min="0"
-                      max="1"
-                      value={draft.minScore}
-                      onChange={(event) => {
-                        const parsed = Number(event.target.value)
-                        setDraft({ ...draft, minScore: Number.isNaN(parsed) ? 0 : parsed })
-                      }}
-                      className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm font-normal"
+                  </Field>
+                  <Field label="Defect prompts" hint="What the segmenter looks for, one per line">
+                    <textarea
+                      className="ctl font-mono"
+                      rows={4}
+                      value={promptsToText(draft.defectPrompts)}
+                      onChange={(event) => setDraft({ ...draft, defectPrompts: textToPrompts(event.target.value) })}
                     />
-                  </label>
+                  </Field>
+                  <Field label="Rules" hint="Plain English. The judge cites these when it fails a part.">
+                    <textarea
+                      className="ctl"
+                      rows={4}
+                      value={draft.rules}
+                      onChange={(event) => setDraft({ ...draft, rules: event.target.value })}
+                    />
+                  </Field>
+                  <div className="grid gap-4 min-[641px]:grid-cols-3">
+                    <Field label="mm per px" hint="Blank = report pixels only">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        className="ctl num"
+                        value={draft.mmPerPx === null ? '' : String(draft.mmPerPx)}
+                        onChange={(event) => setDraft({ ...draft, mmPerPx: parseNullableNumber(event.target.value) })}
+                      />
+                    </Field>
+                    <Field label="Min score" hint="Candidates below this are dropped">
+                      <input
+                        type="number"
+                        step="0.05"
+                        min="0"
+                        max="1"
+                        className="ctl num"
+                        value={draft.minScore}
+                        onChange={(event) => {
+                          const parsed = Number(event.target.value)
+                          setDraft({ ...draft, minScore: Number.isNaN(parsed) ? 0 : parsed })
+                        }}
+                      />
+                    </Field>
+                    <Field label="Reference image" hint="Path; blank = none">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          className="ctl"
+                          value={draft.referenceImage ?? ''}
+                          onChange={(event) =>
+                            setDraft({
+                              ...draft,
+                              referenceImage: event.target.value.trim() === '' ? null : event.target.value.trim(),
+                            })
+                          }
+                        />
+                        {draft.referenceImage !== null && (
+                          <img
+                            src={resolveFileUrl(draft.referenceImage)}
+                            alt=""
+                            className="size-14 shrink-0 rounded-sm border border-line object-cover"
+                            onError={(event) => {
+                              event.currentTarget.style.visibility = 'hidden'
+                            }}
+                          />
+                        )}
+                      </div>
+                    </Field>
+                  </div>
                 </div>
-                <label className="mt-3 flex flex-col gap-1 text-sm font-medium">
-                  Reference image <span className="font-normal text-neutral-500">(blank = none)</span>
-                  <input
-                    type="text"
-                    value={draft.referenceImage ?? ''}
-                    onChange={(event) =>
-                      setDraft({
-                        ...draft,
-                        referenceImage:
-                          event.target.value.trim() === '' ? null : event.target.value.trim(),
-                      })
-                    }
-                    className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm font-normal"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={handleSaveEdit}
-                  disabled={saving || draft.name.trim() === ''}
-                  className="mt-4 rounded bg-neutral-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-                >
-                  {saving ? 'Saving…' : 'Save changes'}
-                </button>
-              </div>
+                <div className="flex items-center gap-3 border-t border-line px-3.5 py-2.5">
+                  <Button variant="primary" icon="save" onClick={handleSaveEdit} disabled={saving || draft.name.trim() === ''}>
+                    {saving ? 'Saving…' : 'Save profile'}
+                  </Button>
+                  {dirty && <span className="text-xs text-ink-3">Unsaved changes</span>}
+                </div>
+              </>
             )}
-          </div>
+          </Panel>
         </div>
       )}
 
-      <div className="mt-8">
-        <h2 className="text-sm font-semibold">Import from SOP</h2>
-        <p className="mt-1 text-sm text-neutral-600">
-          Draft a profile from an SOP paragraph. Drafting never saves anything — review
-          the draft, then save it under a new id.
-        </p>
-        <div className="mt-2 grid gap-3">
-          <label className="flex flex-col gap-1 text-sm font-medium">
-            Category name
+      <div ref={sopPanelRef} className="mt-4 scroll-mt-20">
+      <Panel>
+        <PanelHeader title={<><Icon name="file" />Import from SOP</>} />
+        <div className="flex flex-col gap-4 p-3.5">
+          <p className="text-[13px] text-ink-2">
+            Draft a profile from an SOP paragraph. Drafting never saves anything: review the draft, then save it
+            under a new id.
+          </p>
+          <Field label="Category name">
             <input
+              ref={sopCategoryRef}
               type="text"
+              className="ctl"
               value={sopCategory}
               onChange={(event) => setSopCategory(event.target.value)}
               placeholder="bottle"
-              className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm font-normal"
             />
-          </label>
-          <label className="flex flex-col gap-1 text-sm font-medium">
-            SOP text
+          </Field>
+          <Field label="SOP text">
             <textarea
+              className="ctl"
+              rows={5}
               value={sopText}
               onChange={(event) => setSopText(event.target.value)}
-              rows={5}
               placeholder="Paste the SOP paragraph describing defects and rules…"
-              className="rounded border border-neutral-300 bg-white px-3 py-2 text-sm font-normal"
             />
-          </label>
+          </Field>
           <div>
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              icon="sparkles"
               onClick={handleDraftFromSop}
               disabled={sopText.trim() === '' || sopCategory.trim() === '' || sopBusy}
-              className="rounded bg-neutral-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
             >
               {sopBusy && sopDraft === null ? 'Drafting…' : 'Draft from SOP'}
-            </button>
+            </Button>
           </div>
+
+          <AnimatePresence>
+            {sopError !== null && (
+              <motion.div key="serr" {...fade}>
+                <Alert>{sopError}</Alert>
+              </motion.div>
+            )}
+            {sopNotice !== null && (
+              <motion.div key="snotice" {...fade}>
+                <Alert kind="notice">{sopNotice}</Alert>
+              </motion.div>
+            )}
+            {sopDraft !== null && (
+              <motion.div key="draft" {...fade} className="rounded-md border border-line p-3.5">
+                <h3 className="text-[13px] font-semibold text-ink-2">Draft preview</h3>
+                <dl className="mt-2 space-y-1.5 text-sm">
+                  <div className="flex gap-3">
+                    <dt className="w-28 shrink-0 text-ink-3">Name</dt>
+                    <dd>{sopDraft.name}</dd>
+                  </div>
+                  <div className="flex gap-3">
+                    <dt className="w-28 shrink-0 text-ink-3">Suggested id</dt>
+                    <dd className="font-mono text-xs">{sopDraft.id}</dd>
+                  </div>
+                  <div className="flex gap-3">
+                    <dt className="w-28 shrink-0 text-ink-3">Rules</dt>
+                    <dd>{sopDraft.rules}</dd>
+                  </div>
+                  <div className="flex gap-3">
+                    <dt className="w-28 shrink-0 text-ink-3">Prompts</dt>
+                    <dd>{sopDraft.defectPrompts.join(', ')}</dd>
+                  </div>
+                </dl>
+                <div className="mt-4 flex flex-col gap-4">
+                  <Field label="Save as id">
+                    <input
+                      type="text"
+                      className="ctl font-mono"
+                      value={saveAsId}
+                      onChange={(event) => {
+                        setSaveAsId(event.target.value)
+                        setExistingProfile(null)
+                        setOverwriteArmed(false)
+                      }}
+                    />
+                  </Field>
+                  <AnimatePresence>
+                    {existingProfile !== null && !overwriteArmed && (
+                      <motion.div key="overwrite" {...fade}>
+                        <Alert>
+                          <p>
+                            Id <span className="font-mono font-medium">{existingProfile.id}</span> already exists (“
+                            {existingProfile.name}”). Saving would overwrite it.
+                          </p>
+                          <Button className="mt-2" onClick={() => setOverwriteArmed(true)}>
+                            I understand — overwrite this profile
+                          </Button>
+                        </Alert>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  {overwriteArmed && (
+                    <p className="text-sm font-medium text-fail">
+                      Overwrite confirmed. Press save to replace the existing profile.
+                    </p>
+                  )}
+                  <div>
+                    <Button variant="primary" icon="save" onClick={handleSaveDraftAsNew} disabled={saveAsId.trim() === '' || sopBusy}>
+                      {sopBusy ? 'Saving…' : overwriteArmed ? 'Overwrite existing profile' : 'Save as new profile'}
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-
-        {sopError !== null && (
-          <p role="alert" className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-            {sopError}
-          </p>
-        )}
-        {sopNotice !== null && (
-          <p role="status" className="mt-3 rounded border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">
-            {sopNotice}
-          </p>
-        )}
-
-        {sopDraft !== null && (
-          <div className="mt-4 rounded border border-neutral-300 px-4 py-3">
-            <h3 className="text-sm font-semibold">Draft preview</h3>
-            <dl className="mt-2 space-y-1 text-sm">
-              <div className="flex gap-2">
-                <dt className="w-28 shrink-0 font-medium text-neutral-600">Name</dt>
-                <dd>{sopDraft.name}</dd>
-              </div>
-              <div className="flex gap-2">
-                <dt className="w-28 shrink-0 font-medium text-neutral-600">Suggested id</dt>
-                <dd className="font-mono text-xs">{sopDraft.id}</dd>
-              </div>
-              <div className="flex gap-2">
-                <dt className="w-28 shrink-0 font-medium text-neutral-600">Rules</dt>
-                <dd className="text-neutral-800">{sopDraft.rules}</dd>
-              </div>
-              <div className="flex gap-2">
-                <dt className="w-28 shrink-0 font-medium text-neutral-600">Prompts</dt>
-                <dd>{sopDraft.defectPrompts.join(', ')}</dd>
-              </div>
-            </dl>
-            <label className="mt-3 flex flex-col gap-1 text-sm font-medium">
-              Save as id
-              <input
-                type="text"
-                value={saveAsId}
-                onChange={(event) => {
-                  setSaveAsId(event.target.value)
-                  setExistingProfile(null)
-                  setOverwriteArmed(false)
-                }}
-                className="rounded border border-neutral-300 bg-white px-2 py-1 font-mono text-sm font-normal"
-              />
-            </label>
-            {existingProfile !== null && !overwriteArmed && (
-              <div role="alert" className="mt-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                <p>
-                  Id <span className="font-mono font-medium">{existingProfile.id}</span>{' '}
-                  already exists (“{existingProfile.name}”). Saving would overwrite it.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setOverwriteArmed(true)}
-                  className="mt-2 rounded border border-amber-600 px-3 py-1 text-sm font-medium text-amber-900"
-                >
-                  I understand — overwrite this profile
-                </button>
-              </div>
-            )}
-            {overwriteArmed && (
-              <p className="mt-2 text-sm font-medium text-amber-900">
-                Overwrite confirmed. Press save to replace the existing profile.
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={handleSaveDraftAsNew}
-              disabled={saveAsId.trim() === '' || sopBusy}
-              className="mt-3 rounded bg-neutral-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-            >
-              {sopBusy ? 'Saving…' : overwriteArmed ? 'Overwrite existing profile' : 'Save as new profile'}
-            </button>
-          </div>
-        )}
+      </Panel>
       </div>
     </section>
   )
