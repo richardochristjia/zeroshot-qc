@@ -1,0 +1,4 @@
+- Plan says boxes draw in after overlay onLoad; DetectionBox already returns null until naturalSize is set by onLoad (src/pages/Inspect.tsx:36), so a mount animation on the box is the load-triggered draw-in. Box scale uses transform only.
+- Plan says motion keyed on result.id must not replay for aborted requests; setResult runs only for non-aborted responses, so keying the verdict content on result.id is safe.
+- Tab underline layoutId already exists (src/App.tsx); Profiles/Synthetic alerts, SOP preview and overwrite warning were animated in their rebuilds. Remaining: MotionConfig (main.tsx), route fade (App.tsx), Inspect alert + verdict + rulings + boxes.
+- Route fade is opacity-only keyed on pathname via a motion.div around Routes (no AnimatePresence exit, to avoid double-mounted pages and layout jumps).

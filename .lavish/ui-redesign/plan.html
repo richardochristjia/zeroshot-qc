@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" data-lavish-annotate="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI Redesign Plan</title>
+<style>
+  :root { --bg:#f6f5f2; --card:#fff; --ink:#1b1c1e; --mute:#5b5e63; --line:#dcdad4; --acc:#1e3a5f; --pass:#0f6b4f; --fail:#a8322a; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141517; --card:#1c1d20; --ink:#ececea; --mute:#a3a6ab; --line:#2e3034; --acc:#8fb3e0; --pass:#5fc7a0; --fail:#ef8a80; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.55 system-ui, sans-serif; }
+  main { max-width:900px; margin:0 auto; padding:32px 16px 72px; }
+  h1 { font-size:24px; margin:0 0 2px; } h2 { font-size:17px; margin:32px 0 8px; border-bottom:1px solid var(--line); padding-bottom:4px; }
+  h3 { font-size:15px; margin:16px 0 4px; }
+  .meta { color:var(--mute); font-size:14px; }
+  .tier { display:inline-block; border:1px solid var(--acc); color:var(--acc); border-radius:4px; padding:0 6px; font-weight:600; font-size:13px; }
+  ol, ul { padding-left:20px; margin:6px 0; } li { margin:3px 0; }
+  table { width:100%; border-collapse:collapse; font-size:14px; margin-top:6px; display:block; overflow-x:auto; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--mute); font-weight:600; }
+  code { font-size:13px; background:var(--card); border:1px solid var(--line); border-radius:3px; padding:0 3px; overflow-wrap:anywhere; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px 16px; margin-top:8px; }
+  .entry { font-family:ui-monospace, monospace; font-size:13px; }
+  .bad { color:var(--fail); font-weight:600; } .ok { color:var(--pass); font-weight:600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ZeroShot QC — frontend UI/UX redesign</h1>
+  <p class="meta"><span class="tier">Tier L</span> The tier script estimated M from file count. Raised to L: every screen a user sees changes, with 6+ substantial source files (<code>App.tsx</code>, <code>index.css</code>, 4 pages, new <code>components/</code>). No auth, API or server change.</p>
+
+  <h2>Decisions (from your answers)</h2>
+  <table>
+    <tr><th>#</th><th>Choice</th></tr>
+    <tr><td>1</td><td>Light "inspection bench" + dark parity, one token set</td></tr>
+    <tr><td>2</td><td>Visual + layout/flow rework, <b>no backend change</b></td></tr>
+    <tr><td>3</td><td>Compact top bar: product mark, 4 tabs, backend health dot</td></tr>
+    <tr><td>4</td><td>Fira Sans + Fira Code self-hosted via <code>@fontsource</code></td></tr>
+    <tr><td>5</td><td>House primitives in <code>src/components/</code> + Tailwind v4 <code>@theme</code> tokens</td></tr>
+    <tr><td>6</td><td>Taste gate: 0 FAIL, 4 pages × 3 widths × light/dark; WARNs fixed or named <code>--allow</code></td></tr>
+    <tr><td>P1</td><td>Inspect layout = <b>prototype C</b>: Reference + Under test cards side by side (12px gap), full verdict card on the right</td></tr>
+    <tr><td>P2</td><td>One line-icon set (inline SVG, 1.8px stroke) on tabs, theme switch, buttons, panel titles, timings, verdict, Defect/Cleared tags. No icons on KPI numbers.</td></tr>
+    <tr><td>P3</td><td>Dark danger red <code>#ff5c50</code>; chips on red/amber use dark text in dark mode</td></tr>
+    <tr><td>P4</td><td>Buttons centre their content; Generate sizes to its label</td></tr>
+    <tr><td>P5</td><td><b>Motion</b> (<code>motion@14</code>, formerly Framer Motion, <code>motion/react</code>) wherever an animation or transition helps</td></tr>
+  </table>
+  <p class="meta">Prototype: <code>.lavish/ui-redesign/proto/index.html</code> (throwaway; P1–P4 settled there). Decided by me: the top bar gets a <b>System / Light / Dark</b> theme switch, saved in <code>localStorage</code>. Reason: the taste inspector has no colour-scheme flag. Without the switch it can only test the OS theme. QC stations also often need a forced theme.</p>
+
+  <h2>Problem</h2>
+  <ul>
+    <li>All 4 pages <span class="bad">FAIL</span> the taste inspector today. <code>index.css</code> turns the body dark, but pages hardcode light greys, e.g. <code>bg-white</code> inputs at <code>Inspect.tsx:169</code>. Dark-OS users get unreadable titles and white boxes.</li>
+    <li>No design system: about 60 duplicated class strings, raw Tailwind greys, no tokens, a system font.</li>
+    <li>Each page has two <code>h1</code>s (<code>App.tsx:17</code> plus each page's own). Eval numbers are left-aligned without tabular figures. Inspect and Synthetic open on a mostly empty screen.</li>
+    <li>Inspect, the main job, reads as a form, not a workbench. The verdict sits below the fold, and detections link to the overlay only on hover.</li>
+  </ul>
+
+  <h2>Solution</h2>
+  <p>Build a small token-driven design system with ui-ux-pro-max: Swiss minimal, Fira type, and colour only on data. Rebuild the shell and all 4 pages on it, following taste-skill's <code>app-screens.md</code> rules: flat surfaces, a receding nav, type-led KPIs, honest empty and zero states, and the product's own name and mark. Then run taste-skill's inspector in a look-and-fix loop until the gate passes.</p>
+  <div class="card">
+    <b>Product face (taste-skill "one face" rule):</b> a monogram mark drawn from a lens/reticle, in the accent colour.<br>
+    <b>Signature element:</b> the Inspect compare view. The reference sits beside the part under test, whose numbered boxes match the numbered ruling rows. Hover or focus on either side highlights both.<br>
+    <b>Semantic colour only:</b> PASS green, FAIL red, detection amber, plus one data hue for metric bars. Everything else is neutral.<br>
+    <b>Trade words:</b> "Verdict", "Rulings", "Missed defects", "Reference image", "Defect prompts". No generic "Items" or "Records".
+  </div>
+
+  <h2>Phases</h2>
+  <ol>
+    <li><b>Design system.</b> Run ui-ux-pro-max <code>--design-system</code>, then <code>--stack react</code>/tailwind and the ux-domain checks. Write three token layers (primitive → semantic → component) as CSS variables in <code>index.css</code>, mapped through <code>@theme</code>: colour, type scale, spacing, radius, motion. Define light, dark, and <code>[data-theme]</code> overrides. Add <code>@fontsource/fira-sans</code> and <code>@fontsource/fira-code</code>. Add a short <code>docs/design-system.md</code> listing the tokens and the do/don't rules.</li>
+    <li><b>Primitives.</b> In <code>src/components/</code>: Button (primary/secondary/ghost, centred icon + label), Field (label + input/select/textarea + hint/error), Panel, Alert, VerdictBadge, PageHeader, EmptyState, and an <code>Icon</code> sprite with the prototype's icon set. Each gets visible focus rings and 44px touch targets. Add <code>motion</code> and wrap the app in <code>&lt;MotionConfig reducedMotion="user"&gt;</code>.</li>
+    <li><b>Shell.</b> Rebuild <code>App.tsx</code> as a top bar with mark, name, tabs (neutral active state), a health dot (new <code>getHealth()</code> in <code>api.ts</code> calling the existing <code>/api/health</code>), and the theme switch. Only one <code>h1</code> per page, owned by the page.</li>
+    <li><b>Inspect (prototype C).</b> Profile picker, drop zone (drag-and-drop or file picker; still file-based) and Inspect button on top. Below: Reference card (the profile's <code>reference_image</code>; "No reference set" empty frame when missing) and Under test card with numbered boxes, then the verdict card: FAIL/PASS headline with icon, summary, numbered rulings, timings, rules override. An empty state shows a drop target plus the profile's rules and prompts. All current behaviour is kept: the debounced judge-only re-run, abort on new keystroke, and clear-to-restore.</li>
+    <li><b>Profiles.</b> Profile list beside the editor, with the SOP import as its own panel. All current save, overwrite and validation flows are kept.</li>
+    <li><b>Eval.</b> Run picker, then a run summary as type-led KPIs (F1, precision, recall, AUROC), then the category table: right-aligned, tabular figures, no zebra. F1 bars use the one data hue. Still read-only.</li>
+    <li><b>Synthetic.</b> Image/mask pair grid grouped by profile and defect, plus the existing generate controls.</li>
+    <li><b>Motion pass.</b> Use <code>motion</code> only where it carries meaning, at 150–250ms:
+      <ul>
+        <li>The verdict card and rulings fade and rise in on a new result, with rulings staggered.</li>
+        <li>Detection boxes draw in after the image loads.</li>
+        <li>A crossfade marks a re-judge with edited rules.</li>
+        <li>Page content fades between tabs.</li>
+        <li>The active tab underline slides (<code>layoutId</code>).</li>
+        <li>The Synthetic grid reflows on filter change (<code>layout</code>).</li>
+        <li>Alerts and the SOP draft preview enter and leave (<code>AnimatePresence</code>).</li>
+        <li>The mask overlay fades.</li>
+      </ul>
+      Under <code>prefers-reduced-motion</code> nothing moves.</li>
+    <li><b>Taste gate loop.</b> Run <code>vite build</code> + <code>vite preview</code> against the backend with <code>USE_FAKE_ADAPTERS=true</code>. Run <code>inspect.mjs --app</code> on 4 routes × light/dark. Read the screenshots, fix the top 3 problems, and repeat, up to 3 rounds. Write the final reports to <code>.plans/ui-redesign/taste/</code>.</li>
+    <li><b>Update the Record</b> with the entries below, checked against the final code.</li>
+  </ol>
+
+  <h2>Anti-goals</h2>
+  <ul>
+    <li>No backend/API change except reading the existing <code>/api/health</code>. No webcam capture, no launching eval runs (both contradict the RECORD).</li>
+    <li>No UI kit and no icon font: icons are inline SVG. <code>motion</code> is the only new runtime dependency besides the fonts. No decorative or looping animation, and no motion on numbers that update.</li>
+    <li>No KPI tiles with tinted icon circles or sparklines, no gradients, no emoji (taste-skill tells).</li>
+  </ul>
+
+  <h2>Acceptance criteria</h2>
+  <h3>Automated</h3>
+  <ol>
+    <li><code>npm run build</code>, <code>npm run lint</code>, <code>npm test</code> pass in <code>frontend/</code>.</li>
+    <li>The taste inspector <code>--app</code> reports <b>0 FAIL</b> on <code>/</code>, <code>/profiles</code>, <code>/eval</code>, <code>/synthetic</code> at 1440/768/390, in both light and dark. Each remaining WARN is listed with its reason and <code>--allow</code> name.</li>
+    <li>Pages render only colours from tokens: a grep finds no raw <code>neutral-*/red-*/green-*/amber-*</code> Tailwind palette classes in <code>src/pages</code> or <code>src/App.tsx</code>.</li>
+    <li>Each page has exactly 1 <code>h1</code>.</li>
+    <li>Browser walkthrough against the fake backend: inspect an image, then edit rules and see the verdict re-judge; save a profile; open an eval run; view the synthetic gallery. Each works at 390px with no horizontal scroll.</li>
+    <li>The theme switch persists across reload and overrides the OS setting. "System" follows the OS.</li>
+    <li>With the OS set to reduce motion, no element animates: <code>MotionConfig reducedMotion="user"</code> is in place and the inspector's motion check passes.</li>
+    <li>Fonts load from the bundle: the built <code>dist/</code> has <code>.woff2</code> files and makes no request to <code>fonts.googleapis.com</code>.</li>
+  </ol>
+  <h3>Manual</h3>
+  <ul>
+    <li><code>manual:</code> With real SAM/Muse keys, run one real inspection. Check that the overlay boxes line up with the defects on a real MVTec image.</li>
+    <li><code>manual:</code> Open the docker-compose build (<code>docker compose up</code>) and check that the fonts and theme render behind nginx.</li>
+  </ul>
+
+  <h2>Test cases</h2>
+  <table>
+    <tr><th>Case</th><th>Kind</th><th>Expected</th></tr>
+    <tr><td>Theme resolver: stored "dark"/"light"/missing/garbage</td><td>vitest</td><td>dark / light / system / system</td></tr>
+    <tr><td>Box geometry: bbox → % for zero size and normal image</td><td>vitest</td><td>null when size is 0; correct % otherwise</td></tr>
+    <tr><td>Health dot: backend up / down</td><td>vitest (mock fetch)</td><td>"ok" / "down", no throw</td></tr>
+    <tr><td>Existing <code>url-join.test.ts</code></td><td>vitest</td><td>still green</td></tr>
+    <tr><td>Drop a PNG on the drop zone, then Inspect</td><td>browser</td><td>preview shows; verdict + numbered boxes appear</td></tr>
+    <tr><td>Profile with no reference image</td><td>browser</td><td>Reference card shows a framed "No reference set"; layout holds</td></tr>
+    <tr><td>New verdict / re-judge</td><td>browser</td><td>verdict and rulings animate in once; no animation with reduced motion</td></tr>
+    <tr><td>Hover ruling #2</td><td>browser</td><td>box #2 highlighted; also works with keyboard focus</td></tr>
+    <tr><td>Type rules, then clear them</td><td>browser</td><td>re-judges after ~500ms; clearing restores profile rules</td></tr>
+    <tr><td>Backend stopped, load Inspect</td><td>browser</td><td>health dot red; Alert shows "Could not load profiles."; no blank screen</td></tr>
+    <tr><td>Eval with no runs / with runs</td><td>browser</td><td>framed empty state / right-aligned tabular table</td></tr>
+    <tr><td>Each route × light/dark × 3 widths</td><td>taste inspector</td><td>0 FAIL</td></tr>
+  </table>
+
+  <h2>What the probes showed</h2>
+  <ul>
+    <li><b>Taste inspector on the current app</b> (dev server, fake backend, OS dark): <span class="bad">4/4 FAIL</span>, all on contrast. WARNs: many-h1, hero-void, unused-canvas, numeric-align, tabular. This confirmed the dark-mode break is real, not theoretical.</li>
+    <li><b>The inspector has no colour-scheme flag.</b> It follows the OS. That shaped the design: the theme switch makes light/dark testable.</li>
+    <li><b>The inspector drives the local Chrome over CDP</b> and needs no npm install. It works against <code>localhost</code>.</li>
+    <li><b>The backend runs with <code>USE_FAKE_ADAPTERS=true</code>, no keys needed.</b> The <code>/api/profiles</code> data and existing <code>data/runs</code> + <code>data/synth</code> give every page real content for the gate.</li>
+    <li><b>Throwaway prototype</b> with real profiles, eval metrics and the fake inspect shape. Inspect C: 0 FAIL at 1440/768/390. Its one WARN (the image cards end shorter than the verdict card) becomes a named <code>--allow</code>. It also caught that inline grid styles beat media queries (tablet overflow), and that the icons widen the top bar at 768px, so the theme switch shows icons only there.</li>
+    <li><b><code>motion@14.7.1</code></b> peers allow React 18 and 19, so it is compatible with this app's <code>react@^19.3</code>.</li>
+    <li><b>Data issue (out of scope):</b> <code>data/synth/bottle/scratch/*.png</code> show cats, dogs and a portrait, not bottles. The Synthetic page renders whatever is there. Generation needs its own diagnosis.</li>
+    <li><b>ui-ux-pro-max <code>--design-system</code></b> suggested a Swiss minimal style with Fira Sans/Code (kept). It also suggested a navy/green palette (adapted: colour only on data) and a "Hero + CTA" landing pattern (<span class="bad">dropped</span>, wrong for an app).</li>
+  </ul>
+
+  <h2>Record Updates</h2>
+  <div class="card entry">
+    - (frontend) The web app currently themes light and dark from one set of design tokens, following the system colour scheme unless the user picks a theme.<br>
+    - (frontend) The web app currently self-hosts its typefaces and requests no third-party fonts.<br>
+    - (frontend) The web app currently shows backend reachability in its top bar from GET /api/health.
+  </div>
+</main>
+</body>
+</html>

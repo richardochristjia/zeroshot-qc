@@ -1,0 +1,3 @@
+- Plan says Tailwind classes like `text-ink`; Tailwind v4 `@theme inline` with `--color-*` entries does this (frontend/src/index.css was system-font only). Done as planned.
+- Plan step 1 ui-ux-pro-max: ran design-system, react stack and ux queries (search.py present). Output matches the plan: keep Swiss minimal + #1E3A5F accent; drop Hero+CTA. Read taste-skill references/app-screens.md exists; rules already summarised in plan.
+- Old pages still use raw neutral classes; global h1/h2 base styles will touch them until later phases rebuild them (acceptable).

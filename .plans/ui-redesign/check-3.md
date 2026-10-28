@@ -1,0 +1,5 @@
+- Plan: IconSprite mounted in App; Icon.tsx already exports it (check-2), App.tsx still has the old h1 shell (src/App.tsx:15). Mount it in the new App.
+- Plan says getHealth uses getJson; getJson throws ApiError on non-2xx (src/api.ts:555), so getHealth wraps it in try/catch and rethrows only AbortError.
+- Plan: MotionConfig goes in main.tsx; tasks.md puts it in the Motion phase, so layoutId tab underline is added in this phase with motion's `motion.span` and MotionConfig stays later.
+- public/favicon.svg is the Vite scaffold purple bolt and untracked (whole public/ is untracked); overwrite it and git add only favicon.svg (icons.svg is scaffold leftover, left alone).
+- index.html has no theme script or color-scheme meta; both added.

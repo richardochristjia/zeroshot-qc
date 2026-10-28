@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" data-lavish-annotate="off">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI Redesign Decisions</title>
+<style>
+  :root { --bg:#f6f5f2; --card:#fff; --ink:#1b1c1e; --mute:#5b5e63; --line:#dcdad4; --acc:#1e3a5f; --rec:#0f6b4f; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141517; --card:#1c1d20; --ink:#ececea; --mute:#a3a6ab; --line:#2e3034; --acc:#8fb3e0; --rec:#5fc7a0; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui, sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:32px 16px 64px; }
+  h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:16px; margin:0 0 6px; }
+  p.lede { color:var(--mute); margin:0 0 24px; }
+  .facts { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin-bottom:28px; }
+  figure { margin:0; background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px; min-width:0; }
+  figure img { width:100%; border-radius:4px; display:block; }
+  figcaption { font-size:13px; color:var(--mute); margin-top:6px; }
+  ul.find { margin:0 0 28px; padding-left:18px; color:var(--mute); font-size:14px; }
+  form { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; }
+  label.opt { display:flex; gap:10px; padding:10px; border:1px solid var(--line); border-radius:6px; margin-top:8px; cursor:pointer; }
+  label.opt:has(input:checked) { border-color:var(--acc); outline:1px solid var(--acc); }
+  label.opt b { display:block; } label.opt span { color:var(--mute); font-size:14px; }
+  .rec { color:var(--rec); font-weight:600; font-size:13px; }
+  button { margin-top:12px; font:inherit; font-size:14px; padding:6px 14px; border-radius:6px; border:1px solid var(--acc); background:var(--acc); color:var(--card); cursor:pointer; }
+  code { font-size:13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>ZeroShot QC — UI redesign: 6 decisions</h1>
+  <p class="lede">Planning only. Pick an option per question, queue each, then Send to Agent. Recommended options are pre-selected.</p>
+
+  <div class="facts">
+    <figure><img src="before-inspect.jpg" alt="Current Inspect page in dark system theme"><figcaption>Inspect today (OS in dark mode): page title near-invisible, white inputs on dark body.</figcaption></figure>
+    <figure><img src="before-profiles.jpg" alt="Current Profiles page in dark system theme"><figcaption>Profiles today: same contrast break.</figcaption></figure>
+  </div>
+  <h2>What the probes showed</h2>
+  <ul class="find">
+    <li>Taste inspector (<code>--app</code>) baseline: <b>all 4 pages FAIL</b> on contrast. <code>index.css</code> flips body to dark, but every page hardcodes light Tailwind greys (e.g. <code>Inspect.tsx:169</code>).</li>
+    <li>Also flagged: 2 <code>h1</code> per page (<code>App.tsx:17</code> + each page), Eval numbers left-aligned without tabular figures, large empty first screen on Inspect/Synthetic.</li>
+    <li>ui-ux-pro-max <code>--design-system</code>: style "Minimalism &amp; Swiss", fonts Fira Sans + Fira Code, navy primary. Its "Hero + CTA" pattern is landing-page — dropped for an app.</li>
+    <li>No component layer: ~60 repeated inline class strings across 4 pages (buttons, inputs, alerts).</li>
+  </ul>
+
+  <form data-lavish-question="q1-look" onsubmit="event.preventDefault(); q(this,'q1-look','Q1 look & theme')">
+    <h2>1. Look &amp; theme</h2>
+    <label class="opt"><input type="radio" name="q1" value="A" checked><div><b>A. Light "inspection bench" + dark parity via system setting</b><span>Warm-neutral ground, ink text, colour only on data: PASS/FAIL, detection boxes, metric bars. One token set, both themes. Fixes today's dark break at the root.</span><div class="rec">Recommended — body already flips to dark; tokens make both correct for small cost.</div></div></label>
+    <label class="opt"><input type="radio" name="q1" value="B"><div><b>B. Light only</b><span>Drop dark mode. Least work; dark-OS users get light UI.</span></div></label>
+    <label class="opt"><input type="radio" name="q1" value="C"><div><b>C. Dark-first control room</b><span>Dark default, image-centric. Suits dim QC stations; worse for long form editing (Profiles).</span></div></label>
+    <button type="submit">Queue answer</button>
+  </form>
+
+  <form data-lavish-question="q2-scope" onsubmit="event.preventDefault(); q(this,'q2-scope','Q2 UX scope')">
+    <h2>2. How far does "redesign UX" go?</h2>
+    <label class="opt"><input type="radio" name="q2" value="A"><div><b>A. Visual only</b><span>Same layouts and flows, new skin.</span></div></label>
+    <label class="opt"><input type="radio" name="q2" value="B" checked><div><b>B. Visual + layout/flow rework, no backend change</b><span>Inspect becomes a workbench: drag-and-drop drop zone, verdict as headline, detection list linked to overlay boxes, rules override beside the result. Profiles: list/editor split with SOP import as its own panel. Eval: run picker + right-aligned tabular metrics. Synthetic: image/mask grid. Same API calls.</span><div class="rec">Recommended — biggest gain, zero API/record risk.</div></div></label>
+    <label class="opt"><input type="radio" name="q2" value="C"><div><b>C. B + new capabilities</b><span>E.g. webcam capture, launching eval runs. Contradicts RECORD: "Eval page never launches runs", "upload is file-based without webcam". Needs backend work.</span></div></label>
+    <button type="submit">Queue answer</button>
+  </form>
+
+  <form data-lavish-question="q3-shell" onsubmit="event.preventDefault(); q(this,'q3-shell','Q3 app shell')">
+    <h2>3. App shell / navigation</h2>
+    <label class="opt"><input type="radio" name="q3" value="A" checked><div><b>A. Compact top bar: product mark + 4 tabs + backend health dot</b><span>Full width left for the image workbench.</span><div class="rec">Recommended — only 4 pages; Inspect needs horizontal room.</div></div></label>
+    <label class="opt"><input type="radio" name="q3" value="B"><div><b>B. Left sidebar with labels</b><span>Room to grow past 4 pages; costs ~220px width on every screen.</span></div></label>
+    <button type="submit">Queue answer</button>
+  </form>
+
+  <form data-lavish-question="q4-fonts" onsubmit="event.preventDefault(); q(this,'q4-fonts','Q4 font loading')">
+    <h2>4. Font loading (Fira Sans + Fira Code)</h2>
+    <label class="opt"><input type="radio" name="q4" value="A" checked><div><b>A. Self-host via <code>@fontsource</code> npm packages</b><span>+2 deps, bundled into the static build, works on an offline factory LAN.</span><div class="rec">Recommended — QC stations are often air-gapped; no third-party request.</div></div></label>
+    <label class="opt"><input type="radio" name="q4" value="B"><div><b>B. Google Fonts <code>&lt;link&gt;</code></b><span>No deps. Fails silently offline (falls back to system font, which taste-skill flags).</span></div></label>
+    <button type="submit">Queue answer</button>
+  </form>
+
+  <form data-lavish-question="q5-components" onsubmit="event.preventDefault(); q(this,'q5-components','Q5 component layer')">
+    <h2>5. Component layer</h2>
+    <label class="opt"><input type="radio" name="q5" value="A" checked><div><b>A. Small house primitives + Tailwind v4 <code>@theme</code> tokens</b><span>One <code>components/</code> folder: Button, Field, Panel, Alert, VerdictBadge, PageHeader. No new UI library.</span><div class="rec">Recommended — 4 pages don't need a kit; zero runtime deps.</div></div></label>
+    <label class="opt"><input type="radio" name="q5" value="B"><div><b>B. shadcn/ui (Radix)</b><span>Accessible primitives for free; adds Radix deps + generated files; stock shadcn look is a known "AI default" tell.</span></div></label>
+    <button type="submit">Queue answer</button>
+  </form>
+
+  <form data-lavish-question="q6-gate" onsubmit="event.preventDefault(); q(this,'q6-gate','Q6 taste gate')">
+    <h2>6. Taste-skill pass bar</h2>
+    <label class="opt"><input type="radio" name="q6" value="A" checked><div><b>A. 0 FAIL on all 4 pages × 3 widths, in light and dark; every WARN fixed or justified with a named <code>--allow</code></b><span>Run against <code>vite preview</code> (production build) with fake backend, so the dev-server warn disappears.</span><div class="rec">Recommended — strict but leaves room for warns that don't fit an inspection tool.</div></div></label>
+    <label class="opt"><input type="radio" name="q6" value="B"><div><b>B. 0 FAIL and 0 WARN, no allows</b><span>Strictest; may force design changes that hurt the workflow.</span></div></label>
+    <button type="submit">Queue answer</button>
+  </form>
+</main>
+<script>
+function q(form, key, label) {
+  const v = new FormData(form).values().next().value;
+  if (!v) return;
+  const text = form.querySelector('input:checked').closest('label').querySelector('b').textContent;
+  window.lavish?.queuePrompt(label + ': ' + text, { tag: 'choice', text: label + ': ' + v, element: form, queueKey: key, data: { question: key, answer: v } });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+- Plan says boxPercent comes out of HoverBox (src/pages/Inspect.tsx:31-35); it returns null for non-positive natural size, so geometry.ts returns null too.
+- Plan wants the Reference image from profile.referenceImage; ProductProfile has it (src/api.ts:61) as a /files URL or null, run through resolveFileUrl, with onError falling back to the empty frame.
+- Plan says verdict card keeps the debounced re-judge; the effect (Inspect.tsx:129-148) depends only on rulesText and reads file/profile via refs, so it is kept verbatim.
+- Plan has ruling index = detections order; rulings are matched by detectionId, so a ruling-less detection renders as cleared (detect colour).
+- Plan's drop zone feeds handleFileChange; that takes a ChangeEvent, so it is refactored to a pickFile(File|null) used by both input and drop.
+- Plan says the Inspect button is disabled with no file; the empty-state panel has its own disabled Inspect button, the run bar one stays enabled only with a file.
+- Chosen: box tag and numbered chip use 1-based index of detections order; no-reference frame sits inside the Reference card.

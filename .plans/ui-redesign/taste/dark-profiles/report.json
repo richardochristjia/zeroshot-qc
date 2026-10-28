@@ -1,0 +1,1349 @@
+{
+ "url": "http://localhost:4181/profiles",
+ "at": "2026-10-28T04:21:26.532Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 2,
+   "filled": [
+    0.69,
+    0.5
+   ],
+   "motion": {
+    "elements": 2,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 2,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 1559,
+     "screens": 1.7,
+     "words": 180,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 14,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Profiles",
+     "words": 1,
+     "chars": 8,
+     "lines": 1,
+     "size": 20,
+     "vw": 1.4,
+     "font": "Fira Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.5,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Profiles",
+     "words": 1,
+     "lines": 1,
+     "size": 20,
+     "font": "Fira Sans"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Fira Sans",
+       "share": 0.86,
+       "mono": false
+      },
+      {
+       "family": "Fira Code",
+       "share": 0.14,
+       "mono": true
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      12,
+      13,
+      14,
+      15,
+      20
+     ],
+     "sizeCount": 5,
+     "notLoaded": [],
+     "body": {
+      "font": "Fira Sans",
+      "size": 13,
+      "leading": 1.5,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 7.7
+     },
+     "measureChars": 198,
+     "max": {
+      "size": 20,
+      "vw": 1.4,
+      "font": "Fira Sans",
+      "text": "Profiles"
+     },
+     "monoShare": 0.14,
+     "monoProseShare": 0.1,
+     "monoFamilies": [
+      "Fira Code"
+     ],
+     "monoSamples": [
+      "bottle-sop-test",
+      "bottle",
+      "cable",
+      "capsule",
+      "carpet",
+      "grid"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.05,
+     "smallText": 8
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#111214",
+     "bodyBgHsl": {
+      "h": 220,
+      "s": 0.08,
+      "l": 0.07
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#18191c",
+       "top": 141,
+       "hsl": {
+        "h": 225,
+        "s": 0.08,
+        "l": 0.1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#8b8e95",
+       "share": 0.38
+      },
+      {
+       "color": "#ebeae6",
+       "share": 0.33
+      },
+      {
+       "color": "#a3a6ad",
+       "share": 0.28
+      },
+      {
+       "color": "#111214",
+       "share": 0.02
+      }
+     ],
+     "button": {
+      "bg": "#1e1f23",
+      "hsl": {
+       "h": 228,
+       "s": 0.08,
+       "l": 0.13
+      },
+      "fg": "#ebeae6"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 6,
+     "inHero": 5,
+     "radius": 6,
+     "height": 36,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Dark",
+      "Draft from SOP",
+      "Reload",
+      "bottle-sop-test bottle-sop-test 4 prompt",
+      "Save profile"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 20,
+     "hairlineSamples": [
+      "header.sticky.top-0 1440px",
+      "div.flex.items-center 258px",
+      "li.border-b.border-line 258px",
+      "li.border-b.border-line 258px",
+      "li.border-b.border-line 258px"
+     ],
+     "outlinedBoxes": 3,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 6,
+     "boxRadius": 6,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 4,
+     "fixed": true,
+     "height": 53,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "fira sans",
+     "fira code"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 1559,
+    "margins": {
+     "left": 60,
+     "right": 60
+    },
+    "sections": [
+     {
+      "sel": "div.grid.items-start",
+      "tag": "div",
+      "top": 141,
+      "height": 966,
+      "words": 105,
+      "media": 0,
+      "middle": 32,
+      "heading": {
+       "text": "16 profiles",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 61,
+      "right": 75,
+      "textLeft": 75,
+      "textRight": 75,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.mt-4.scroll-mt-20",
+      "tag": "div",
+      "top": 1123,
+      "height": 372,
+      "words": 30,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Import from SOP",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 75,
+      "right": 75,
+      "textLeft": 75,
+      "textRight": 694,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Profiles",
+      "size": 20,
+      "top": 73,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 60,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0.18,
+    "voidBox": {
+     "x": 480,
+     "y": 660,
+     "w": 960,
+     "h": 240
+    }
+   },
+   "app": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "dark": true,
+    "ground": "#111214",
+    "sidebar": null,
+    "topbar": {
+     "h": 53
+    },
+    "canvas": {
+     "left": 60,
+     "right": 60
+    },
+    "hero": {
+     "text": "Profiles",
+     "words": 1,
+     "chars": 8,
+     "lines": 1,
+     "size": 20,
+     "vw": 1.4,
+     "font": "Fira Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.5,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 3,
+     "firstScreen": 2,
+     "ragged": [
+      {
+       "diff": 375,
+       "top": 141
+      }
+     ],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 3,
+     "radii": [
+      [
+       6,
+       3
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.37,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      12,
+      13,
+      14,
+      15,
+      20
+     ]
+    },
+    "title": {
+     "text": "Profiles",
+     "size": 20,
+     "top": 73
+    },
+    "colourShare": 0.002
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 3,
+   "filled": [
+    0.88,
+    0.92,
+    0.8
+   ],
+   "motion": {
+    "elements": 2,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 2,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 2167,
+     "screens": 2.1,
+     "words": 175,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 14,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Profiles",
+     "words": 1,
+     "chars": 8,
+     "lines": 1,
+     "size": 20,
+     "vw": 2.6,
+     "font": "Fira Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.5,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Profiles",
+     "words": 1,
+     "lines": 1,
+     "size": 20,
+     "font": "Fira Sans"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Fira Sans",
+       "share": 0.86,
+       "mono": false
+      },
+      {
+       "family": "Fira Code",
+       "share": 0.14,
+       "mono": true
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      12,
+      13,
+      14,
+      15,
+      20
+     ],
+     "sizeCount": 5,
+     "notLoaded": [],
+     "body": {
+      "font": "Fira Sans",
+      "size": 13,
+      "leading": 1.5,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 7.7
+     },
+     "measureChars": 107,
+     "max": {
+      "size": 20,
+      "vw": 2.6,
+      "font": "Fira Sans",
+      "text": "Profiles"
+     },
+     "monoShare": 0.14,
+     "monoProseShare": 0.1,
+     "monoFamilies": [
+      "Fira Code"
+     ],
+     "monoSamples": [
+      "bottle-sop-test",
+      "bottle",
+      "cable",
+      "capsule",
+      "carpet",
+      "grid"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.04,
+     "smallText": 8
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#111214",
+     "bodyBgHsl": {
+      "h": 220,
+      "s": 0.08,
+      "l": 0.07
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#18191c",
+       "top": 141,
+       "hsl": {
+        "h": 225,
+        "s": 0.08,
+        "l": 0.1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#8b8e95",
+       "share": 0.38
+      },
+      {
+       "color": "#ebeae6",
+       "share": 0.33
+      },
+      {
+       "color": "#a3a6ad",
+       "share": 0.26
+      },
+      {
+       "color": "#111214",
+       "share": 0.02
+      }
+     ],
+     "button": {
+      "bg": "#9dbce3",
+      "hsl": {
+       "h": 213,
+       "s": 0.56,
+       "l": 0.75
+      },
+      "fg": "#ebeae6"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 5,
+     "inHero": 3,
+     "radius": 6,
+     "height": 36,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Draft from SOP",
+      "Reload",
+      "bottle-sop-test bottle-sop-test 4 prompt"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 20,
+     "hairlineSamples": [
+      "header.sticky.top-0 768px",
+      "div.flex.items-center 726px",
+      "li.border-b.border-line 726px",
+      "li.border-b.border-line 726px",
+      "li.border-b.border-line 726px"
+     ],
+     "outlinedBoxes": 3,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 6,
+     "boxRadius": 6,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 4,
+     "fixed": true,
+     "height": 53,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "fira sans",
+     "fira code"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 2167,
+    "margins": {
+     "left": 21,
+     "right": 21
+    },
+    "sections": [
+     {
+      "sel": "div.grid.items-start",
+      "tag": "div",
+      "top": 141,
+      "height": 1574,
+      "words": 105,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "16 profiles",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 21,
+      "right": 21,
+      "textLeft": 35,
+      "textRight": 35,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.mt-4.scroll-mt-20",
+      "tag": "div",
+      "top": 1730,
+      "height": 372,
+      "words": 30,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Import from SOP",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 35,
+      "right": 35,
+      "textLeft": 35,
+      "textRight": 62,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Profiles",
+      "size": 20,
+      "top": 73,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 20,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "dark": true,
+    "ground": "#111214",
+    "sidebar": null,
+    "topbar": {
+     "h": 53
+    },
+    "canvas": {
+     "left": 20,
+     "right": 21
+    },
+    "hero": {
+     "text": "Profiles",
+     "words": 1,
+     "chars": 8,
+     "lines": 1,
+     "size": 20,
+     "vw": 2.6,
+     "font": "Fira Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.5,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 3,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 3,
+     "radii": [
+      [
+       6,
+       3
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.37,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      12,
+      13,
+      14,
+      15,
+      20
+     ]
+    },
+    "title": {
+     "text": "Profiles",
+     "size": 20,
+     "top": 73
+    },
+    "colourShare": 0
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 4,
+   "filled": [
+    0.76,
+    0.93,
+    0.93,
+    0.87
+   ],
+   "motion": {
+    "elements": 2,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 2,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 2592,
+     "screens": 3.1,
+     "words": 173,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 14,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Profiles",
+     "words": 1,
+     "chars": 8,
+     "lines": 1,
+     "size": 20,
+     "vw": 5.1,
+     "font": "Fira Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.5,
+     "top": 113,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Profiles",
+     "words": 1,
+     "lines": 1,
+     "size": 20,
+     "font": "Fira Sans"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Fira Sans",
+       "share": 0.86,
+       "mono": false
+      },
+      {
+       "family": "Fira Code",
+       "share": 0.14,
+       "mono": true
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      12,
+      13,
+      14,
+      20
+     ],
+     "sizeCount": 4,
+     "notLoaded": [],
+     "body": {
+      "font": "Fira Sans",
+      "size": 13,
+      "leading": 1.5,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 7.7
+     },
+     "measureChars": 50,
+     "max": {
+      "size": 20,
+      "vw": 5.1,
+      "font": "Fira Sans",
+      "text": "Profiles"
+     },
+     "monoShare": 0.14,
+     "monoProseShare": 0.1,
+     "monoFamilies": [
+      "Fira Code"
+     ],
+     "monoSamples": [
+      "bottle-sop-test",
+      "bottle",
+      "cable",
+      "capsule",
+      "carpet",
+      "grid"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.04,
+     "smallText": 8
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#111214",
+     "bodyBgHsl": {
+      "h": 220,
+      "s": 0.08,
+      "l": 0.07
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#18191c",
+       "top": 260,
+       "hsl": {
+        "h": 225,
+        "s": 0.08,
+        "l": 0.1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#8b8e95",
+       "share": 0.39
+      },
+      {
+       "color": "#ebeae6",
+       "share": 0.32
+      },
+      {
+       "color": "#a3a6ad",
+       "share": 0.27
+      },
+      {
+       "color": "#111214",
+       "share": 0.02
+      }
+     ],
+     "button": {
+      "bg": "#9dbce3",
+      "hsl": {
+       "h": 213,
+       "s": 0.56,
+       "l": 0.75
+      },
+      "fg": "#ebeae6"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 5,
+     "inHero": 3,
+     "radius": 6,
+     "height": 44,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Draft from SOP",
+      "Reload",
+      "bottle-sop-test bottle-sop-test 4 prompt"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 20,
+     "hairlineSamples": [
+      "header.sticky.top-0 390px",
+      "div.flex.items-center 356px",
+      "li.border-b.border-line 356px",
+      "li.border-b.border-line 356px",
+      "li.border-b.border-line 356px"
+     ],
+     "outlinedBoxes": 3,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 6,
+     "boxRadius": 6,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 4,
+     "fixed": true,
+     "height": 93,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "fira sans",
+     "fira code"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 2592,
+    "margins": {
+     "left": 17,
+     "right": 17
+    },
+    "sections": [
+     {
+      "sel": "div.mb-4.flex",
+      "tag": "div",
+      "top": 113,
+      "height": 131,
+      "words": 17,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Profiles",
+       "size": 20,
+       "tag": "h1"
+      },
+      "left": 16,
+      "right": 16,
+      "textLeft": 16,
+      "textRight": 31,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section.rounded-md.border",
+      "tag": "section",
+      "top": 260,
+      "height": 966,
+      "words": 52,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "16 profiles",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 17,
+      "right": 17,
+      "textLeft": 31,
+      "textRight": 31,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section.rounded-md.border",
+      "tag": "section",
+      "top": 1242,
+      "height": 842,
+      "words": 53,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "bottle-sop-test",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 31,
+      "right": 31,
+      "textLeft": 31,
+      "textRight": 51,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div.mt-4.scroll-mt-20",
+      "tag": "div",
+      "top": 2100,
+      "height": 427,
+      "words": 30,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Import from SOP",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 31,
+      "right": 31,
+      "textLeft": 31,
+      "textRight": 48,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Profiles",
+      "size": 20,
+      "top": 113,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 16,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "dark": true,
+    "ground": "#111214",
+    "sidebar": null,
+    "topbar": {
+     "h": 93
+    },
+    "canvas": {
+     "left": 16,
+     "right": 17
+    },
+    "hero": {
+     "text": "Profiles",
+     "words": 1,
+     "chars": 8,
+     "lines": 1,
+     "size": 20,
+     "vw": 5.1,
+     "font": "Fira Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.5,
+     "top": 113,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 3,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 3,
+     "radii": [
+      [
+       6,
+       3
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.37,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      12,
+      13,
+      14,
+      20
+     ]
+    },
+    "title": {
+     "text": "Profiles",
+     "size": 20,
+     "top": 113
+    },
+    "colourShare": 0
+   },
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "WARN",
+   "id": "ragged-row",
+   "width": 1440,
+   "message": "1 pair(s) of cards in one row end at different heights (by 375px).",
+   "fix": "Cards that share a row share a bottom edge: balance them by their content (the same number of rows, a block of similar height beside it), or stack them. In testing, ragged rows were marked down every time."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-profiles/desktop-fold.jpg",
+   "pages": [
+    "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-profiles/desktop-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-profiles/tablet-fold.jpg",
+   "pages": [
+    "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-profiles/tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-profiles/mobile-fold.jpg",
+   "pages": [
+    "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-profiles/mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

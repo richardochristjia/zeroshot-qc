@@ -1,0 +1,543 @@
+<!doctype html>
+<!-- PROTOTYPE, throwaway: visual mockup of the planned ZeroShot QC redesign. Not app code. Data: fake-adapter backend + data/runs + data/synth. -->
+<html lang="en" data-lavish-annotate="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZeroShot QC Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Fira+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ---- primitive tokens ---- */
+:root {
+  --stone-50:#f6f5f1; --stone-100:#efede7; --stone-200:#e2dfd7; --stone-300:#cfcbc1; --stone-500:#7a776f; --stone-600:#57554f; --stone-900:#18181a;
+  --night-950:#111214; --night-900:#18191c; --night-850:#1e1f23; --night-700:#2d2f34; --night-500:#5d6068; --night-300:#a3a6ad; --night-100:#ebeae6;
+  --navy-700:#1e3a5f; --navy-300:#9dbce3;
+  --green-700:#11704e; --green-300:#63caa1;
+  --red-700:#b3261e; --red-400:#ff5c50;
+  --amber-600:#b86e00; --amber-300:#f3b852;
+  --blue-600:#2f5d8a; --blue-300:#7fa9d6;
+  --r-sm:4px; --r-md:6px; --dur:160ms;
+  --font: "Fira Sans", system-ui, sans-serif; --mono: "Fira Code", ui-monospace, monospace;
+}
+/* ---- semantic tokens: light ---- */
+:root, :root[data-theme="light"] {
+  --ground: var(--stone-50); --surface:#fff; --sunken: var(--stone-100);
+  --ink: var(--stone-900); --ink-2: var(--stone-600); --ink-3: var(--stone-500);
+  --line: var(--stone-200); --line-strong: var(--stone-300);
+  --accent: var(--navy-700); --on-accent:#fff;
+  --pass: var(--green-700); --fail: var(--red-700); --on-fail:#fff; --detect: var(--amber-600); --data: var(--blue-600);
+  --pass-tint: color-mix(in srgb, var(--green-700) 9%, transparent);
+  --fail-tint: color-mix(in srgb, var(--red-700) 8%, transparent);
+  --focus: var(--navy-700);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ground: var(--night-950); --surface: var(--night-900); --sunken: var(--night-850);
+  --ink: var(--night-100); --ink-2: var(--night-300); --ink-3:#8b8e95;
+  --line: var(--night-700); --line-strong:#3a3c42;
+  --accent: var(--navy-300); --on-accent: var(--night-950);
+  --pass: var(--green-300); --fail: var(--red-400); --on-fail: var(--night-950); --detect: var(--amber-300); --data: var(--blue-300);
+  --pass-tint: color-mix(in srgb, var(--green-300) 12%, transparent);
+  --fail-tint: color-mix(in srgb, var(--red-400) 16%, transparent);
+  --focus: var(--navy-300); color-scheme: dark;
+}}
+:root[data-theme="dark"] {
+  --ground: var(--night-950); --surface: var(--night-900); --sunken: var(--night-850);
+  --ink: var(--night-100); --ink-2: var(--night-300); --ink-3:#8b8e95;
+  --line: var(--night-700); --line-strong:#3a3c42;
+  --accent: var(--navy-300); --on-accent: var(--night-950);
+  --pass: var(--green-300); --fail: var(--red-400); --on-fail: var(--night-950); --detect: var(--amber-300); --data: var(--blue-300);
+  --pass-tint: color-mix(in srgb, var(--green-300) 12%, transparent);
+  --fail-tint: color-mix(in srgb, var(--red-400) 16%, transparent);
+  --focus: var(--navy-300); color-scheme: dark;
+}
+/* ---- base ---- */
+* { box-sizing:border-box; }
+body { margin:0; background:var(--ground); color:var(--ink); font:15px/1.5 var(--font); -webkit-font-smoothing:antialiased; }
+h1 { font-size:20px; font-weight:600; margin:0; letter-spacing:-0.01em; }
+h2 { font-size:13px; font-weight:600; margin:0; color:var(--ink-2); }
+.num, td.n, .mono { font-variant-numeric: tabular-nums; }
+.mono { font-family:var(--mono); font-size:13px; }
+:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+button, select, input, textarea { font:inherit; color:inherit; }
+.btn { min-height:36px; padding:0 14px; border-radius:var(--r-md); border:1px solid var(--line-strong); background:var(--surface); cursor:pointer; font-size:14px; font-weight:500; transition:background var(--dur); }
+.btn:hover { background:var(--sunken); }
+.btn.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+.btn.primary:hover { filter:brightness(1.08); }
+.field { display:flex; flex-direction:column; gap:4px; font-size:13px; font-weight:500; color:var(--ink-2); }
+.field .hint { font-weight:400; color:var(--ink-3); font-size:12px; }
+.ctl { min-height:36px; border:1px solid var(--line-strong); border-radius:var(--r-md); background:var(--surface); padding:6px 10px; font-size:14px; color:var(--ink); width:100%; }
+textarea.ctl { resize:vertical; line-height:1.45; }
+.panel { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-md); }
+.panel-h { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--line); }
+.muted { color:var(--ink-2); } .faint { color:var(--ink-3); }
+
+/* ---- shell ---- */
+.bar { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:24px; height:52px; padding:0 20px; background:var(--surface); border-bottom:1px solid var(--line); }
+.brand { display:flex; align-items:center; gap:9px; font-weight:600; font-size:15px; white-space:nowrap; }
+.brand svg { color:var(--accent); }
+.tabs { display:flex; gap:2px; height:100%; }
+.tabs a { display:flex; align-items:center; padding:0 12px; font-size:14px; color:var(--ink-2); text-decoration:none; border-bottom:2px solid transparent; margin-bottom:-1px; cursor:pointer; }
+.tabs a:hover { color:var(--ink); }
+.tabs a[aria-current="page"] { color:var(--ink); border-bottom-color:var(--ink); font-weight:500; }
+.bar-end { margin-left:auto; display:flex; align-items:center; gap:16px; font-size:13px; }
+.health { display:flex; align-items:center; gap:6px; color:var(--ink-2); white-space:nowrap; }
+.dot { width:8px; height:8px; border-radius:50%; background:var(--pass); }
+.seg { display:flex; border:1px solid var(--line-strong); border-radius:var(--r-md); overflow:hidden; }
+.seg button { border:0; background:transparent; padding:4px 10px; font-size:12px; cursor:pointer; color:var(--ink-2); min-height:28px; }
+.seg button[aria-pressed="true"] { background:var(--sunken); color:var(--ink); font-weight:500; }
+.page { max-width:1360px; margin:0 auto; padding:20px 20px 120px; }
+.page-head { display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px; margin-bottom:16px; }
+.page-head .sub { font-size:13px; color:var(--ink-2); margin-top:2px; }
+.screen { display:none; } .screen.on { display:block; }
+
+/* ---- inspect ---- */
+.runbar { display:grid; grid-template-columns: minmax(180px,240px) minmax(0,1fr) auto; gap:12px; align-items:end; margin-left:auto; flex:1; max-width:860px; }
+.drop { display:flex; align-items:center; gap:10px; min-height:36px; border:1px dashed var(--line-strong); border-radius:var(--r-md); padding:4px 10px; font-size:13px; color:var(--ink-2); background:var(--surface); }
+.drop img { width:28px; height:28px; border-radius:3px; object-fit:cover; }
+.drop b { color:var(--ink); font-weight:500; }
+.bench { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(320px,1fr); gap:16px; align-items:start; }
+.stage { position:relative; background:var(--sunken); border-radius:var(--r-sm); overflow:hidden; }
+.stage img { display:block; width:100%; height:auto; }
+.box { position:absolute; border:2px solid var(--detect); border-radius:2px; transition:box-shadow var(--dur), border-color var(--dur); cursor:pointer; }
+.box.real { border-color:var(--fail); }
+.box .tag { position:absolute; left:-2px; top:-22px; min-width:20px; height:20px; padding:0 5px; font:600 12px/20px var(--mono); color:#18181a; background:var(--detect); border-radius:2px 2px 2px 0; }
+.box.real .tag { background:var(--fail); color:var(--on-fail); }
+.box.hl { box-shadow:0 0 0 3px color-mix(in srgb, var(--ink) 35%, transparent); }
+.legend { display:flex; gap:16px; padding:10px 14px; font-size:12px; color:var(--ink-2); border-top:1px solid var(--line); flex-wrap:wrap; }
+.legend i { display:inline-block; width:12px; height:12px; border:2px solid; border-radius:2px; vertical-align:-2px; margin-right:5px; }
+.verdict { padding:16px; border-bottom:1px solid var(--line); }
+.vline { display:flex; align-items:baseline; gap:12px; }
+.vbig { font:600 34px/1 var(--font); letter-spacing:0.02em; }
+.vbig.fail { color:var(--fail); } .vbig.pass { color:var(--pass); }
+.conf { font-size:14px; color:var(--ink-2); }
+.summary { margin:8px 0 0; font-size:14px; }
+.rulings { list-style:none; margin:0; padding:6px; }
+.rulings li { display:grid; grid-template-columns:26px minmax(0,1fr); gap:10px; padding:10px 8px; border-radius:var(--r-sm); cursor:pointer; }
+.rulings li:hover, .rulings li.hl { background:var(--sunken); }
+.chip { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:3px; font:600 12px var(--mono); color:#18181a; background:var(--detect); }
+.chip.real { background:var(--fail); color:var(--on-fail); }
+.rl-top { display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline; font-size:14px; }
+.rl-top b { font-weight:500; }
+.pill { font-size:12px; padding:1px 7px; border-radius:10px; border:1px solid var(--line-strong); color:var(--ink-2); }
+.pill.fail { border-color:transparent; background:var(--fail-tint); color:var(--fail); font-weight:500; }
+.rl-why { font-size:13px; color:var(--ink-2); margin-top:2px; }
+.rl-rule { font-size:12px; color:var(--ink-3); margin-top:4px; }
+.times { display:grid; grid-template-columns:repeat(3,1fr); margin:0; border-top:1px solid var(--line); }
+.times div { padding:10px 14px; } .times div + div { border-left:1px solid var(--line); }
+.times dt { font-size:12px; color:var(--ink-3); } .times dd { margin:0; font-size:15px; font-weight:500; }
+.override { padding:14px; border-top:1px solid var(--line); }
+.status { font-size:12px; color:var(--ink-3); margin-top:6px; display:flex; gap:6px; align-items:center; }
+/* inspect B */
+.strip { display:flex; flex-wrap:wrap; align-items:center; gap:12px 28px; padding:14px 16px; margin-bottom:16px; border-left:4px solid var(--fail); }
+.strip .vbig { font-size:26px; }
+.strip .kv { font-size:13px; color:var(--ink-2); } .strip .kv b { color:var(--ink); font-weight:500; }
+.trio { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(340px,0.95fr); gap:16px; align-items:start; }
+.cap { display:flex; justify-content:space-between; font-size:12px; color:var(--ink-2); padding:8px 12px; border-top:1px solid var(--line); }
+
+.trio.merged { grid-template-columns:minmax(0,2fr) minmax(340px,0.95fr); }
+.previews { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; align-content:start; }
+@media (max-width:640px) { .previews { grid-template-columns:minmax(0,1fr); } }
+.previews figure { margin:0; overflow:hidden; }
+.cap.top { border-top:0; border-bottom:1px solid var(--line); }
+.legend.plain { grid-column:1/-1; border-top:0; padding:2px 2px 0; }
+.ic { width:16px; height:16px; flex:none; vertical-align:-3px; }
+.ic.ok { color:var(--pass); } .ic.bad { color:var(--fail); } .ic.lg { width:28px; height:28px; vertical-align:-4px; margin-right:8px; }
+.btn { justify-content:center; }
+.tabs a, .btn, .cap span, .panel-h h2, .seg button, .pill, .field-title { display:inline-flex; align-items:center; gap:6px; }
+.tabs a .ic { color:var(--ink-3); } .tabs a[aria-current="page"] .ic { color:var(--ink); }
+.times dt { display:flex; align-items:center; gap:5px; } .times dt .ic { width:13px; height:13px; }
+/* ---- profiles ---- */
+.split { display:grid; grid-template-columns:260px minmax(0,1fr); gap:16px; align-items:start; }
+.plist { list-style:none; margin:0; padding:4px; max-height:640px; overflow:auto; }
+.plist li button { width:100%; text-align:left; display:flex; justify-content:space-between; gap:8px; padding:8px 10px; border:0; border-radius:var(--r-sm); background:transparent; cursor:pointer; font-size:14px; }
+.plist li button:hover { background:var(--sunken); }
+.plist li button[aria-current="true"] { background:var(--sunken); font-weight:500; }
+.plist .faint { font-size:12px; }
+.form { padding:16px; display:grid; gap:14px; }
+.row2 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.savebar { display:flex; align-items:center; gap:12px; padding:12px 16px; border-top:1px solid var(--line); background:var(--sunken); border-radius:0 0 var(--r-md) var(--r-md); }
+.prompts { display:flex; flex-wrap:wrap; gap:6px; }
+.prompts span { font-size:13px; padding:3px 8px; border:1px solid var(--line-strong); border-radius:var(--r-sm); background:var(--surface); }
+.refrow { display:flex; gap:12px; align-items:center; }
+.refrow img { width:56px; height:56px; border-radius:var(--r-sm); object-fit:cover; border:1px solid var(--line); }
+
+/* ---- eval ---- */
+.runs { list-style:none; margin:0; padding:4px; }
+.runs li button { width:100%; text-align:left; padding:8px 10px; border:0; border-radius:var(--r-sm); background:transparent; cursor:pointer; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 8px; }
+.runs li button:hover { background:var(--sunken); }
+.runs li button[aria-current="true"] { background:var(--sunken); }
+.runs .rid { font-family:var(--mono); font-size:12px; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.runs .mode { font-size:14px; font-weight:500; }
+.runs .f { font-size:14px; text-align:right; grid-row:span 2; align-self:center; }
+.kpis { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); border-bottom:1px solid var(--line); }
+.kpis div { padding:14px 16px; } .kpis div + div { border-left:1px solid var(--line); }
+.kpis dt { font-size:12px; color:var(--ink-2); } .kpis dd { margin:2px 0 0; font-size:26px; font-weight:500; letter-spacing:-0.01em; }
+.kpis dd.lead { color:var(--data); }
+.cm { display:flex; gap:24px; flex-wrap:wrap; padding:10px 16px; font-size:13px; color:var(--ink-2); border-bottom:1px solid var(--line); }
+.cm b { color:var(--ink); font-weight:500; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+th { text-align:left; font-size:12px; font-weight:500; color:var(--ink-2); padding:8px 16px; border-bottom:1px solid var(--line); }
+td { padding:9px 16px; border-bottom:1px solid var(--line); }
+tr:last-child td { border-bottom:0; }
+th.n, td.n { text-align:right; }
+.bar-cell { width:30%; }
+.hbar { height:6px; background:var(--sunken); border-radius:3px; }
+.hbar i { display:block; height:100%; background:var(--data); border-radius:3px; }
+.ablate { padding:14px 16px; display:grid; gap:10px; }
+.ab { display:grid; grid-template-columns:200px minmax(0,1fr) 56px; gap:12px; align-items:center; font-size:14px; }
+.ab .hbar { height:10px; } .ab.cur .hbar i { background:var(--data); } .ab:not(.cur) .hbar i { background:var(--line-strong); }
+.zero { color:var(--ink-3); }
+
+/* ---- synthetic ---- */
+.gen { display:grid; grid-template-columns:repeat(3,minmax(0,200px)) max-content; gap:12px; align-items:end; padding:14px 16px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+.pair { overflow:hidden; }
+.pair .img { position:relative; aspect-ratio:1; background:var(--sunken); }
+.pair .img img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.pair .img img.mask { image-rendering:pixelated; mix-blend-mode:screen; opacity:0; transition:opacity var(--dur); }
+.show-masks .pair .img img.mask { opacity:0.85; }
+.pair .meta { display:flex; justify-content:space-between; padding:8px 12px; font-size:13px; }
+.groups { display:flex; gap:8px; margin:0 0 12px; flex-wrap:wrap; }
+.groups button { border:1px solid var(--line-strong); background:var(--surface); border-radius:14px; padding:2px 12px; font-size:13px; cursor:pointer; min-height:28px; }
+.groups button[aria-pressed="true"] { background:var(--ink); color:var(--ground); border-color:var(--ink); }
+.empty { border:1px dashed var(--line-strong); border-radius:var(--r-md); padding:28px; text-align:center; color:var(--ink-2); font-size:14px; }
+
+/* ---- prototype switcher (not part of the design) ---- */
+.proto { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:50; display:flex; align-items:center; gap:6px; padding:6px; background:#b0124f; color:#fff; border-radius:24px; box-shadow:0 6px 24px rgba(0,0,0,.25); font:500 13px system-ui; }
+.proto button { border:0; background:rgba(255,255,255,.18); color:#fff; width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:15px; }
+.proto span { padding:0 10px; white-space:nowrap; }
+
+@media (max-width: 1000px) {
+  .seg button span, .health span { display:none; }
+  .bench, .trio, .trio.merged, .split { grid-template-columns:minmax(0,1fr); }
+  .runbar { grid-template-columns:minmax(0,1fr); max-width:none; margin-left:0; }
+  .kpis { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .kpis div:nth-child(4) { border-left:0; }
+  .kpis div:nth-child(n+4) { border-top:1px solid var(--line); }
+  .gen { grid-template-columns:minmax(0,1fr); }
+  .row2 { grid-template-columns:minmax(0,1fr); }
+}
+@media (max-width: 640px) {
+  .bar { flex-wrap:wrap; height:auto; gap:0 12px; padding:8px 16px 0; }
+  .tabs { order:3; flex-basis:100%; height:40px; margin:0 -12px; }
+  .bar-end { gap:10px; }
+  .brand span { display:none; }
+  .health span { display:none; }
+  .seg button span { display:none; }
+  .page { padding:16px 16px 110px; }
+  .ab { grid-template-columns:minmax(0,1fr) 48px; } .ab .hbar { grid-column:1/-1; grid-row:2; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol><symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M8 17v-5M13 17V8M18 17v-8"/></symbol><symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8-5.2L4 10l5.2-1.8z"/><path d="M19 3v4M17 5h4"/></symbol><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></symbol><symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 2h8.2L22 7.9v8.2L16.1 22H7.9L2 16.1V7.9z"/><path d="M15 9l-6 6M9 9l6 6"/></symbol><symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol><symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5l4 4L8 20H4v-4z"/></symbol><symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4m0 0L8 8m4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol><symbol id="i-save" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8M7 21v-7h10v7"/></symbol><symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/></symbol><symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol><symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol><symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol><symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5M3 16.5l9 4.5 9-4.5"/></symbol><symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol><symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-gauge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0z"/></symbol></svg>
+<header class="bar">
+  <div class="brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4"/></svg>
+    <span>ZeroShot QC</span>
+  </div>
+  <nav class="tabs" aria-label="Main">
+    <a data-go="inspect-c" aria-current="page"><svg class="ic" aria-hidden="true"><use href="#i-scan"/></svg>Inspect</a>
+    <a data-go="profiles"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg>Profiles</a>
+    <a data-go="eval"><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>Eval</a>
+    <a data-go="synthetic"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Synthetic</a>
+  </nav>
+  <div class="bar-end">
+    <div class="health"><i class="dot" aria-hidden="true"></i><span>Backend online</span></div>
+    <div class="seg" role="group" aria-label="Theme">
+      <button data-theme-set="system" aria-pressed="true"><svg class="ic" aria-hidden="true"><use href="#i-monitor"/></svg><span>System</span></button>
+      <button data-theme-set="light" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg><span>Light</span></button>
+      <button data-theme-set="dark" aria-pressed="false"><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg><span>Dark</span></button>
+    </div>
+  </div>
+</header>
+
+<!-- ============ INSPECT C: merged ============ -->
+<main class="page screen" id="inspect-c">
+  <div class="page-head">
+    <div><h1>Inspect</h1><div class="sub">Merged: reference and test side by side, full verdict card beside them.</div></div>
+    <div class="runbar">
+      <label class="field">Profile
+        <select class="ctl"><option>Bottle (bottle)</option><option>Cable (cable)</option></select>
+      </label>
+      <div class="field">Image
+        <div class="drop"><img src="bottle-test.jpg" alt=""><span><b>broken_large_000.png</b> · 900 × 900 · drop another to replace</span></div>
+      </div>
+      <button class="btn primary"><svg class="ic" aria-hidden="true"><use href="#i-scan"/></svg>Inspect again</button>
+    </div>
+  </div>
+  <div class="trio merged">
+    <div class="previews">
+      <figure class="panel"><figcaption class="cap top"><span><svg class="ic ok" aria-hidden="true"><use href="#i-check"/></svg>Reference</span><span class="faint">train/good/000</span></figcaption><div class="stage"><img src="bottle-ref.jpg" alt="Known-good reference bottle"></div></figure>
+      <figure class="panel"><figcaption class="cap top"><span><svg class="ic" aria-hidden="true"><use href="#i-scan"/></svg>Under test</span><span class="faint">3 candidates</span></figcaption><div class="stage" data-stage><img src="bottle-test.jpg" alt="Test bottle with boxed candidates"></div></figure>
+      <div class="legend plain"><span><i style="border-color:var(--fail)"></i>Ruled a defect</span><span><i style="border-color:var(--detect)"></i>Cleared by judge</span><span class="faint">Hover a box or a ruling to link them</span></div>
+    </div>
+    <section class="panel" aria-label="Verdict">
+      <div class="verdict">
+        <h2>Verdict</h2>
+        <div class="vline" style="margin-top:6px"><span class="vbig fail"><svg class="ic lg" aria-hidden="true"><use href="#i-x"/></svg>FAIL</span><span class="conf num">confidence 90.0%</span></div>
+        <p class="summary">Chip on the rim breaks the "no rim chips" rule. Two other candidates are surface glare, not damage.</p>
+      </div>
+      <div class="panel-h" style="border-bottom:0;padding-bottom:0"><h2><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>Rulings · 3 candidates</h2><span class="faint" style="font-size:12px">0 missed defects</span></div>
+      <ol class="rulings" data-rulings></ol>
+      <dl class="times num"><div><dt><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Segment</dt><dd>412 ms</dd></div><div><dt><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Judge</dt><dd>1,284 ms</dd></div><div><dt><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Total</dt><dd>1,716 ms</dd></div></dl>
+      <div class="override">
+        <label class="field" style="flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 6px" for="rules-c"><svg class="ic" aria-hidden="true"><use href="#i-pencil"/></svg>Rules override <span class="hint" style="flex-basis:100%">Applies to this run only. Clear it to go back to the profile rules.</span></label>
+        <textarea id="rules-c" class="ctl" rows="3" style="margin-top:6px">FAIL a bottle with any chip on the rim or crack longer than 5 mm. Ignore glare and reflections.</textarea>
+        <div class="status"><span class="dot" style="background:var(--detect)"></span>Re-judging with edited rules · segmentation reused</div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- ============ INSPECT A: workbench ============ -->
+<main class="page screen" id="inspect-a">
+  <div class="page-head">
+    <div><h1>Inspect</h1><div class="sub">Segment candidates, then judge them against the profile rules.</div></div>
+    <div class="runbar">
+      <label class="field">Profile
+        <select class="ctl"><option>Bottle (bottle)</option><option>Cable (cable)</option></select>
+      </label>
+      <div class="field">Image
+        <div class="drop"><img src="bottle-test.jpg" alt=""><span><b>broken_large_000.png</b> · 900 × 900 · drop another to replace</span></div>
+      </div>
+      <button class="btn primary"><svg class="ic" aria-hidden="true"><use href="#i-scan"/></svg>Inspect again</button>
+    </div>
+  </div>
+  <div class="bench">
+    <section class="panel" aria-label="Overlay">
+      <div class="stage" data-stage>
+        <img src="bottle-test.jpg" alt="Bottle under inspection, three candidate defects boxed">
+      </div>
+      <div class="legend"><span><i style="border-color:var(--fail)"></i>Ruled a defect</span><span><i style="border-color:var(--detect)"></i>Candidate, cleared by judge</span><span class="faint">Hover a box or ruling to link them</span></div>
+    </section>
+    <section class="panel" aria-label="Verdict">
+      <div class="verdict">
+        <h2>Verdict</h2>
+        <div class="vline" style="margin-top:6px"><span class="vbig fail"><svg class="ic lg" aria-hidden="true"><use href="#i-x"/></svg>FAIL</span><span class="conf num">confidence 90.0%</span></div>
+        <p class="summary">Chip on the rim breaks the "no rim chips" rule. Two other candidates are surface glare, not damage.</p>
+      </div>
+      <div class="panel-h" style="border-bottom:0;padding-bottom:0"><h2><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg>Rulings · 3 candidates</h2><span class="faint" style="font-size:12px">0 missed defects</span></div>
+      <ol class="rulings" data-rulings></ol>
+      <dl class="times num"><div><dt><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Segment</dt><dd>412 ms</dd></div><div><dt><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Judge</dt><dd>1,284 ms</dd></div><div><dt><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>Total</dt><dd>1,716 ms</dd></div></dl>
+      <div class="override">
+        <label class="field" style="flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 6px" for="rules"><svg class="ic" aria-hidden="true"><use href="#i-pencil"/></svg>Rules override <span class="hint" style="flex-basis:100%">Applies to this run only. Clear it to go back to the profile rules.</span></label>
+        <textarea id="rules" class="ctl" rows="3" style="margin-top:6px">FAIL a bottle with any chip on the rim or crack longer than 5 mm. Ignore glare and reflections.</textarea>
+        <div class="status"><span class="dot" style="background:var(--detect)"></span>Re-judging with edited rules · segmentation reused</div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- ============ INSPECT B: compare ============ -->
+<main class="page screen" id="inspect-b">
+  <div class="page-head">
+    <div><h1>Inspect</h1><div class="sub">Variant B: verdict strip on top, reference beside the test image.</div></div>
+    <div class="runbar">
+      <label class="field">Profile <select class="ctl"><option>Bottle (bottle)</option></select></label>
+      <div class="field">Image <div class="drop"><img src="bottle-test.jpg" alt=""><span><b>broken_large_000.png</b> · 900 × 900</span></div></div>
+      <button class="btn primary"><svg class="ic" aria-hidden="true"><use href="#i-scan"/></svg>Inspect again</button>
+    </div>
+  </div>
+  <section class="panel strip" aria-label="Verdict">
+    <span class="vbig fail"><svg class="ic lg" aria-hidden="true"><use href="#i-x"/></svg>FAIL</span>
+    <span class="kv">Confidence <b class="num">90.0%</b></span>
+    <span class="kv">Defects <b class="num">1 of 3</b></span>
+    <span class="kv">Missed <b class="num">0</b></span>
+    <span class="kv">Total <b class="num">1,716 ms</b></span>
+    <span style="flex-basis:100%;font-size:14px">Chip on the rim breaks the "no rim chips" rule. Two other candidates are surface glare, not damage.</span>
+  </section>
+  <div class="trio">
+    <figure class="panel" style="margin:0"><div class="stage"><img src="bottle-ref.jpg" alt="Known-good reference bottle"></div><figcaption class="cap"><span>Reference</span><span class="faint">train/good/000</span></figcaption></figure>
+    <figure class="panel" style="margin:0"><div class="stage" data-stage><img src="bottle-test.jpg" alt="Test bottle with boxed candidates"></div><figcaption class="cap"><span>Under test</span><span class="faint">3 candidates</span></figcaption></figure>
+    <section class="panel" aria-label="Rulings">
+      <div class="panel-h"><h2>Rulings</h2></div>
+      <ol class="rulings" data-rulings></ol>
+    </section>
+  </div>
+</main>
+
+<!-- ============ INSPECT EMPTY ============ -->
+<main class="page screen" id="inspect-empty">
+  <div class="page-head"><div><h1>Inspect</h1><div class="sub">Segment candidates, then judge them against the profile rules.</div></div></div>
+  <div class="bench">
+    <section class="panel" style="display:grid;place-items:center;min-height:520px;border-style:dashed;border-color:var(--line-strong)">
+      <div style="text-align:center;max-width:340px">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--ink-3)" stroke-width="1.5" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        <p style="margin:10px 0 4px;font-weight:500">Drop a part photo here</p>
+        <p class="muted" style="margin:0 0 14px;font-size:14px">PNG or JPG. It stays on this machine until you press Inspect.</p>
+        <button class="btn"><svg class="ic" aria-hidden="true"><use href="#i-upload"/></svg>Choose file</button>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="form">
+        <label class="field">Profile <select class="ctl"><option>Bottle (bottle)</option></select></label>
+        <div><h2>Rules for Bottle</h2><p style="margin:6px 0 0;font-size:14px" class="muted">FAIL a bottle with any broken glass, chip, or contamination stain; PASS otherwise.</p></div>
+        <div><h2>Looks for</h2><div class="prompts" style="margin-top:6px"><span>broken bottle glass</span><span>chip on bottle</span><span>contamination stain</span></div></div>
+        <button class="btn primary" disabled style="opacity:.45;cursor:not-allowed"><svg class="ic" aria-hidden="true"><use href="#i-scan"/></svg>Inspect</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- ============ PROFILES ============ -->
+<main class="page screen" id="profiles">
+  <div class="page-head">
+    <div><h1>Profiles</h1><div class="sub">What each product is checked for, and the rules the judge applies.</div></div>
+    <div style="margin-left:auto;display:flex;gap:8px"><button class="btn"><svg class="ic" aria-hidden="true"><use href="#i-file"/></svg>Draft from SOP</button></div>
+  </div>
+  <div class="split">
+    <section class="panel"><div class="panel-h"><h2><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg>16 profiles</h2><button class="btn" style="min-height:28px;padding:0 10px;font-size:12px"><svg class="ic" aria-hidden="true"><use href="#i-refresh"/></svg>Reload</button></div><ul class="plist" data-plist></ul></section>
+    <section class="panel">
+      <div class="panel-h"><div><span style="font-weight:600">Bottle</span> <span class="mono faint">bottle</span></div><span class="faint" style="font-size:12px">Ids are fixed once created</span></div>
+      <div class="form">
+        <label class="field">Name <input class="ctl" value="Bottle"></label>
+        <div class="field">Defect prompts <span class="hint">What the segmenter looks for, one per line</span>
+          <textarea class="ctl mono" rows="3">broken bottle glass
+chip on bottle
+contamination stain</textarea></div>
+        <label class="field">Rules <span class="hint">Plain English. The judge cites these when it fails a part.</span>
+          <textarea class="ctl" rows="4">FAIL a bottle with any broken glass, chip, or contamination stain; PASS otherwise.</textarea></label>
+        <div class="row2">
+          <label class="field">mm per px <span class="hint">Blank = report pixels only</span><input class="ctl num" value="0.1"></label>
+          <label class="field">Min score <span class="hint">Candidates below this are dropped</span><input class="ctl num" value="0.30"></label>
+          <div class="field">Reference image <div class="refrow"><img src="bottle-ref.jpg" alt="Bottle reference"><span class="mono faint" style="overflow-wrap:anywhere">mvtec/bottle/train/good/000.png</span></div></div>
+        </div>
+      </div>
+      <div class="savebar"><button class="btn primary"><svg class="ic" aria-hidden="true"><use href="#i-save"/></svg>Save profile</button><span class="faint" style="font-size:13px">Unsaved: rules edited</span></div>
+    </section>
+  </div>
+</main>
+
+<!-- ============ EVAL ============ -->
+<main class="page screen" id="eval">
+  <div class="page-head"><div><h1>Eval</h1><div class="sub">Runs scored on MVTec AD. Launch new runs from the CLI.</div></div></div>
+  <div class="split">
+    <section class="panel"><div class="panel-h"><h2><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg>Runs</h2><span class="faint" style="font-size:12px">F1</span></div><ul class="runs" data-runs></ul></section>
+    <div style="display:grid;gap:16px;min-width:0">
+      <section class="panel">
+        <div class="panel-h"><div><span style="font-weight:600">SAM + judge + reference</span> <span class="mono faint">20261027T094406Z</span></div><span class="faint" style="font-size:12px">mvtec · seed 0 · 5 categories · 150 images</span></div>
+        <dl class="kpis num" style="margin:0">
+          <div><dt>F1</dt><dd class="lead">0.919</dd></div>
+          <div><dt>Precision</dt><dd>0.929</dd></div>
+          <div><dt>Recall</dt><dd>0.910</dd></div>
+          <div><dt>AUROC</dt><dd>0.965</dd></div>
+          <div><dt>Accuracy</dt><dd>0.893</dd></div>
+        </dl>
+        <div class="cm num"><span>True fail <b>91</b></span><span>True pass <b>43</b></span><span>False fail <b>7</b></span><span>Missed <b>9</b></span></div>
+        <table class="num">
+          <thead><tr><th>Category</th><th class="bar-cell">F1</th><th class="n">F1</th><th class="n">Precision</th><th class="n">Recall</th><th class="n">AUROC</th></tr></thead>
+          <tbody data-cats></tbody>
+        </table>
+      </section>
+      <section class="panel">
+        <div class="panel-h"><h2><svg class="ic" aria-hidden="true"><use href="#i-layers"/></svg>Ablation · same seed, same 150 images</h2><span class="faint" style="font-size:12px">overall F1</span></div>
+        <div class="ablate num">
+          <div class="ab"><span>SAM only <span class="faint">(any detection fails)</span></span><div class="hbar"><i style="width:0"></i></div><span class="zero" style="text-align:right">0.000</span></div>
+          <div class="ab"><span>SAM + judge</span><div class="hbar"><i style="width:87.2%"></i></div><span style="text-align:right">0.872</span></div>
+          <div class="ab cur"><span><b style="font-weight:500">SAM + judge + reference</b></span><div class="hbar"><i style="width:91.9%"></i></div><span style="text-align:right;font-weight:500">0.919</span></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<!-- ============ SYNTHETIC ============ -->
+<main class="page screen" id="synthetic">
+  <div class="page-head">
+    <div><h1>Synthetic</h1><div class="sub">Generated defect images with exact masks, for eval when real defects are scarce.</div></div>
+    <label style="margin-left:auto;display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer"><input type="checkbox" data-masks> <svg class="ic" aria-hidden="true"><use href="#i-eye"/></svg>Show masks</label>
+  </div>
+  <section class="panel" style="margin-bottom:16px">
+    <div class="gen">
+      <label class="field">Profile <select class="ctl"><option>Bottle</option></select></label>
+      <label class="field">Defect <select class="ctl"><option>scratch</option><option>dent</option></select></label>
+      <label class="field">Pairs <input class="ctl num" value="5"></label>
+      <button class="btn primary"><svg class="ic" aria-hidden="true"><use href="#i-sparkles"/></svg>Generate</button>
+    </div>
+  </section>
+  <div class="groups"><button aria-pressed="true">All · 21</button><button aria-pressed="false">bottle / scratch · 20</button><button aria-pressed="false">bottle / dent · 1</button></div>
+  <div class="grid" data-grid></div>
+</main>
+
+<div class="proto" role="toolbar" aria-label="Prototype screens">
+  <button data-step="-1" aria-label="Previous screen">←</button>
+  <span data-label></span>
+  <button data-step="1" aria-label="Next screen">→</button>
+</div>
+
+<script>
+// Shape of real /api/inspect output; boxes placed by hand on the visible damage (the fake segmenter's boxes are scripted, not real).
+const dets = [
+  { id:'d1', label:'chip on bottle', score:0.85, bbox:[630,280,115,165], mm2:198.9, real:true, rule:'No chips on the rim', why:'Notch in the rim edge with missing glass; matches a chip, absent from the reference.' },
+  { id:'d2', label:'broken bottle glass', score:0.79, bbox:[120,160,200,120], mm2:112.8, real:false, why:'Bright arc follows the rim curve; reflection, also present on the reference.' },
+  { id:'d3', label:'contamination stain', score:0.62, bbox:[360,635,115,100], mm2:210.3, real:false, why:'Low-contrast shading inside the neck; lighting falloff, not residue.' },
+];
+document.querySelectorAll('[data-stage]').forEach(stage => {
+  dets.forEach((d, i) => {
+    const [x,y,w,h] = d.bbox, b = document.createElement('div');
+    b.className = 'box' + (d.real ? ' real' : ''); b.tabIndex = 0; b.dataset.det = d.id;
+    b.setAttribute('aria-label', `${i+1}: ${d.label}`);
+    Object.assign(b.style, { left:x/9+'%', top:y/9+'%', width:w/9+'%', height:h/9+'%' });
+    b.innerHTML = `<span class="tag">${i+1}</span>`;
+    stage.appendChild(b);
+  });
+});
+document.querySelectorAll('[data-rulings]').forEach(ol => {
+  ol.innerHTML = dets.map((d, i) => `<li tabindex="0" data-det="${d.id}">
+    <span class="chip${d.real ? ' real' : ''}">${i+1}</span>
+    <div><div class="rl-top"><b>${d.label}</b>${d.real ? '<span class="pill fail"><svg class="ic" style="width:12px;height:12px" aria-hidden="true"><use href="#i-alert"/></svg>Defect</span>' : '<span class="pill"><svg class="ic" style="width:12px;height:12px" aria-hidden="true"><use href="#i-check"/></svg>Cleared</span>'}<span class="faint num" style="font-size:12px">score ${d.score.toFixed(2)} · ${d.mm2.toFixed(1)} mm²</span></div>
+    <div class="rl-why">${d.why}</div>${d.rule ? `<div class="rl-rule">Rule cited: ${d.rule}</div>` : ''}</div></li>`).join('');
+});
+const link = (id, on) => document.querySelectorAll(`[data-det="${id}"]`).forEach(el => el.classList.toggle('hl', on));
+document.addEventListener('pointerover', e => { const t = e.target.closest('[data-det]'); if (t) link(t.dataset.det, true); });
+document.addEventListener('pointerout', e => { const t = e.target.closest('[data-det]'); if (t) link(t.dataset.det, false); });
+document.addEventListener('focusin', e => { const t = e.target.closest('[data-det]'); if (t) link(t.dataset.det, true); });
+document.addEventListener('focusout', e => { const t = e.target.closest('[data-det]'); if (t) link(t.dataset.det, false); });
+
+const profiles = [['Bottle','bottle',3],['bottle-sop-test','bottle-sop-test',4],['Cable','cable',3],['Capsule','capsule',3],['Carpet','carpet',3],['Grid','grid',3],['Hazelnut','hazelnut',3],['Leather','leather',3],['Metal nut','metal_nut',3],['Pill','pill',3],['Screw','screw',3],['Tile','tile',3],['Toothbrush','toothbrush',3],['Transistor','transistor',3],['Wood','wood',3],['Zipper','zipper',3]];
+document.querySelector('[data-plist]').innerHTML = profiles.map(([n,id,c],i) => `<li><button aria-current="${i===0}"><span>${n}<span class="mono faint" style="display:block">${id}</span></span><span class="faint">${c} prompts</span></button></li>`).join('');
+
+const runs = [['SAM + judge + reference','20261027T094406Z',0.919,true],['SAM + judge','20261027T091346Z',0.872],['SAM only','20261027T090316Z',0],['verify · judge + ref','verify_sam_judge_ref',1],['verify · judge','verify_sam_judge',0.889],['verify · SAM only','verify_sam_only',0.8],['m5verify · judge + ref','m5verify-sam_judge_ref',1],['m5verify · judge','m5verify-sam_judge',1]];
+document.querySelector('[data-runs]').innerHTML = runs.map(([m,id,f,cur]) => `<li><button aria-current="${!!cur}"><span class="mode">${m}</span><span class="f num ${f===0?'zero':''}">${f.toFixed(3)}</span><span class="rid">${id}</span></button></li>`).join('');
+
+const cats = [['bottle',0.829,0.810,0.850,0.892],['cable',0.778,0.875,0.700,0.805],['capsule',0.976,0.952,1,0.978],['carpet',1,1,1,1],['grid',1,1,1,1]];
+document.querySelector('[data-cats]').innerHTML = cats.map(([c,f,p,r,a]) => `<tr><td>${c}</td><td class="bar-cell"><div class="hbar"><i style="width:${f*100}%"></i></div></td><td class="n">${f.toFixed(3)}</td><td class="n">${p.toFixed(3)}</td><td class="n">${r.toFixed(3)}</td><td class="n">${a.toFixed(3)}</td></tr>`).join('');
+
+document.querySelector('[data-grid]').innerHTML = [1,2,3,4,5].map(i => `<figure class="panel pair" style="margin:0"><div class="img"><img src="syn${i}.jpg" alt="Synthetic bottle scratch ${i}" loading="lazy"><img class="mask" src="syn${i}m.png" alt=""></div><figcaption class="meta"><span>bottle / scratch</span><span class="mono faint">00${i-1}</span></figcaption></figure>`).join('');
+document.querySelector('[data-masks]').addEventListener('change', e => document.getElementById('synthetic').classList.toggle('show-masks', e.target.checked));
+
+// theme switch
+const root = document.documentElement;
+document.querySelectorAll('[data-theme-set]').forEach(b => b.addEventListener('click', () => {
+  const v = b.dataset.themeSet;
+  if (v === 'system') root.removeAttribute('data-theme'); else root.dataset.theme = v;
+  document.querySelectorAll('[data-theme-set]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+}));
+
+// prototype switcher
+const screens = [['inspect-c','Inspect C · merged'],['inspect-a','Inspect A · workbench'],['inspect-b','Inspect B · compare'],['inspect-empty','Inspect · empty'],['profiles','Profiles'],['eval','Eval'],['synthetic','Synthetic']];
+const tabOf = id => id.startsWith('inspect') ? 'inspect-c' : id;
+function show(id) {
+  if (!screens.some(s => s[0] === id)) id = screens[0][0];
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === id));
+  document.querySelectorAll('.tabs a').forEach(a => { if (a.dataset.go === tabOf(id)) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+  const i = screens.findIndex(s => s[0] === id);
+  document.querySelector('[data-label]').textContent = `${i+1}/${screens.length} · ${screens[i][1]}`;
+  const u = new URL(location); u.searchParams.set('variant', id); history.replaceState(null, '', u);
+}
+const cur = () => screens.findIndex(s => document.getElementById(s[0]).classList.contains('on'));
+const step = d => show(screens[(cur() + d + screens.length) % screens.length][0]);
+document.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => step(+b.dataset.step)));
+document.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', () => show(a.dataset.go)));
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+  if (e.key === 'ArrowLeft') step(-1); if (e.key === 'ArrowRight') step(1);
+});
+show(new URL(location).searchParams.get('variant') ?? 'inspect-a');
+</script>
+</body>
+</html>

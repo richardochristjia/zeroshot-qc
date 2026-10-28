@@ -1,0 +1,5 @@
+- Plan says keep the groupItems helper for chip counts (src/pages/Synthetic.tsx:57-86); it returns category -> defect -> items, so chips flatten it and the grid shows the flattened, sorted items filtered by the chosen "category / defect".
+- Plan keeps per-item "Image file missing" / "No mask" / "Mask file missing" frames; with a square card and mask overlay these become an image-area frame (image missing) and a small footer note (mask states) so the card size stays stable.
+- PairCard's reset effect (Synthetic.tsx:19) triggers a set-state-in-effect lint warning and is redundant with key={imageUrl}; removed. The load effect's setLoading(true) (line 103) is the initial state; removed.
+- Mask PNGs are 48x48 (plan): scaled with image-rendering pixelated, opacity transition via CSS.
+- Filter selection that vanishes after data change cannot happen (items load once).

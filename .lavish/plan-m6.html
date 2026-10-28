@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" data-theme="luxury">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZeroShot QC — M6 Plan</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/daisyui.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/themes.css">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.4/dist/index.global.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:where(.grid,.flex)>*{min-width:0}
+:where(p,h1,h2,h3,li,td,th,.badge){overflow-wrap:anywhere}
+:where(svg){max-width:100%;height:auto}
+</style>
+</head>
+<body class="bg-base-100 text-base-content">
+<main class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="badge badge-warning badge-soft">Tier L</span>
+    <span class="badge badge-outline">Scope: M6 web app</span>
+    <span class="badge badge-outline">Awaiting approval — no code written</span>
+  </div>
+  <h1 class="mt-4 text-3xl font-bold sm:text-4xl">ZeroShot QC — M6: Web app</h1>
+  <p class="mt-2 opacity-80">Source: <code>HANDOFF.md</code> §4/§8 + <code>ROADMAP.md</code> Day 7–8. Backend through M5 is merged or nearly (PR #5 open); <code>frontend/</code> does not exist; the four routers are one-line stubs; images are not yet served over HTTP. Design source for this page: Lavish fallback (Tailwind + DaisyUI) — the product has no design system yet.</p>
+
+  <div class="alert alert-warning mt-6" role="alert">
+    <span><strong>Decisions already locked by you:</strong> (1) merge <strong>PR #5 first</strong>, M6 branches from <code>main</code>; (2) <strong>upload only, no webcam</strong> (roadmap cut #2); (3) <strong>Eval page is read-only</strong> — runs stay in the CLI. Nothing below re-asks these.</span>
+  </div>
+
+  <section class="card card-border bg-base-100 mt-8"><div class="card-body">
+    <h2 class="card-title">Problem</h2>
+    <p>Everything works, but only from a terminal: inspecting a part means a CLI command, rules are edited as flags, profiles as JSON, and eval numbers as printed tables. The hackathon judges must see the headline moment in a browser — upload a photo, get PASS/FAIL with outlined defects and written reasons, edit a rule in plain English, watch the verdict flip instantly with no retraining. No page exists yet, and no router serves anything the pages will need.</p>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Solution</h2>
+    <p>Scaffold <code>frontend/</code> with Vite + React + TypeScript + Tailwind (HANDOFF stack) and implement the four pages against real backend routers built to HANDOFF §8. The live rule editor needs no server sessions: it re-sends the image with edited rules, and the existing disk cache serves segmentation while only the judge re-runs — debounced. Images (uploads, overlays, synth, eval examples) are served from <code>data/</code> under <code>/files/...</code>. Dev runs as Vite (proxy) + uvicorn; deploy stays M7.</p>
+    <figure class="mt-4">
+      <svg viewBox="0 0 720 170" role="img" aria-label="M6 page to API map" class="w-full">
+        <g fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="10" y="60" width="120" height="60" rx="8"/><rect x="160" y="20" width="120" height="40" rx="8"/><rect x="160" y="80" width="120" height="40" rx="8"/><rect x="160" y="130" width="120" height="30" rx="8" stroke-dasharray="4 3"/>
+          <rect x="440" y="20" width="270" height="40" rx="8"/><rect x="440" y="80" width="270" height="40" rx="8"/><rect x="440" y="130" width="270" height="30" rx="8" stroke-dasharray="4 3"/>
+          <path d="M130,90 L160,40" /><path d="M130,90 L160,100" /><path d="M130,95 L160,145" stroke-dasharray="4 3"/>
+          <path d="M280,40 L440,40" /><path d="M280,100 L440,100" /><path d="M280,145 L440,145" stroke-dasharray="4 3"/>
+        </g>
+        <g fill="currentColor" font-size="13" text-anchor="middle">
+          <text x="70" y="85">Browser</text><text x="70" y="103" font-size="11">4 pages</text>
+          <text x="220" y="36">Inspect</text><text x="220" y="52" font-size="11">upload + verdict</text>
+          <text x="220" y="96">Profiles</text><text x="220" y="112" font-size="11">edit + SOP import</text>
+          <text x="220" y="149" font-size="11">Eval + Synthetic (read)</text>
+          <text x="575" y="36">POST /api/inspect</text><text x="575" y="52" font-size="11">multipart + rules</text>
+          <text x="575" y="96">profiles / from-sop</text><text x="575" y="112" font-size="11">GET+PUT, draft endpoint</text>
+          <text x="575" y="149" font-size="11">eval runs + synth + /files</text>
+        </g>
+      </svg>
+    </figure>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Phases</h2>
+    <ol class="list-decimal space-y-2 pl-5">
+      <li><strong>Backend routers.</strong> Implement the four stub routers to §8: <code>POST /api/inspect</code> (multipart image + profile_id + optional rules → <code>InspectionResult</code>, 422 on double judge failure), profiles GET/PUT + existing from-sop, synth generation endpoint, eval run list/detail, <code>/files/...</code> static serving from <code>data/</code> (gitignored content stays uncommitted).</li>
+      <li><strong>Frontend scaffold.</strong> <code>frontend/</code> (Vite + React + TS + Tailwind), typed API client, router with 4 pages, dev proxy to the backend.</li>
+      <li><strong>Inspect page.</strong> Profile picker, file upload, overlay with hoverable detections, verdict card with per-ruling reasons, rules textarea that re-runs the judge debounced (segmentation served from cache).</li>
+      <li><strong>Profiles page.</strong> List, edit (PUT), “Import from SOP” via the M5 draft endpoint with save-as-new confirmation.</li>
+      <li><strong>Eval + Synthetic pages.</strong> Eval: run list, per-category metrics table, ablation bar chart, clickable failure examples — read-only. Synthetic: gallery grouped by category and defect type from <code>data/synth/</code>.</li>
+      <li><strong>Record.</strong> Append the M6 entries (below) after verifying them against the build.</li>
+    </ol>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Acceptance Criteria</h2>
+    <ul class="list-disc space-y-1 pl-5">
+      <li>End-to-end inspect works in the browser: upload → overlay with hoverable detections → verdict card with reasons.</li>
+      <li>Editing rules in the textarea flips the verdict without re-uploading (judge-only rerun, visibly fast).</li>
+      <li>Profiles list/edit/SOP-import round-trips; Eval shows table + chart + clickable failures; Synthetic gallery groups correctly.</li>
+      <li><code>pytest</code> green (router tests via TestClient); frontend <code>tsc + build</code> clean; no secrets in frontend code.</li>
+      <li><code>manual:</code> full walkthrough on a second device against the dev servers (upload, rule flip, SOP import, gallery).</li>
+    </ul>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Test cases</h2>
+    <div class="overflow-x-auto rounded-box border border-base-content/5">
+      <table class="table table-zebra">
+        <thead><tr><th>Case</th><th>Expect</th></tr></thead>
+        <tbody>
+          <tr><td>POST /api/inspect, fake backend</td><td>Valid <code>InspectionResult</code>, overlay under <code>/files/</code></td></tr>
+          <tr><td>Same image + new rules</td><td>Segment adapter uncalled (cache hit), verdict differs</td></tr>
+          <tr><td>Double judge failure</td><td>HTTP 422, clean error body</td></tr>
+          <tr><td>Unknown profile id</td><td>404, no traceback</td></tr>
+          <tr><td>PUT profile invalid JSON</td><td>422, profile file unchanged</td></tr>
+          <tr><td>from-sop draft save flow</td><td>Draft unsaved until confirmed; then valid JSON file</td></tr>
+          <tr><td>Eval run detail, missing id</td><td>404, no traceback</td></tr>
+          <tr><td><code>/files/...</code> traversal (<code>..</code>)</td><td>Blocked, no escape from <code>data/</code></td></tr>
+          <tr><td>Frontend build</td><td><code>tsc</code> + <code>vite build</code> clean</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Probes</h2>
+    <ul class="list-disc space-y-1 pl-5">
+      <li><strong>Tier probe:</strong> estimator says L (11 files + user-visible flow + server API). Agreed — full plan, full pipeline.</li>
+      <li><strong>Record probe:</strong> no frontend/router entries exist — absence is not a constraint; M6 establishes the first entries (below).</li>
+      <li><strong>Code probe:</strong> routers are one-line stubs, <code>main.py</code> holds only <code>/api/health</code> (29 lines), <code>frontend/</code> absent, Node v22 + npm 10 present. The live-editor shortcut is real: <code>run_inspection</code> already takes call-only <code>rules</code> and the segment cache keys on image+prompts, so a rules-only rerun skips segmentation with no new server state.</li>
+      <li><strong>Not probed (needs you):</strong> real-model latency for the debounced editor (manual criterion); npm registry reachability for scaffolding (build fails fast and loudly if offline).</li>
+    </ul>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Risks &amp; out of scope</h2>
+    <ul class="list-disc space-y-1 pl-5">
+      <li><strong>Regenerating routers breaks CLI parity</strong> → routers call the same <code>run_inspection</code>/profile functions the CLI uses; router tests assert identical verdicts for identical inputs.</li>
+      <li><strong>Uploads polluting the repo</strong> → uploads land in gitignored <code>data/uploads/</code>, served via <code>/files/</code> with traversal blocked (test case above).</li>
+      <li><strong>Out of scope:</strong> webcam (cut), eval-run launching (read-only), conveyor video (M7 stretch), deploy (M7), auth/multi-user (never in HANDOFF).</li>
+    </ul>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Record Updates</h2>
+    <p class="opacity-80">Written at the <em>end</em> of implementation, verified against the built code.</p>
+    <pre class="mt-3 overflow-x-auto rounded-box bg-base-200 p-4 text-sm">- (api) Inspection requests are currently served by FastAPI routers with images served from data/ under /files/.
+- (frontend) The web app currently offers Inspect, Profiles, Eval, and Synthetic pages against the backend API.
+- (frontend) The Inspect page currently re-runs only the judge when rules change, reusing cached segmentation.
+- (frontend) The Eval page currently displays existing runs and never launches new ones.
+- (frontend) Image upload is currently file-based without webcam capture.</pre>
+  </div></section>
+
+  <div class="alert alert-info mt-8" role="alert">
+    <span><strong>Next step:</strong> approve here or reply <strong>“approve”</strong> in chat — but first merge <strong>PR #5</strong>, since M6 branches from <code>main</code> after it. On approval I’ll spec, build, review, and stop with the M6 readout and PR.</span>
+  </div>
+
+</main>
+</body>
+</html>

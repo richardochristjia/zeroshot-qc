@@ -1,0 +1,4 @@
+- Plan says ablation matches on source + seed + sorted categories; EvalRunSummary has all three plus metrics on the list endpoint (src/api.ts:118-127), so no extra fetches. One row per mode, first (newest) run wins.
+- Plan keeps the failure viewer; its reset-on-row effect (src/pages/Eval.tsx:159-ish) is redundant because the parent keys FailureDetail by row; removed.
+- Three eval effects trigger set-state-in-effect lint warnings (Eval.tsx:116,159,176). Fix: drop the redundant initial setStatus; reset selectedFailure in the click handler; derive "loading detail" from detail.runId !== selectedId plus a failed-id state.
+- Plan has no n/accuracy columns in the table; spec lists F1 bar, F1, P, R, AUROC only. Followed spec; accuracy appears in the KPIs, n in the header.

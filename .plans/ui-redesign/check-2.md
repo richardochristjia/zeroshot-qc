@@ -1,0 +1,4 @@
+- Plan says the sprite is mounted once in App; App.tsx is rebuilt in the Shell phase, so IconSprite is exported from Icon.tsx and mounted there, not now.
+- Plan lists 19 icon names; the prototype sprite also has gauge (needed for Eval KPIs). Included it.
+- Focus ring is already global from phase 1 (index.css); this phase only relies on the pointer:coarse 44px sizing via .btn/.ctl, which Button and Field controls carry.
+- Field clones id/aria-describedby into a single child control, so pages pass one input/select/textarea per Field.

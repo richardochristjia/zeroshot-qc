@@ -1,0 +1,1806 @@
+{
+ "url": "http://localhost:4181/eval",
+ "at": "2026-10-28T04:21:40.329Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 6,
+   "filled": [
+    0.63,
+    0.73,
+    0.73,
+    0.73,
+    0.73,
+    0.68
+   ],
+   "motion": {
+    "elements": 2,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 2,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 4665,
+     "screens": 5.2,
+     "words": 972,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 10,
+     "sections": 5,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Eval",
+     "words": 1,
+     "chars": 4,
+     "lines": 1,
+     "size": 20,
+     "vw": 1.4,
+     "font": "Fira Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.5,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Eval",
+     "words": 1,
+     "lines": 1,
+     "size": 20,
+     "font": "Fira Sans"
+    },
+    "headings": [],
+    "headingSummary": {
+     "count": 0,
+     "maxLines": 0,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Fira Sans",
+       "share": 0.97,
+       "mono": false
+      },
+      {
+       "family": "Fira Code",
+       "share": 0.03,
+       "mono": true
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      12,
+      13,
+      14,
+      15,
+      20,
+      26
+     ],
+     "sizeCount": 6,
+     "notLoaded": [],
+     "body": {
+      "font": "Fira Sans",
+      "size": 14,
+      "leading": 1.43,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 14.6
+     },
+     "measureChars": 149,
+     "max": {
+      "size": 26,
+      "vw": 1.8,
+      "font": "Fira Sans",
+      "text": "0.000"
+     },
+     "monoShare": 0.03,
+     "monoProseShare": 0.03,
+     "monoFamilies": [
+      "Fira Code"
+     ],
+     "monoSamples": [
+      "20261027T090316Z-sam_only",
+      "20261027T091346Z-sam_judge",
+      "20261027T094406Z-sam_judge_ref",
+      "m5verify-sam_judge",
+      "m5verify-sam_judge_ref",
+      "m5verify-sam_only"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.01,
+     "smallText": 10
+    },
+    "eyebrows": [],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#111214",
+     "bodyBgHsl": {
+      "h": 220,
+      "s": 0.08,
+      "l": 0.07
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#18191c",
+       "top": 141,
+       "hsl": {
+        "h": 225,
+        "s": 0.08,
+        "l": 0.1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#ebeae6",
+       "share": 0.92
+      },
+      {
+       "color": "#8b8e95",
+       "share": 0.05
+      },
+      {
+       "color": "#a3a6ad",
+       "share": 0.03
+      }
+     ],
+     "button": {
+      "bg": "#1e1f23",
+      "hsl": {
+       "h": 228,
+       "s": 0.08,
+       "l": 0.13
+      },
+      "fg": "#ebeae6"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 2,
+     "inHero": 2,
+     "radius": 0,
+     "height": 28,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Dark",
+      "SAM only 20261027T090316Z-sam_only 0.000"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 113,
+     "hairlineSamples": [
+      "header.sticky.top-0 1440px",
+      "div.flex.items-center 258px",
+      "li.border-b.border-line 258px",
+      "li.border-b.border-line 258px",
+      "li.border-b.border-line 258px"
+     ],
+     "outlinedBoxes": 5,
+     "dashed": 1,
+     "blurred": 0,
+     "roundedBoxes": 5,
+     "boxRadius": 6,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 3,
+       "iconTopped": false,
+       "rounded": true,
+       "top": 141
+      }
+     ]
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 4,
+     "fixed": true,
+     "height": 53,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "fira sans",
+     "fira code"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 4665,
+    "margins": {
+     "left": 75,
+     "right": 61
+    },
+    "sections": [
+     {
+      "sel": "section.rounded-md.border",
+      "tag": "section",
+      "top": 141,
+      "height": 390,
+      "words": 63,
+      "media": 0,
+      "middle": 121,
+      "heading": {
+       "text": "0.000",
+       "size": 26,
+       "tag": "span"
+      },
+      "left": 351,
+      "right": 75,
+      "textLeft": 351,
+      "textRight": 75,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section.rounded-md.border",
+      "tag": "section",
+      "top": 546,
+      "height": 151,
+      "words": 20,
+      "media": 0,
+      "middle": 762,
+      "heading": {
+       "text": "Ablation · same seed, same N images",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 351,
+      "right": 75,
+      "textLeft": 351,
+      "textRight": 75,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "ul",
+      "tag": "ul",
+      "top": 754,
+      "height": 3699,
+      "words": 800,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 337,
+      "right": 61,
+      "textLeft": 351,
+      "textRight": 570,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div.border-t.border-line",
+      "tag": "div",
+      "top": 4453,
+      "height": 147,
+      "words": 8,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 733,
+      "right": 457,
+      "textLeft": 733,
+      "textRight": 457,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Eval",
+      "size": 20,
+      "top": 73,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 60,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0.1,
+    "voidBox": {
+     "x": 600,
+     "y": 540,
+     "w": 720,
+     "h": 180
+    }
+   },
+   "app": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "dark": true,
+    "ground": "#111214",
+    "sidebar": null,
+    "topbar": {
+     "h": 53
+    },
+    "canvas": {
+     "left": 75,
+     "right": 61
+    },
+    "hero": {
+     "text": "Eval",
+     "words": 1,
+     "chars": 4,
+     "lines": 1,
+     "size": 20,
+     "vw": 1.4,
+     "font": "Fira Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.5,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 4,
+     "firstScreen": 4,
+     "ragged": [
+      {
+       "diff": 165,
+       "top": 141
+      }
+     ],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 6,
+     "radii": [
+      [
+       6,
+       5
+      ],
+      [
+       0,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 20,
+     "leftAligned": 0,
+     "figures": 37,
+     "tabularShare": 1,
+     "kpiMax": 26
+    },
+    "rows": {
+     "count": 5,
+     "median": 37
+    },
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.04,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      12,
+      13,
+      14,
+      15,
+      20,
+      26
+     ]
+    },
+    "title": {
+     "text": "Eval",
+     "size": 20,
+     "top": 73
+    },
+    "colourShare": 0
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 6,
+   "filled": [
+    0.82,
+    0.88,
+    0.92,
+    0.92,
+    0.92,
+    0.86
+   ],
+   "motion": {
+    "elements": 2,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 2,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 5302,
+     "screens": 5.2,
+     "words": 967,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 10,
+     "sections": 5,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Eval",
+     "words": 1,
+     "chars": 4,
+     "lines": 1,
+     "size": 20,
+     "vw": 2.6,
+     "font": "Fira Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.5,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Eval",
+     "words": 1,
+     "lines": 1,
+     "size": 20,
+     "font": "Fira Sans"
+    },
+    "headings": [
+     {
+      "text": "0.000",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 26,
+      "vw": 3.4,
+      "font": "Fira Sans",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.29,
+      "top": 785,
+      "tag": "dd",
+      "kind": "heading"
+     },
+     {
+      "text": "0.000",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 26,
+      "vw": 3.4,
+      "font": "Fira Sans",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.29,
+      "top": 785,
+      "tag": "dd",
+      "kind": "statement"
+     },
+     {
+      "text": "0.000",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 26,
+      "vw": 3.4,
+      "font": "Fira Sans",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.29,
+      "top": 785,
+      "tag": "dd",
+      "kind": "statement"
+     },
+     {
+      "text": "0.500",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 26,
+      "vw": 3.4,
+      "font": "Fira Sans",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.29,
+      "top": 851,
+      "tag": "dd",
+      "kind": "statement"
+     },
+     {
+      "text": "0.333",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 26,
+      "vw": 3.4,
+      "font": "Fira Sans",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.29,
+      "top": 851,
+      "tag": "dd",
+      "kind": "statement"
+     }
+    ],
+    "headingSummary": {
+     "count": 5,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 4,
+     "centered": 0,
+     "medianWords": 1,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Fira Sans",
+       "share": 0.97,
+       "mono": false
+      },
+      {
+       "family": "Fira Code",
+       "share": 0.03,
+       "mono": true
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      12,
+      13,
+      14,
+      15,
+      20,
+      26
+     ],
+     "sizeCount": 6,
+     "notLoaded": [],
+     "body": {
+      "font": "Fira Sans",
+      "size": 14,
+      "leading": 1.43,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 14.6
+     },
+     "measureChars": 104,
+     "max": {
+      "size": 26,
+      "vw": 3.4,
+      "font": "Fira Sans",
+      "text": "0.000"
+     },
+     "monoShare": 0.03,
+     "monoProseShare": 0.03,
+     "monoFamilies": [
+      "Fira Code"
+     ],
+     "monoSamples": [
+      "20261027T090316Z-sam_only",
+      "20261027T091346Z-sam_judge",
+      "20261027T094406Z-sam_judge_ref",
+      "m5verify-sam_judge",
+      "m5verify-sam_judge_ref",
+      "m5verify-sam_only"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.01,
+     "smallText": 10
+    },
+    "eyebrows": [
+     {
+      "text": "F1",
+      "above": "0.000",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 767
+     },
+     {
+      "text": "Precision",
+      "above": "0.000",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 767
+     },
+     {
+      "text": "Recall",
+      "above": "0.000",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 767
+     },
+     {
+      "text": "AUROC",
+      "above": "0.500",
+      "upper": true,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 833
+     },
+     {
+      "text": "Accuracy",
+      "above": "0.333",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 833
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#111214",
+     "bodyBgHsl": {
+      "h": 220,
+      "s": 0.08,
+      "l": 0.07
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#18191c",
+       "top": 141,
+       "hsl": {
+        "h": 225,
+        "s": 0.08,
+        "l": 0.1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#ebeae6",
+       "share": 0.92
+      },
+      {
+       "color": "#8b8e95",
+       "share": 0.05
+      },
+      {
+       "color": "#a3a6ad",
+       "share": 0.03
+      }
+     ],
+     "button": {
+      "bg": "#1e1f23",
+      "hsl": {
+       "h": 228,
+       "s": 0.08,
+       "l": 0.13
+      },
+      "fg": "#ebeae6"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 1,
+     "inHero": 1,
+     "radius": 0,
+     "height": 56,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "SAM only 20261027T090316Z-sam_only 0.000"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 113,
+     "hairlineSamples": [
+      "header.sticky.top-0 768px",
+      "div.flex.items-center 726px",
+      "li.border-b.border-line 726px",
+      "li.border-b.border-line 726px",
+      "li.border-b.border-line 726px"
+     ],
+     "outlinedBoxes": 5,
+     "dashed": 1,
+     "blurred": 0,
+     "roundedBoxes": 5,
+     "boxRadius": 6,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 4,
+     "fixed": true,
+     "height": 53,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "fira sans",
+     "fira code"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 5302,
+    "margins": {
+     "left": 21,
+     "right": 21
+    },
+    "sections": [
+     {
+      "sel": "section.rounded-md.border",
+      "tag": "section",
+      "top": 141,
+      "height": 555,
+      "words": 50,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "9 runs",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 21,
+      "right": 21,
+      "textLeft": 35,
+      "textRight": 35,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section.rounded-md.border",
+      "tag": "section",
+      "top": 711,
+      "height": 456,
+      "words": 63,
+      "media": 0,
+      "middle": 79,
+      "heading": {
+       "text": "0.000",
+       "size": 26,
+       "tag": "span"
+      },
+      "left": 35,
+      "right": 35,
+      "textLeft": 35,
+      "textRight": 35,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section.rounded-md.border",
+      "tag": "section",
+      "top": 1183,
+      "height": 151,
+      "words": 20,
+      "media": 0,
+      "middle": 446,
+      "heading": {
+       "text": "Ablation · same seed, same N images",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 35,
+      "right": 35,
+      "textLeft": 35,
+      "textRight": 35,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "ul",
+      "tag": "ul",
+      "top": 1391,
+      "height": 3699,
+      "words": 800,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 21,
+      "right": 21,
+      "textLeft": 35,
+      "textRight": 214,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div.border-t.border-line",
+      "tag": "div",
+      "top": 5090,
+      "height": 147,
+      "words": 8,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 259,
+      "right": 259,
+      "textLeft": 259,
+      "textRight": 259,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Eval",
+      "size": 20,
+      "top": 73,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 20,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "dark": true,
+    "ground": "#111214",
+    "sidebar": null,
+    "topbar": {
+     "h": 53
+    },
+    "canvas": {
+     "left": 21,
+     "right": 21
+    },
+    "hero": {
+     "text": "Eval",
+     "words": 1,
+     "chars": 4,
+     "lines": 1,
+     "size": 20,
+     "vw": 2.6,
+     "font": "Fira Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.5,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 4,
+     "firstScreen": 2,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 6,
+     "radii": [
+      [
+       6,
+       5
+      ],
+      [
+       0,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 20,
+     "leftAligned": 0,
+     "figures": 37,
+     "tabularShare": 1,
+     "kpiMax": 26
+    },
+    "rows": {
+     "count": 5,
+     "median": 37
+    },
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.04,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      12,
+      13,
+      14,
+      15,
+      20,
+      26
+     ]
+    },
+    "title": {
+     "text": "Eval",
+     "size": 20,
+     "top": 73
+    },
+    "colourShare": 0
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 9,
+   "filled": [
+    0.88,
+    0.85,
+    0.93,
+    0.93,
+    0.93,
+    0.93,
+    0.93,
+    0.93,
+    0.87
+   ],
+   "motion": {
+    "elements": 2,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 2,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 7362,
+     "screens": 8.7,
+     "words": 965,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 10,
+     "sections": 5,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Eval",
+     "words": 1,
+     "chars": 4,
+     "lines": 1,
+     "size": 20,
+     "vw": 5.1,
+     "font": "Fira Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.5,
+     "top": 113,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Eval",
+     "words": 1,
+     "lines": 1,
+     "size": 20,
+     "font": "Fira Sans"
+    },
+    "headings": [
+     {
+      "text": "0.000",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 26,
+      "vw": 6.7,
+      "font": "Fira Sans",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.25,
+      "top": 844,
+      "tag": "dd",
+      "kind": "statement"
+     },
+     {
+      "text": "0.000",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 26,
+      "vw": 6.7,
+      "font": "Fira Sans",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.25,
+      "top": 844,
+      "tag": "dd",
+      "kind": "statement"
+     },
+     {
+      "text": "0.000",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 26,
+      "vw": 6.7,
+      "font": "Fira Sans",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.25,
+      "top": 844,
+      "tag": "dd",
+      "kind": "statement"
+     },
+     {
+      "text": "0.500",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 26,
+      "vw": 6.7,
+      "font": "Fira Sans",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.25,
+      "top": 911,
+      "tag": "dd",
+      "kind": "statement"
+     },
+     {
+      "text": "0.333",
+      "words": 1,
+      "chars": 5,
+      "lines": 1,
+      "size": 26,
+      "vw": 6.7,
+      "font": "Fira Sans",
+      "weight": 500,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.25,
+      "top": 911,
+      "tag": "dd",
+      "kind": "statement"
+     }
+    ],
+    "headingSummary": {
+     "count": 5,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 5,
+     "centered": 0,
+     "medianWords": 1,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Fira Sans",
+       "share": 0.97,
+       "mono": false
+      },
+      {
+       "family": "Fira Code",
+       "share": 0.03,
+       "mono": true
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      12,
+      13,
+      14,
+      20,
+      26
+     ],
+     "sizeCount": 5,
+     "notLoaded": [],
+     "body": {
+      "font": "Fira Sans",
+      "size": 14,
+      "leading": 1.43,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 14.6
+     },
+     "measureChars": 51,
+     "max": {
+      "size": 26,
+      "vw": 6.7,
+      "font": "Fira Sans",
+      "text": "0.000"
+     },
+     "monoShare": 0.03,
+     "monoProseShare": 0.03,
+     "monoFamilies": [
+      "Fira Code"
+     ],
+     "monoSamples": [
+      "20261027T090316Z-sam_only",
+      "20261027T091346Z-sam_judge",
+      "20261027T094406Z-sam_judge_ref",
+      "m5verify-sam_judge",
+      "m5verify-sam_judge_ref",
+      "m5verify-sam_only"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0,
+     "centerShare": 0.01,
+     "smallText": 10
+    },
+    "eyebrows": [
+     {
+      "text": "F1",
+      "above": "0.000",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 826
+     },
+     {
+      "text": "Precision",
+      "above": "0.000",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 826
+     },
+     {
+      "text": "Recall",
+      "above": "0.000",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 826
+     },
+     {
+      "text": "AUROC",
+      "above": "0.500",
+      "upper": true,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 893
+     },
+     {
+      "text": "Accuracy",
+      "above": "0.333",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 12,
+      "top": 893
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#111214",
+     "bodyBgHsl": {
+      "h": 220,
+      "s": 0.08,
+      "l": 0.07
+     },
+     "dark": true,
+     "sectionBgs": [
+      {
+       "color": "#18191c",
+       "top": 181,
+       "hsl": {
+        "h": 225,
+        "s": 0.08,
+        "l": 0.1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#ebeae6",
+       "share": 0.92
+      },
+      {
+       "color": "#8b8e95",
+       "share": 0.05
+      },
+      {
+       "color": "#a3a6ad",
+       "share": 0.03
+      }
+     ],
+     "button": {
+      "bg": "#1e1f23",
+      "hsl": {
+       "h": 228,
+       "s": 0.08,
+       "l": 0.13
+      },
+      "fg": "#ebeae6"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 1,
+     "inHero": 1,
+     "radius": 0,
+     "height": 56,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "SAM only 20261027T090316Z-sam_only 0.000"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 113,
+     "hairlineSamples": [
+      "header.sticky.top-0 390px",
+      "div.flex.items-center 356px",
+      "li.border-b.border-line 356px",
+      "li.border-b.border-line 356px",
+      "li.border-b.border-line 356px"
+     ],
+     "outlinedBoxes": 5,
+     "dashed": 1,
+     "blurred": 0,
+     "roundedBoxes": 5,
+     "boxRadius": 6,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": {
+     "links": 4,
+     "fixed": true,
+     "height": 93,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "fira sans",
+     "fira code"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 7362,
+    "margins": {
+     "left": 17,
+     "right": 17
+    },
+    "sections": [
+     {
+      "sel": "section.rounded-md.border",
+      "tag": "section",
+      "top": 181,
+      "height": 555,
+      "words": 50,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "9 runs",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 17,
+      "right": 17,
+      "textLeft": 31,
+      "textRight": 31,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "section.rounded-md.border",
+      "tag": "section",
+      "top": 751,
+      "height": 476,
+      "words": 63,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "0.000",
+       "size": 26,
+       "tag": "span"
+      },
+      "left": 31,
+      "right": 31,
+      "textLeft": 31,
+      "textRight": 31,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "section.rounded-md.border",
+      "tag": "section",
+      "top": 1243,
+      "height": 151,
+      "words": 20,
+      "media": 0,
+      "middle": 76,
+      "heading": {
+       "text": "Ablation · same seed, same N images",
+       "size": 13,
+       "tag": "h2"
+      },
+      "left": 31,
+      "right": 31,
+      "textLeft": 31,
+      "textRight": 31,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "ul",
+      "tag": "ul",
+      "top": 1451,
+      "height": 5699,
+      "words": 800,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 17,
+      "right": 17,
+      "textLeft": 31,
+      "textRight": 33,
+      "fullBleed": false,
+      "footer": false,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     },
+     {
+      "sel": "div.border-t.border-line",
+      "tag": "div",
+      "top": 7150,
+      "height": 147,
+      "words": 8,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": 70,
+      "right": 70,
+      "textLeft": 70,
+      "textRight": 70,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": true,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Eval",
+      "size": 20,
+      "top": 113,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 16,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 1,
+    "bodySize": 13,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "dark": true,
+    "ground": "#111214",
+    "sidebar": null,
+    "topbar": {
+     "h": 93
+    },
+    "canvas": {
+     "left": 17,
+     "right": 17
+    },
+    "hero": {
+     "text": "Eval",
+     "words": 1,
+     "chars": 4,
+     "lines": 1,
+     "size": 20,
+     "vw": 5.1,
+     "font": "Fira Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.5,
+     "top": 113,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 4,
+     "firstScreen": 2,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 6,
+     "radii": [
+      [
+       6,
+       5
+      ],
+      [
+       0,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 20,
+     "leftAligned": 0,
+     "figures": 37,
+     "tabularShare": 1,
+     "kpiMax": 26
+    },
+    "rows": {
+     "count": 5,
+     "median": 37
+    },
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.04,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      12,
+      13,
+      14,
+      20,
+      26
+     ]
+    },
+    "title": {
+     "text": "Eval",
+     "size": 20,
+     "top": 113
+    },
+    "colourShare": 0
+   },
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "WARN",
+   "id": "ragged-row",
+   "width": 1440,
+   "message": "1 pair(s) of cards in one row end at different heights (by 165px).",
+   "fix": "Cards that share a row share a bottom edge: balance them by their content (the same number of rows, a block of similar height beside it), or stack them. In testing, ragged rows were marked down every time."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-eval/desktop-fold.jpg",
+   "pages": [
+    "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-eval/desktop-page-01.jpg",
+    "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-eval/desktop-page-02.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-eval/tablet-fold.jpg",
+   "pages": [
+    "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-eval/tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-eval/mobile-fold.jpg",
+   "pages": [
+    "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-eval/mobile-page-01.jpg",
+    "/Users/167560.KEVIN/orca/projects/Zeroshot QC/.plans/ui-redesign/taste/dark-eval/mobile-page-02.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

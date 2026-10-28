@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en" data-theme="luxury">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZeroShot QC — M1 Plan</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/daisyui.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5.5.19/themes.css">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.2.4/dist/index.global.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:where(.grid,.flex)>*{min-width:0}
+:where(p,h1,h2,h3,li,td,th,.badge){overflow-wrap:anywhere}
+:where(svg){max-width:100%;height:auto}
+</style>
+</head>
+<body class="bg-base-100 text-base-content">
+<main class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="badge badge-warning badge-soft">Tier L</span>
+    <span class="badge badge-outline">Scope: M1 only</span>
+    <span class="badge badge-outline">Awaiting approval — no code written</span>
+  </div>
+  <h1 class="mt-4 text-3xl font-bold sm:text-4xl">ZeroShot QC — M1: Scaffold + Adapters</h1>
+  <p class="mt-2 opacity-80">Source: <code>HANDOFF.md</code> + <code>ROADMAP.md</code> (Meta-Hackathon docs). Workspace today is empty — one initial commit, no code, no <code>.agents/RECORD.md</code>. Design source for this page: Lavish fallback (Tailwind + DaisyUI) — the project has no design system yet.</p>
+
+  <div class="alert alert-warning mt-6" role="alert">
+    <span><strong>Decisions already locked by you:</strong> (1) this run covers <strong>M1 only</strong>, then stops for review; (2) <strong>no Meta keys/docs yet</strong> — real HTTP adapters are built behind the HANDOFF §5 protocols, driven by <code>.env</code>, and verified with fakes; (3) <strong>MVTec not downloaded</strong> — the plan includes the download step. Nothing below re-asks these.</span>
+  </div>
+
+  <section class="card card-border bg-base-100 mt-8"><div class="card-body">
+    <h2 class="card-title">Problem</h2>
+    <p>Small factories inspect by eye because automated inspection needs thousands of labeled photos per product. ZeroShot QC claims zero-training inspection: SAM 3.1 segments candidate defects from text prompts, Muse Spark judges them against plain-English rules and a known-good reference, Muse Image generates synthetic test data. The whole claim rests on one unproven assumption — that SAM 3.1 text prompts can find small industrial defects (ROADMAP Day-1 risk check). M1 exists to prove the plumbing and surface that risk as early as possible.</p>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Solution</h2>
+    <p>Scaffold the exact HANDOFF §4 layout (backend only in M1; frontend arrives at M6), implement the §6 schemas verbatim, and build the three adapter protocols (§5) with two implementations each: a real Meta HTTP adapter whose request shape is isolated in one module so it can be corrected the moment official docs arrive, and a deterministic fake for tests. A disk cache keyed by <code>sha256</code> of inputs (§2) wraps every model call from day one, so eval reruns never re-pay. <code>/api/health</code> reports configured model IDs without leaking keys. <code>scripts/smoke.py</code> runs the adapters over 3 MVTec images and reports per-category mask counts — the Day-1 risk signal.</p>
+    <figure class="mt-4">
+      <svg viewBox="0 0 720 150" role="img" aria-label="M1 architecture flow" class="w-full">
+        <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+        <g fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="10" y="45" width="120" height="60" rx="8"/><rect x="160" y="45" width="130" height="60" rx="8"/><rect x="320" y="45" width="130" height="60" rx="8"/><rect x="480" y="45" width="110" height="60" rx="8"/><rect x="620" y="45" width="90" height="60" rx="8"/>
+          <path d="M130,75 L160,75" marker-end="url(#a)"/><path d="M290,75 L320,75" marker-end="url(#a)"/><path d="M450,75 L480,75" marker-end="url(#a)"/><path d="M590,75 L620,75" marker-end="url(#a)"/>
+        </g>
+        <g text-anchor="middle" fill="currentColor" font-size="13">
+          <text x="70" y="70">MVTec image</text><text x="70" y="90" font-size="11">data/mvtec/</text>
+          <text x="225" y="70">Segmenter</text><text x="225" y="90" font-size="11">SAM 3.1 / fake</text>
+          <text x="385" y="70">Judge</text><text x="385" y="90" font-size="11">Muse Spark / fake</text>
+          <text x="535" y="70">Disk cache</text><text x="535" y="90" font-size="11">sha256 inputs</text>
+          <text x="665" y="70">Overlay</text><text x="665" y="90" font-size="11">+ counts</text>
+        </g>
+        <text x="360" y="25" text-anchor="middle" fill="currentColor" font-size="12">Every model call passes through the cache; adapters swap API ↔ fake behind one protocol</text>
+      </svg>
+    </figure>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Phases</h2>
+    <ol class="list-decimal space-y-2 pl-5">
+      <li><strong>Scaffold.</strong> Repo layout per HANDOFF §4 (backend subtree), <code>.env.example</code> (§11), <code>.gitignore</code> for <code>data/</code> and keys, pinned deps (FastAPI, Pydantic v2, Pillow, numpy, opencv-headless, pycocotools), README stub noting MVTec CC BY-NC-SA 4.0.</li>
+      <li><strong>Schemas + config.</strong> §6 Pydantic models verbatim in <code>schemas.py</code>; <code>config.py</code> via pydantic-settings reading <code>.env</code> — model IDs never hardcoded (§2).</li>
+      <li><strong>Adapters.</strong> <code>Segmenter</code> / <code>Judge</code> / <code>ImageGenerator</code> protocols (§5); real HTTP adapters with the Meta request/response mapping isolated in one place per adapter; deterministic fakes in <code>fakes.py</code>.</li>
+      <li><strong>Cache.</strong> <code>pipeline/cache.py</code>: disk cache keyed by <code>sha256(image bytes + prompts + model id)</code>; a hit must not call the adapter.</li>
+      <li><strong>Health + smoke.</strong> <code>GET /api/health</code> (status + configured model IDs, no secrets); <code>scripts/smoke.py</code> runs SAM over 3 MVTec images × 3 prompts, saves overlays, prints counts; calls the judge once and validates JSON against <code>Verdict</code>.</li>
+      <li><strong>Data step.</strong> Documented MVTec download into <code>data/mvtec/</code> (manual, license-gated); smoke degrades to a clear “data missing” message, never a stack trace, when absent.</li>
+      <li><strong>Record.</strong> Bootstrap <code>.agents/RECORD.md</code> (see Record Updates) as the last task, verified against what was actually built.</li>
+    </ol>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Acceptance criteria</h2>
+    <ul class="list-disc space-y-1 pl-5">
+      <li><code>GET /api/health</code> returns 200 with status and the model IDs from <code>.env</code> (empty strings when unset — never a key).</li>
+      <li><code>python scripts/smoke.py</code> with fakes enabled completes on any 3 images, saves overlays, and prints per-prompt mask counts.</li>
+      <li>Judge fake returns output that validates against <code>Verdict</code> on the first attempt.</li>
+      <li>Second identical smoke run is served from cache (adapter call count does not increase).</li>
+      <li><code>pytest</code> is green; no model ID, endpoint, or key appears anywhere in source.</li>
+      <li><code>manual:</code> with real keys + official docs pasted in, smoke prints real SAM mask counts for 3 MVTec images — the Day-1 risk readout (works / weak / fallback to golden-sample route per ROADMAP).</li>
+    </ul>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Test cases</h2>
+    <div class="overflow-x-auto rounded-box border border-base-content/5">
+      <table class="table table-zebra">
+        <thead><tr><th>Case</th><th>Expect</th></tr></thead>
+        <tbody>
+          <tr><td>Health with empty <code>.env</code></td><td>200; model IDs empty; no secret fields</td></tr>
+          <tr><td>Fake segmenter, known image + prompts</td><td>Deterministic <code>RawMask</code> list; stable across runs</td></tr>
+          <tr><td>Fake judge output</td><td>Validates as <code>Verdict</code>; verdict ∈ PASS/FAIL</td></tr>
+          <tr><td>Cache: same inputs twice</td><td>Adapter called once; second result identical</td></tr>
+          <tr><td>Cache: changed prompt</td><td>Cache miss; adapter called again</td></tr>
+          <tr><td>Smoke with <code>data/mvtec/</code> missing</td><td>Clear “data missing” message; exit ≠ crash</td></tr>
+          <tr><td>Grep guard: model IDs / keys in source</td><td>No matches outside <code>.env.example</code> placeholders</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Probes</h2>
+    <ul class="list-disc space-y-1 pl-5">
+      <li><strong>Workspace probe:</strong> target repo is empty (initial commit only) — greenfield scaffold, no existing code to match. Confirmed by listing + <code>git log</code>.</li>
+      <li><strong>Record probe:</strong> <code>.agents/RECORD.md</code> absent — bootstrap required (below). No recorded fact contradicts this plan.</li>
+      <li><strong>Not probed (needs you):</strong> Meta Model API shape and SAM 3.1 defect sensitivity. Both are unknowable from this repo; the adapter isolation + fake-first design means a wrong guess costs one module, not the pipeline. Listed as the top risk.</li>
+    </ul>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Risks &amp; fallbacks</h2>
+    <ul class="list-disc space-y-1 pl-5">
+      <li><strong>SAM 3.1 weak on defects</strong> → ROADMAP fallback: segment the object, let Muse Spark diff against the golden reference. Pitch unchanged. Decided at the M1 gate, not before.</li>
+      <li><strong>Meta API shape differs from the isolated mapping</strong> → rewrite only that mapping; protocols, cache, schemas, and tests are untouched.</li>
+      <li><strong>MVTec download blocked</strong> → M1 still completes against fakes + placeholder images; real-data smoke becomes the manual criterion above.</li>
+    </ul>
+    <p class="mt-3 opacity-80">Out of scope for this run: segmentation pipeline polish (M2), judge rules engine (M3), eval (M4), synthetic/SOP (M5), frontend (M6), deploy (M7), conveyor video (stretch).</p>
+  </div></section>
+
+  <section class="card card-border bg-base-100 mt-4"><div class="card-body">
+    <h2 class="card-title">Record Updates</h2>
+    <p class="opacity-80">Written at the <em>end</em> of implementation, verified against the built code — not at approval.</p>
+    <ol class="list-decimal space-y-2 pl-5 mt-2">
+      <li>Create <code>.agents/RECORD.md</code> with the forge <code>record-preamble.md</code> copied verbatim as its body, followed by the entries below.</li>
+    </ol>
+    <pre class="mt-3 overflow-x-auto rounded-box bg-base-200 p-4 text-sm">- (pipeline) Inspection currently routes every model call through a disk cache keyed by a hash of its inputs.
+- (adapters) Model access currently goes through Segmenter, Judge, and ImageGenerator protocols with fake implementations for tests.
+- (config) Model IDs are currently read from environment configuration and never hardcoded.
+- (data) The data directory currently holds datasets, cache, and run outputs and is excluded from version control.</pre>
+  </div></section>
+
+  <div class="alert alert-info mt-8" role="alert">
+    <span><strong>Next step:</strong> approve this plan here (annotate / send feedback) or reply <strong>“approve”</strong> in chat. On approval I’ll turn it into a spec + task list and build M1, then stop and report the smoke readout. To change scope, say what to cut or add — I won’t start M2 without your go-ahead.</span>
+  </div>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,4 @@
+- Plan holds for Profiles: all handlers (handleSaveEdit, handleDraftFromSop, handleSaveDraftAsNew, persistDraft, handleRefresh) are kept verbatim (src/pages/Profiles.tsx); only JSX is rebuilt on Alert/Button/Field/Panel/PageHeader/EmptyState (read src/components/*).
+- Plan's "Unsaved changes" hint needs a diff vs loaded profile; profiles[] holds the loaded copy (updated on save), so compare JSON of draft to profiles.find(id). No new state.
+- Plan's "Draft from SOP" header button scrolls/focuses the SOP panel; chosen: ref on the category input, scrollIntoView + focus.
+- Overwrite warning Alert has no warn kind (src/components/Alert.tsx); reuse kind=error with the confirm button inside rather than add a variant.

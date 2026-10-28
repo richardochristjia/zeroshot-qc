@@ -1,0 +1,5 @@
+- Fixture-tuned expectations may not transfer to MVTec; the fixture proves harness plumbing, not accuracy (backend/app/eval/fakes.py). Check: manual rerun on real data.
+- Real MVTec archive layout may differ from the loader's assumed layout; mismatch surfaces as the guidance error (backend/app/eval/dataset.py). Check: first real-data run.
+- Scripted fakes separate modes by construction and could mask a same-pattern wiring bug; mitigated by asserting judge call/skip per mode (backend/tests/test_eval_run.py). Check: review `test_modes_differ_only_in_judge_wiring`.
+- `sam_only` AUROC on the fixture is 0.5 by construction (constant fail score); a real segmenter with graded scores would rank. Check: real-data run.
+- Fixture PNGs byte-reproduce only for the same Pillow version; regenerating with a newer Pillow may diff (backend/tests/fixtures/mvtec/fixture.py). Check: `git status` after regenerating.
