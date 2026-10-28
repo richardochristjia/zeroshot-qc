@@ -1,46 +1,61 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { JSX } from 'react'
-import {
-  ApiError,
-  inspectImage,
-  listProfiles,
-  resolveFileUrl,
-} from '../api.ts'
-import type { Detection, InspectionResult, ProductProfile } from '../api.ts'
+import type { DragEvent, JSX } from 'react'
+import { ApiError, inspectImage, listProfiles, resolveFileUrl } from '../api.ts'
+import type { Detection, DefectRuling, InspectionResult, ProductProfile } from '../api.ts'
+import { Alert } from '../components/Alert.tsx'
+import { Button } from '../components/Button.tsx'
+import { EmptyState } from '../components/EmptyState.tsx'
+import { Field } from '../components/Field.tsx'
+import { Icon } from '../components/Icon.tsx'
+import { PageHeader } from '../components/PageHeader.tsx'
+import { Panel, PanelHeader } from '../components/Panel.tsx'
+import { VerdictBadge } from '../components/VerdictBadge.tsx'
+import { boxPercent } from '../geometry.ts'
 
 type Status = 'idle' | 'loading-profiles' | 'ready' | 'inspecting' | 'done'
 
 function formatSize(det: Detection): string {
-  const px = `${det.areaPx} px`
-  if (det.areaMm2 !== null) return `${px} (${det.areaMm2.toFixed(1)} mm²)`
-  return px
+  return det.areaMm2 !== null ? `${det.areaMm2.toFixed(1)} mm²` : `${det.areaPx} px`
 }
 
-interface HoverBoxProps {
+const DETECT_TEXT = 'text-[#18181a]'
+const HIGHLIGHT = 'shadow-[0_0_0_3px_color-mix(in_srgb,var(--ink)_35%,transparent)]'
+
+interface BoxProps {
   detection: Detection
+  index: number
+  real: boolean
+  highlighted: boolean
   naturalWidth: number
   naturalHeight: number
+  onHover: (id: string | null) => void
 }
 
-function HoverBox({ detection, naturalWidth, naturalHeight }: HoverBoxProps): JSX.Element | null {
-  if (naturalWidth <= 0 || naturalHeight <= 0) return null
-  const [x, y, w, h] = detection.bbox
-  const left = (x / naturalWidth) * 100
-  const top = (y / naturalHeight) * 100
-  const width = (w / naturalWidth) * 100
-  const height = (h / naturalHeight) * 100
+function DetectionBox({ detection, index, real, highlighted, naturalWidth, naturalHeight, onHover }: BoxProps): JSX.Element | null {
+  const pos = boxPercent(detection.bbox, naturalWidth, naturalHeight)
+  if (pos === null) return null
   return (
     <div
       tabIndex={0}
-      aria-label={`${detection.id} ${detection.label} ${formatSize(detection)}`}
-      className="group absolute border-2 border-amber-400 outline-none focus:border-amber-600"
-      style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` }}
+      aria-label={`${index}: ${detection.label}, ${real ? 'defect' : 'cleared'}`}
+      onPointerEnter={() => onHover(detection.id)}
+      onPointerLeave={() => onHover(null)}
+      onFocus={() => onHover(detection.id)}
+      onBlur={() => onHover(null)}
+      className={`absolute cursor-pointer rounded-[2px] border-2 transition-shadow ${real ? 'border-fail' : 'border-detect'} ${highlighted ? HIGHLIGHT : ''}`}
+      style={{ left: `${pos.left}%`, top: `${pos.top}%`, width: `${pos.width}%`, height: `${pos.height}%` }}
     >
-      <span className="pointer-events-none absolute left-0 top-0 hidden whitespace-nowrap bg-neutral-900 px-1.5 py-0.5 text-xs text-white group-hover:block group-focus:block">
-        {detection.id} · {detection.label} · {formatSize(detection)}
+      <span
+        className={`absolute -left-0.5 -top-[22px] h-5 min-w-5 rounded-t-[2px] px-1.5 font-mono text-xs font-semibold leading-5 ${real ? 'bg-fail text-on-fail' : `bg-detect ${DETECT_TEXT}`}`}
+      >
+        {index}
       </span>
     </div>
   )
+}
+
+function basename(path: string): string {
+  return path.split('/').pop() ?? path
 }
 
 export default function Inspect(): JSX.Element {
@@ -53,12 +68,16 @@ export default function Inspect(): JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 })
   const [rulesText, setRulesText] = useState<string>('')
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [dragOver, setDragOver] = useState(false)
+  const [refFailedUrl, setRefFailedUrl] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const debounceRef = useRef<number | null>(null)
   const fileRef = useRef<File | null>(null)
   fileRef.current = file
   const profileRef = useRef<string>('')
   profileRef.current = profileId
+  const inputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -116,11 +135,11 @@ export default function Inspect(): JSX.Element {
     [],
   )
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    const picked = event.target.files?.item(0) ?? null
+  const pickFile = (picked: File | null): void => {
     if (previewUrl !== null) URL.revokeObjectURL(previewUrl)
     setResult(null)
     setError(null)
+    setHoveredId(null)
     setNaturalSize({ w: 0, h: 0 })
     if (picked === null) {
       setFile(null)
@@ -129,6 +148,26 @@ export default function Inspect(): JSX.Element {
     }
     setFile(picked)
     setPreviewUrl(URL.createObjectURL(picked))
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    pickFile(event.target.files?.item(0) ?? null)
+    event.target.value = ''
+  }
+
+  const dropProps = {
+    onDragOver: (event: DragEvent) => {
+      event.preventDefault()
+      setDragOver(true)
+    },
+    onDragLeave: () => setDragOver(false),
+    onDrop: (event: DragEvent) => {
+      event.preventDefault()
+      setDragOver(false)
+      const dropped = event.dataTransfer.files.item(0)
+      if (dropped !== null && dropped.type.startsWith('image/')) pickFile(dropped)
+      else setError('Drop an image file (PNG or JPG).')
+    },
   }
 
   const currentRules = rulesText.trim() === '' ? undefined : rulesText
@@ -160,172 +199,291 @@ export default function Inspect(): JSX.Element {
     void runInspect(file, profileId, currentRules)
   }
 
+  const profile = profiles.find((p) => p.id === profileId) ?? null
   const shownImage = result?.overlayUrl ?? previewUrl
   const verdict = result?.verdict ?? null
+  const rulingById = new Map<string, DefectRuling>(verdict?.rulings.map((r) => [r.detectionId, r]) ?? [])
+  const inspecting = status === 'inspecting'
+  const refUrl = profile?.referenceImage ? resolveFileUrl(profile.referenceImage) : null
+  const refMissing = refUrl === null || refFailedUrl === refUrl
+
+  const submitLabel = inspecting ? 'Inspecting…' : result !== null ? 'Inspect again' : 'Inspect'
+  const submit = (
+    <Button variant="primary" icon="scan" onClick={handleSubmit} disabled={file === null || profileId === '' || inspecting}>
+      {submitLabel}
+    </Button>
+  )
+
+  const hiddenInput = (
+    <input ref={inputRef} type="file" accept="image/*" aria-label="Image file" onChange={handleFileChange} className="sr-only" />
+  )
 
   return (
     <section aria-label="Inspect">
-      <h1 className="text-xl font-semibold">Inspect</h1>
-      <p className="mt-2 text-sm">Upload an image and pick a profile to run an inspection.</p>
+      <PageHeader title="Inspect" subtitle="Segment candidates, then judge them against the profile rules.">
+        <div className="grid items-end gap-3 grid-cols-[minmax(180px,240px)_minmax(0,1fr)_auto] max-[1000px]:grid-cols-1">
+          <Field label="Profile">
+            <select className="ctl" value={profileId} onChange={(event) => setProfileId(event.target.value)}>
+              {profiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.id})
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="flex min-w-0 flex-col gap-1 text-[13px] font-medium text-ink-2">
+            Image
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              {...dropProps}
+              className={`flex min-h-9 min-w-0 items-center gap-2.5 rounded-md border border-dashed px-2.5 py-1 text-left text-[13px] font-normal text-ink-2 ${dragOver ? 'border-accent bg-sunken' : 'border-line-strong bg-surface'}`}
+            >
+              {previewUrl !== null && file !== null ? (
+                <>
+                  <img src={previewUrl} alt="" className="h-7 w-7 rounded-[3px] object-cover" />
+                  <span className="min-w-0 truncate">
+                    <b className="font-medium text-ink">{file.name}</b>
+                    {naturalSize.w > 0 && <span className="num"> · {naturalSize.w}×{naturalSize.h}</span>}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Icon name="upload" />
+                  Drop an image or click to choose
+                </>
+              )}
+            </button>
+            {hiddenInput}
+          </div>
+          {submit}
+        </div>
+      </PageHeader>
 
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label className="flex flex-col gap-1 text-sm font-medium">
-          Profile
-          <select
-            value={profileId}
-            onChange={(event) => setProfileId(event.target.value)}
-            className="rounded border border-neutral-300 bg-white px-2 py-1 text-sm"
+      {error !== null && <Alert className="mb-4">{error}</Alert>}
+
+      {file === null ? (
+        <div className="grid gap-4 grid-cols-[minmax(0,1.35fr)_minmax(320px,1fr)] max-[1000px]:grid-cols-1">
+          <div {...dropProps}>
+          <EmptyState
+            icon="upload"
+            title="Drop a part photo here"
+            className={`h-full min-h-72 justify-center ${dragOver ? 'border-accent bg-sunken' : ''}`}
+            action={
+              <Button icon="upload" onClick={() => inputRef.current?.click()}>
+                Choose file
+              </Button>
+            }
           >
-            {profiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profile.name} ({profile.id})
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm font-medium">
-          Image
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="text-sm"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={file === null || profileId === '' || status === 'inspecting'}
-          className="rounded bg-neutral-900 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
-        >
-          {status === 'inspecting' ? 'Inspecting…' : 'Inspect'}
-        </button>
-      </div>
-
-      {error !== null && (
-        <p role="alert" className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-          {error}
-        </p>
-      )}
-
-      {shownImage === null || shownImage === undefined ? (
-        <div className="mt-6 rounded border border-dashed border-neutral-300 px-4 py-10 text-center text-sm text-neutral-500">
-          No image yet. Choose an image file above, then press Inspect.
+            PNG or JPG. It is judged against the selected profile.
+          </EmptyState>
+          </div>
+          <Panel>
+            <PanelHeader title={profile?.name ?? 'Profile'} />
+            <div className="flex flex-col gap-3 p-3.5 text-sm">
+              {profile === null ? (
+                <p className="text-ink-2">{status === 'loading-profiles' ? 'Loading profiles…' : 'No profiles found.'}</p>
+              ) : (
+                <>
+                  <div>
+                    <h2>Rules</h2>
+                    <p className="mt-1 whitespace-pre-wrap">{profile.rules || 'No rules set.'}</p>
+                  </div>
+                  <div>
+                    <h2>Looks for</h2>
+                    <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                      {profile.defectPrompts.map((prompt) => (
+                        <li key={prompt} className="rounded-full border border-line-strong px-2 py-0.5 text-xs text-ink-2">
+                          {prompt}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </>
+              )}
+              <div>
+                <Button variant="primary" icon="scan" disabled>
+                  Inspect
+                </Button>
+              </div>
+            </div>
+          </Panel>
         </div>
       ) : (
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="grid items-start gap-4 grid-cols-[minmax(0,2fr)_minmax(340px,0.95fr)] max-[1000px]:grid-cols-1">
           <div>
-            <h2 className="text-sm font-semibold">Overlay</h2>
-            <div className="relative mt-2 inline-block max-w-full">
-              <img
-                src={resolveFileUrl(shownImage)}
-                alt={result !== null ? `Inspection overlay for ${result.profileId}` : 'Uploaded image preview'}
-                className="block max-w-full"
-                onLoad={(event) => {
-                  const img = event.currentTarget
-                  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-                    setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight })
-                  }
-                }}
-              />
-              {result !== null &&
-                result.detections.map((det) => (
-                  <HoverBox
-                    key={det.id}
-                    detection={det}
-                    naturalWidth={naturalSize.w}
-                    naturalHeight={naturalSize.h}
-                  />
-                ))}
+            <div className="grid items-start gap-3 grid-cols-2 max-[640px]:grid-cols-1">
+              <Panel aria-label="Reference">
+                <PanelHeader title={<><Icon name="check" />Reference</>}>
+                  {profile?.referenceImage && <span className="mono truncate text-ink-3">{basename(profile.referenceImage)}</span>}
+                </PanelHeader>
+                <div className="bg-sunken">
+                  {refMissing ? (
+                    <EmptyState icon="file" title="No reference set for this profile" className="m-3" />
+                  ) : (
+                    <img
+                      src={refUrl}
+                      alt={`Reference for ${profile?.name ?? 'profile'}`}
+                      className="block h-auto w-full"
+                      onError={() => setRefFailedUrl(refUrl)}
+                    />
+                  )}
+                </div>
+              </Panel>
+              <Panel aria-label="Under test">
+                <PanelHeader title={<><Icon name="scan" />Under test</>}>
+                  {result !== null && (
+                    <span className="num text-xs text-ink-2">
+                      {result.detections.length} candidate{result.detections.length === 1 ? '' : 's'}
+                    </span>
+                  )}
+                </PanelHeader>
+                <div className="relative bg-sunken">
+                  {shownImage !== null && shownImage !== undefined && (
+                    <img
+                      src={resolveFileUrl(shownImage)}
+                      alt={result !== null ? `Inspection overlay for ${result.profileId}` : 'Uploaded image preview'}
+                      className="block h-auto w-full"
+                      onLoad={(event) => {
+                        const img = event.currentTarget
+                        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                          setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight })
+                        }
+                      }}
+                    />
+                  )}
+                  {result !== null &&
+                    result.detections.map((det, i) => (
+                      <DetectionBox
+                        key={det.id}
+                        detection={det}
+                        index={i + 1}
+                        real={rulingById.get(det.id)?.isRealDefect ?? false}
+                        highlighted={hoveredId === det.id}
+                        naturalWidth={naturalSize.w}
+                        naturalHeight={naturalSize.h}
+                        onHover={setHoveredId}
+                      />
+                    ))}
+                </div>
+                {result !== null && result.detections.length === 0 && (
+                  <p role="status" className="border-t border-line px-3.5 py-2 text-[13px] text-ink-2">
+                    No defects detected. The image is shown unmarked.
+                  </p>
+                )}
+              </Panel>
             </div>
-            {result !== null && result.detections.length === 0 && (
-              <p className="mt-2 text-sm text-neutral-500">
-                No defects detected. The overlay shows the original image unmarked.
-              </p>
-            )}
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-2">
+              <span><i className="mr-1.5 inline-block h-3 w-3 rounded-[2px] border-2 border-fail align-[-2px]" />Ruled a defect</span>
+              <span><i className="mr-1.5 inline-block h-3 w-3 rounded-[2px] border-2 border-detect align-[-2px]" />Cleared by judge</span>
+              <span className="text-ink-3">Hover a box or a ruling to link them</span>
+            </div>
           </div>
 
-          <div>
-            <h2 className="text-sm font-semibold">Verdict</h2>
+          <Panel aria-label="Verdict">
+            <PanelHeader title={<><Icon name="list" />Verdict</>} />
             {verdict === null || result === null ? (
-              <p className="mt-2 text-sm text-neutral-500">
-                Press Inspect to get a verdict with per-detection reasons.
-              </p>
+              <p className="p-4 text-sm text-ink-2">Press Inspect to get a verdict with per-detection reasons.</p>
             ) : (
-              <div className="mt-2 rounded border border-neutral-300 px-4 py-3">
-                <div className="flex items-baseline gap-3">
-                  <span
-                    className={`text-lg font-bold ${verdict.verdict === 'PASS' ? 'text-green-700' : 'text-red-700'}`}
-                  >
-                    {verdict.verdict}
-                  </span>
-                  <span className="text-sm text-neutral-600">
-                    confidence {(verdict.confidence * 100).toFixed(1)}%
-                  </span>
+              <>
+                <div className="border-b border-line p-4">
+                  <div className="flex items-baseline gap-3">
+                    <VerdictBadge verdict={verdict.verdict} />
+                    <span className="num text-sm text-ink-2">confidence {(verdict.confidence * 100).toFixed(1)}%</span>
+                  </div>
+                  <p className="mt-2 text-sm">{verdict.summary}</p>
                 </div>
-                <p className="mt-1 text-sm">{verdict.summary}</p>
+                <div className="flex items-baseline justify-between px-4 pt-3">
+                  <h2>Rulings · {result.detections.length} candidate{result.detections.length === 1 ? '' : 's'}</h2>
+                  {verdict.missedDefects.length > 0 && (
+                    <span className="num text-xs text-ink-2">{verdict.missedDefects.length} missed defect{verdict.missedDefects.length === 1 ? '' : 's'}</span>
+                  )}
+                </div>
                 {verdict.rulings.length > 0 ? (
-                  <ul className="mt-3 space-y-2">
-                    {verdict.rulings.map((ruling) => (
-                      <li key={ruling.detectionId} className="rounded bg-neutral-100 px-2 py-1.5 text-sm">
-                        <span className="font-medium">{ruling.detectionId}</span>
-                        {' — '}
-                        {ruling.isRealDefect ? 'defect' : 'not a defect'}
-                        {ruling.ruleViolated !== null && ` (rule: ${ruling.ruleViolated})`}
-                        <span className="block text-neutral-700">{ruling.reason}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <ol className="m-0 list-none p-1.5">
+                    {verdict.rulings.map((ruling, pos) => {
+                      const di = result.detections.findIndex((d) => d.id === ruling.detectionId)
+                      const det = di >= 0 ? result.detections[di] : null
+                      const n = di >= 0 ? di + 1 : pos + 1
+                      const label = det?.label ?? ruling.detectionId
+                      return (
+                        <li
+                          key={ruling.detectionId}
+                          tabIndex={0}
+                          aria-label={`${n}: ${label}, ${ruling.isRealDefect ? 'defect' : 'cleared'}`}
+                          onPointerEnter={() => setHoveredId(ruling.detectionId)}
+                          onPointerLeave={() => setHoveredId(null)}
+                          onFocus={() => setHoveredId(ruling.detectionId)}
+                          onBlur={() => setHoveredId(null)}
+                          className={`grid cursor-pointer grid-cols-[26px_minmax(0,1fr)] gap-2.5 rounded-sm px-2 py-2.5 ${hoveredId === ruling.detectionId ? 'bg-sunken' : ''}`}
+                        >
+                          <span
+                            className={`inline-flex h-[22px] w-[22px] items-center justify-center rounded-[3px] font-mono text-xs font-semibold ${ruling.isRealDefect ? 'bg-fail text-on-fail' : `bg-detect ${DETECT_TEXT}`}`}
+                          >
+                            {n}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 text-sm">
+                              <b className="font-medium">{label}</b>
+                              {ruling.isRealDefect ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-fail-tint px-2 py-px text-xs font-medium text-fail">
+                                  <Icon name="alert" />Defect
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full border border-line-strong px-2 py-px text-xs text-ink-2">
+                                  <Icon name="check" />Cleared
+                                </span>
+                              )}
+                              {det !== null && (
+                                <span className="num text-xs text-ink-3">score {det.score.toFixed(2)} · {formatSize(det)}</span>
+                              )}
+                            </div>
+                            <p className="mt-0.5 text-[13px] text-ink-2">{ruling.reason}</p>
+                            {ruling.ruleViolated !== null && (
+                              <p className="mt-1 text-xs text-ink-3">Rule cited: {ruling.ruleViolated}</p>
+                            )}
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ol>
                 ) : (
-                  <p className="mt-2 text-sm text-neutral-500">No rulings: nothing was detected.</p>
+                  <p className="px-4 py-3 text-sm text-ink-2">No rulings: nothing was detected.</p>
                 )}
                 {verdict.missedDefects.length > 0 && (
-                  <p className="mt-2 text-sm text-neutral-600">
-                    Missed defects: {verdict.missedDefects.join(', ')}
-                  </p>
+                  <p className="px-4 pb-3 text-sm text-ink-2">Missed defects: {verdict.missedDefects.join(', ')}</p>
                 )}
-                {status === 'inspecting' && rulesText.trim() !== '' && (
-                  <p role="status" className="mt-2 text-sm text-neutral-500">
-                    Re-judging with edited rules…
-                  </p>
-                )}
-                <dl className="mt-3 grid grid-cols-3 gap-2 text-xs text-neutral-600">
-                  <div>
-                    <dt className="font-medium">Segment</dt>
-                    <dd>{result.timingsMs.segment.toFixed(0)} ms</dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium">Judge</dt>
-                    <dd>{result.timingsMs.judge.toFixed(0)} ms</dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium">Total</dt>
-                    <dd>{result.timingsMs.total.toFixed(0)} ms</dd>
-                  </div>
+                <dl className="m-0 grid grid-cols-3 border-t border-line">
+                  {([['Segment', result.timingsMs.segment], ['Judge', result.timingsMs.judge], ['Total', result.timingsMs.total]] as const).map(([name, ms], i) => (
+                    <div key={name} className={`px-3.5 py-2.5 ${i > 0 ? 'border-l border-line' : ''}`}>
+                      <dt className="flex items-center gap-1 text-xs text-ink-3"><Icon name="clock" />{name}</dt>
+                      <dd className="num m-0 text-[15px] font-medium">{ms.toFixed(0)} ms</dd>
+                    </div>
+                  ))}
                 </dl>
-              </div>
+              </>
             )}
-          </div>
-        </div>
-      )}
-
-      {file !== null && (
-        <div className="mt-6">
-          <label htmlFor="inspect-rules" className="text-sm font-semibold">
-            Rules override
-          </label>
-          <textarea
-            id="inspect-rules"
-            value={rulesText}
-            onChange={(event) => setRulesText(event.target.value)}
-            rows={4}
-            placeholder="Edit rules in plain English to re-judge the same image…"
-            className="mt-2 block w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm"
-          />
-          <p className="mt-1 text-xs text-neutral-500">
-            Edits re-judge the same image after a short pause; segment results are reused so
-            re-runs stay fast. Clearing the box restores the profile rules.
-          </p>
+            <div className="border-t border-line p-3.5">
+              <Field
+                label={<span className="inline-flex items-center gap-1.5"><Icon name="pencil" />Rules override</span>}
+                hint="Applies to this run only. Clear it to go back to the profile rules."
+              >
+                <textarea
+                  className="ctl"
+                  value={rulesText}
+                  onChange={(event) => setRulesText(event.target.value)}
+                  rows={4}
+                  placeholder="Edit rules in plain English to re-judge the same image…"
+                />
+              </Field>
+              {inspecting && rulesText.trim() !== '' && (
+                <p role="status" className="mt-1.5 flex items-center gap-1.5 text-xs text-ink-3">
+                  <i className="h-2 w-2 rounded-full bg-detect" aria-hidden="true" />
+                  Re-judging with edited rules · segmentation reused
+                </p>
+              )}
+            </div>
+          </Panel>
         </div>
       )}
     </section>
