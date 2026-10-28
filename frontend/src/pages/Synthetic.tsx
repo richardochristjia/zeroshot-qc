@@ -1,55 +1,57 @@
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
+import { motion } from 'motion/react'
 import { ApiError, listSyntheticGallery, resolveFileUrl } from '../api.ts'
 import type { SynthGalleryItem } from '../api.ts'
+import { Alert } from '../components/Alert.tsx'
+import { EmptyState } from '../components/EmptyState.tsx'
+import { Icon } from '../components/Icon.tsx'
+import { PageHeader } from '../components/PageHeader.tsx'
 
 function errorDetail(err: unknown, fallback: string): string {
   if (err instanceof ApiError) return err.detail
   return fallback
 }
 
-interface PairCardProps {
-  item: SynthGalleryItem
-}
-
-function PairCard({ item }: PairCardProps): JSX.Element {
+function PairCard({ item, index, showMask }: { item: SynthGalleryItem; index: number; showMask: boolean }): JSX.Element {
+  // Parent keys this card by imageUrl, so the broken flags reset per item.
   const [imgBroken, setImgBroken] = useState<boolean>(false)
   const [maskBroken, setMaskBroken] = useState<boolean>(false)
-  useEffect(() => {
-    setImgBroken(false)
-    setMaskBroken(false)
-  }, [item.imageUrl, item.maskUrl])
+  const maskNote =
+    item.maskUrl === null ? 'No mask for this pair.' : maskBroken ? 'Mask file missing under data/.' : null
   return (
-    <li className="rounded border border-neutral-300 bg-white px-3 py-2">
-      {imgBroken ? (
-        <div className="rounded border border-dashed border-neutral-300 px-3 py-8 text-center text-xs text-neutral-500">
-          Image file missing under data/.
-        </div>
-      ) : (
-        <img
-          src={resolveFileUrl(item.imageUrl)}
-          alt={`${item.category} ${item.defect} synthetic image`}
-          className="block w-full"
-          onError={() => setImgBroken(true)}
-        />
-      )}
-      {item.maskUrl === null ? (
-        <div className="mt-2 rounded border border-dashed border-neutral-300 px-3 py-4 text-center text-xs text-neutral-500">
-          No mask for this pair.
-        </div>
-      ) : maskBroken ? (
-        <div className="mt-2 rounded border border-dashed border-neutral-300 px-3 py-4 text-center text-xs text-neutral-500">
-          Mask file missing under data/.
-        </div>
-      ) : (
-        <img
-          src={resolveFileUrl(item.maskUrl)}
-          alt={`${item.category} ${item.defect} defect mask`}
-          className="mt-2 block w-full"
-          onError={() => setMaskBroken(true)}
-        />
-      )}
-    </li>
+    <motion.li layout transition={{ duration: 0.2, ease: 'easeOut' }} className="overflow-hidden rounded-md border border-line bg-surface">
+      <div className="relative aspect-square bg-sunken">
+        {imgBroken ? (
+          <div className="flex h-full items-center justify-center p-3 text-center text-xs text-ink-3">
+            Image file missing under data/.
+          </div>
+        ) : (
+          <img
+            src={resolveFileUrl(item.imageUrl)}
+            alt={`${item.category} ${item.defect} synthetic image`}
+            className="block h-full w-full object-cover"
+            onError={() => setImgBroken(true)}
+          />
+        )}
+        {item.maskUrl !== null && !maskBroken && !imgBroken && (
+          <img
+            src={resolveFileUrl(item.maskUrl)}
+            alt={`${item.category} ${item.defect} defect mask`}
+            className="absolute inset-0 h-full w-full object-cover mix-blend-screen transition-opacity duration-150"
+            style={{ imageRendering: 'pixelated', opacity: showMask ? 0.85 : 0 }}
+            onError={() => setMaskBroken(true)}
+          />
+        )}
+      </div>
+      <div className="flex items-center justify-between gap-2 px-3 py-2 text-xs">
+        <span className="truncate text-ink-2">
+          {item.category} / {item.defect}
+          {maskNote !== null && <span className="block text-ink-3">{maskNote}</span>}
+        </span>
+        <span className="num shrink-0 font-mono text-ink-3">#{String(index + 1).padStart(3, '0')}</span>
+      </div>
+    </motion.li>
   )
 }
 
@@ -97,10 +99,11 @@ export default function Synthetic(): JSX.Element {
   const [items, setItems] = useState<SynthGalleryItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [filter, setFilter] = useState<string>('')
+  const [showMasks, setShowMasks] = useState<boolean>(false)
 
   useEffect(() => {
     const controller = new AbortController()
-    setLoading(true)
     listSyntheticGallery(controller.signal)
       .then((loaded) => {
         setItems(loaded)
@@ -114,53 +117,57 @@ export default function Synthetic(): JSX.Element {
     return () => controller.abort()
   }, [])
 
-  const groups = groupItems(items)
+  const chips = groupItems(items).flatMap((group) =>
+    group.defects.map((d) => ({ key: `${group.category} / ${d.defect}`, items: d.items })),
+  )
+  const visible = chips.filter((chip) => filter === '' || chip.key === filter).flatMap((chip) => chip.items)
+  const chipClass = (active: boolean): string =>
+    `num inline-flex min-h-8 items-center rounded-md border px-3 text-[13px] ${
+      active ? 'border-ink bg-ink text-ground' : 'border-line-strong bg-surface text-ink-2 hover:bg-sunken'
+    }`
 
   return (
     <section aria-label="Synthetic">
-      <h1 className="text-xl font-semibold">Synthetic</h1>
-      <p className="mt-2 text-sm">
-        Gallery of generated defect pairs grouped by category and defect type.
-      </p>
+      <PageHeader title="Synthetic" subtitle="Generated defect images with exact masks, for eval when real defects are scarce.">
+        <label className="inline-flex min-h-9 cursor-pointer items-center gap-2 text-sm text-ink-2">
+          <input type="checkbox" checked={showMasks} onChange={(event) => setShowMasks(event.target.checked)} />
+          <Icon name="eye" />
+          Show masks
+        </label>
+      </PageHeader>
 
-      {error !== null && (
-        <p
-          role="alert"
-          className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800"
-        >
-          {error}
-        </p>
-      )}
+      {error !== null && <Alert className="mb-4">{error}</Alert>}
 
       {loading ? (
-        <p role="status" className="mt-6 text-sm text-neutral-500">
-          Loading gallery…
-        </p>
+        <EmptyState title="Loading gallery…" />
       ) : items.length === 0 ? (
-        <div className="mt-6 rounded border border-dashed border-neutral-300 px-4 py-10 text-center text-sm text-neutral-500">
-          No synthetic images yet. Generate a pair from the API or CLI, then
-          return here to browse the gallery.
-        </div>
+        <EmptyState icon="sparkles" title="No synthetic images yet.">
+          Generate a pair from the API or CLI, then return here to browse the gallery.
+        </EmptyState>
       ) : (
-        <div className="mt-6 space-y-8">
-          {groups.map((group) => (
-            <div key={group.category}>
-              <h2 className="text-sm font-semibold">{group.category}</h2>
-              {group.defects.map((defectGroup) => (
-                <div key={defectGroup.defect} className="mt-3">
-                  <h3 className="text-sm text-neutral-600">
-                    {defectGroup.defect} ({defectGroup.items.length})
-                  </h3>
-                  <ul className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {defectGroup.items.map((item) => (
-                      <PairCard key={item.imageUrl} item={item} />
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="mb-4 flex flex-wrap gap-2" role="group" aria-label="Filter by category and defect">
+            <button type="button" aria-pressed={filter === ''} className={chipClass(filter === '')} onClick={() => setFilter('')}>
+              All · {items.length}
+            </button>
+            {chips.map((chip) => (
+              <button
+                key={chip.key}
+                type="button"
+                aria-pressed={filter === chip.key}
+                className={chipClass(filter === chip.key)}
+                onClick={() => setFilter(chip.key)}
+              >
+                {chip.key} · {chip.items.length}
+              </button>
+            ))}
+          </div>
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+            {visible.map((item, index) => (
+              <PairCard key={item.imageUrl} item={item} index={index} showMask={showMasks} />
+            ))}
+          </ul>
+        </>
       )}
     </section>
   )
