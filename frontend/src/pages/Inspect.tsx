@@ -46,7 +46,7 @@ function DetectionBox({ detection, index, real, highlighted, naturalWidth, natur
       onPointerLeave={() => onHover(null)}
       onFocus={() => onHover(detection.id)}
       onBlur={() => onHover(null)}
-      className={`absolute cursor-pointer rounded-[2px] border-2 transition-shadow ${real ? 'border-fail' : 'border-detect'} ${highlighted ? HIGHLIGHT : ''}`}
+      className={`absolute rounded-[2px] border-2 transition-shadow ${real ? 'border-fail' : 'border-detect'} ${highlighted ? HIGHLIGHT : ''}`}
       style={{ left: `${pos.left}%`, top: `${pos.top}%`, width: `${pos.width}%`, height: `${pos.height}%` }}
     >
       <span
@@ -436,7 +436,7 @@ export default function Inspect(): JSX.Element {
                           onPointerLeave={() => setHoveredId(null)}
                           onFocus={() => setHoveredId(ruling.detectionId)}
                           onBlur={() => setHoveredId(null)}
-                          className={`grid cursor-pointer grid-cols-[26px_minmax(0,1fr)] gap-2.5 rounded-sm px-2 py-2.5 ${hoveredId === ruling.detectionId ? 'bg-sunken' : ''}`}
+                          className={`grid grid-cols-[26px_minmax(0,1fr)] gap-2.5 rounded-sm px-2 py-2.5 ${hoveredId === ruling.detectionId ? 'bg-sunken' : ''}`}
                         >
                           <span
                             className={`inline-flex h-[22px] w-[22px] items-center justify-center rounded-[3px] font-mono text-xs font-semibold ${ruling.isRealDefect ? 'bg-fail text-on-fail' : `bg-detect ${DETECT_TEXT}`}`}
