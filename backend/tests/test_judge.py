@@ -388,6 +388,56 @@ def test_missing_profile_reference_image_raises_value_error(
         )
 
 
+def _relative_ref(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "mvtec").mkdir()
+    Image.new("RGB", (IMAGE_W, IMAGE_H), color=(10, 200, 10)).save(
+        tmp_path / "mvtec" / "good.png"
+    )
+    monkeypatch.setattr(settings, "data_dir", str(tmp_path))
+
+
+def test_relative_reference_resolves_from_data_dir_backend_cwd(
+    image: Image.Image,
+    profile: ProductProfile,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _relative_ref(tmp_path, monkeypatch)
+    monkeypatch.chdir(Path(__file__).resolve().parent.parent)
+    rel = profile.model_copy(update={"reference_image": "mvtec/good.png"})
+    judge = StubJudge(_pass_verdict())
+    run_inspection(image, rel, StubSegmenter([]), judge=judge)
+    assert isinstance(judge.seen_reference, Image.Image)
+
+
+def test_relative_reference_resolves_from_data_dir_repo_root_cwd(
+    image: Image.Image,
+    profile: ProductProfile,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _relative_ref(tmp_path, monkeypatch)
+    monkeypatch.chdir(Path(__file__).resolve().parent.parent.parent)
+    rel = profile.model_copy(update={"reference_image": "mvtec/good.png"})
+    judge = StubJudge(_pass_verdict())
+    run_inspection(image, rel, StubSegmenter([]), judge=judge)
+    assert isinstance(judge.seen_reference, Image.Image)
+
+
+def test_missing_relative_reference_names_path(
+    image: Image.Image,
+    profile: ProductProfile,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "data_dir", str(tmp_path))
+    rel = profile.model_copy(update={"reference_image": "mvtec/absent.png"})
+    with pytest.raises(ValueError, match="absent.png"):
+        run_inspection(
+            image, rel, StubSegmenter([]), judge=StubJudge(_pass_verdict())
+        )
+
+
 # Judge cache on rule edits
 
 

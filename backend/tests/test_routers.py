@@ -36,6 +36,9 @@ def isolated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     """Point data + profiles at tmp dirs so no repo file is touched."""
     data_dir = tmp_path / "data"
     data_dir.mkdir()
+    ref = data_dir / "mvtec" / "screw" / "train" / "good" / "000.png"
+    ref.parent.mkdir(parents=True)  # committed profile points here
+    Image.new("RGB", (8, 8)).save(ref)
     monkeypatch.setattr(settings, "data_dir", str(data_dir))
     prof_dir = tmp_path / "profiles"
     prof_dir.mkdir()

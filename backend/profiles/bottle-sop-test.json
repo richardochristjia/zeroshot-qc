@@ -9,6 +9,6 @@
   "min_score": 0.3,
   "mm_per_px": null,
   "name": "bottle-sop-test",
-  "reference_image": null,
+  "reference_image": "mvtec/bottle/train/good/000.png",
   "rules": "Inspect each glass bottle at the mouth rim and body. Fail any bottle with broken glass, chips on the rim, cracks \"longer than 5mm\", or contamination stains on the surface. Pass clean bottles with intact rims."
 }

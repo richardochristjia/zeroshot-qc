@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { DragEvent, JSX } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ApiError, inspectImage, listProfiles, resolveFileUrl } from '../api.ts'
+import { ApiError, inspectImage, listProfiles, referenceImageUrl, resolveFileUrl } from '../api.ts'
 import type { Detection, DefectRuling, InspectionResult, ProductProfile } from '../api.ts'
 import { Alert } from '../components/Alert.tsx'
 import { Button } from '../components/Button.tsx'
@@ -208,8 +208,9 @@ export default function Inspect(): JSX.Element {
   const verdict = result?.verdict ?? null
   const rulingById = new Map<string, DefectRuling>(verdict?.rulings.map((r) => [r.detectionId, r]) ?? [])
   const inspecting = status === 'inspecting'
-  const refUrl = profile?.referenceImage ? resolveFileUrl(profile.referenceImage) : null
+  const refUrl = profile?.referenceImage ? referenceImageUrl(profile.referenceImage) : null
   const refMissing = refUrl === null || refFailedUrl === refUrl
+  const refTitle = refUrl === null ? 'No reference set for this profile' : `Reference image not found: ${profile?.referenceImage}`
 
   const submitLabel = inspecting ? 'Inspecting…' : result !== null ? 'Inspect again' : 'Inspect'
   const submit = (
@@ -329,7 +330,7 @@ export default function Inspect(): JSX.Element {
                 </PanelHeader>
                 <div className="bg-sunken">
                   {refMissing ? (
-                    <EmptyState icon="file" title="No reference set for this profile" className="m-3" />
+                    <EmptyState icon="file" title={refTitle} className="m-3" />
                   ) : (
                     <img
                       src={refUrl}

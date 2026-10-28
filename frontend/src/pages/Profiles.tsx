@@ -9,7 +9,7 @@ import {
   listProfiles,
   putProfile,
 } from '../api.ts'
-import { resolveFileUrl } from '../api.ts'
+import { referenceImageUrl } from '../api.ts'
 import type { ProductProfile } from '../api.ts'
 import { Alert } from '../components/Alert.tsx'
 import { Button } from '../components/Button.tsx'
@@ -357,7 +357,7 @@ export default function Profiles(): JSX.Element {
                         }}
                       />
                     </Field>
-                    <Field label="Reference image" hint="Path; blank = none">
+                    <Field label="Reference image" hint="Path under data/; blank = none">
                       <div className="flex items-center gap-2">
                         <input
                           type="text"
@@ -372,7 +372,7 @@ export default function Profiles(): JSX.Element {
                         />
                         {draft.referenceImage !== null && (
                           <img
-                            src={resolveFileUrl(draft.referenceImage)}
+                            src={referenceImageUrl(draft.referenceImage)}
                             alt=""
                             className="size-14 shrink-0 rounded-sm border border-line object-cover"
                             onError={(event) => {

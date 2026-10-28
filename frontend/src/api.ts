@@ -498,6 +498,11 @@ export function resolveFileUrl(url: string): string {
   return apiUrl(url);
 }
 
+/** Profile `referenceImage` (relative to the backend data dir) to a `/files/` URL. */
+export function referenceImageUrl(path: string): string {
+  return resolveFileUrl(`/files/${path}`);
+}
+
 // ---------------------------------------------------------------------------
 // Transport.
 // ---------------------------------------------------------------------------

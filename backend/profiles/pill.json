@@ -7,6 +7,6 @@
   "id": "pill",
   "mm_per_px": null,
   "name": "Pill",
-  "reference_image": null,
+  "reference_image": "mvtec/pill/train/good/000.png",
   "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec pill SOP. Draft: FAIL a pill with any crack, contamination, or faulty imprint; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
 }
