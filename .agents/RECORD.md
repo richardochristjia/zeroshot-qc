@@ -68,3 +68,4 @@ Entries are added or amended **only with human approval**.
 - (frontend) The web app currently themes light and dark from one set of design tokens, following the system colour scheme unless the user picks a theme.
 - (frontend) The web app currently self-hosts its typefaces and requests no third-party fonts.
 - (frontend) The web app currently shows backend reachability in its top bar from GET /api/health.
+- (frontend) The Eval page currently opens a failure example's image in a modal dialog with previous and next navigation.

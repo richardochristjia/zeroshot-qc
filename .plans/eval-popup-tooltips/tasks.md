@@ -13,13 +13,13 @@
 - [x] Add Prev/Next buttons and ←/→ keys; remove inline detail and placeholder
 
 ## Verification
-- [ ] AC1: `npm run build`, `npm run lint`, `npm test` pass in `frontend/`
-- [ ] AC2: dialog opens without scrolling; Esc, backdrop, close button close it; focus returns to row
-- [ ] AC3: Prev/Next and ←/→ step through failures, disabled at ends
-- [ ] AC4: every listed term has an InfoTip opening on hover, focus, tap; table-header tips not clipped
-- [ ] AC5: switching runs closes the dialog
-- [ ] AC6: only existing colour tokens used; no animation under reduced motion
-- [ ] Record Updates: (1) review the complete implementation; (2a) if it matches the planned Record Updates in plan.md, write that exact entry into `.agents/RECORD.md`; (2b) if it diverged, do not write a wrong entry — surface the divergence in the final summary
+- [x] AC1: `npm run build`, `npm run lint`, `npm test` pass in `frontend/`
+- [x] AC2: dialog opens without scrolling; Esc, backdrop, close button close it; focus returns to row (code-reviewed only; browser unverified)
+- [x] AC3: Prev/Next and ←/→ step through failures, disabled at ends
+- [x] AC4: every listed term has an InfoTip opening on hover, focus, tap; table-header tips not clipped (code-reviewed only; browser unverified)
+- [x] AC5: switching runs closes the dialog
+- [x] AC6: only existing colour tokens used; no animation under reduced motion
+- [x] Record Updates: (1) review the complete implementation; (2a) if it matches the planned Record Updates in plan.md, write that exact entry into `.agents/RECORD.md`; (2b) if it diverged, do not write a wrong entry — surface the divergence in the final summary
 
 ## Manual checks
 - [ ] manual: with real runs under `data/runs/`, open Eval, click a failure low in the list, step with ←/→, close with Esc, hover/tap AUROC header and KPI ⓘ in both themes; image visible without scrolling, tips fully visible, focus returns to row
