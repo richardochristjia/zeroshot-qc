@@ -1,0 +1,2 @@
+- KPI deltas for precision/recall/AUROC/accuracy reuse bestOtherDelta with a metric key (plan said "same logic"); ablation list dedupes by mode so a second run of a mode is not compared. Check: open /eval on a group with 3 modes.
+- Dialog order is category-sorted to match grouped grid; unverified visually. Check: open a card and press Right in /eval.
