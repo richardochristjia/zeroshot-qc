@@ -1,36 +1,61 @@
 import { NavLink, Route, Routes } from 'react-router-dom'
+import { motion } from 'motion/react'
+import { HealthDot } from './components/HealthDot.tsx'
+import { Icon, IconSprite, type IconName } from './components/Icon.tsx'
+import { ThemeSwitch } from './components/ThemeSwitch.tsx'
 import Eval from './pages/Eval.tsx'
 import Inspect from './pages/Inspect.tsx'
 import Profiles from './pages/Profiles.tsx'
 import Synthetic from './pages/Synthetic.tsx'
 
-const links = [
-  { to: '/', label: 'Inspect' },
-  { to: '/profiles', label: 'Profiles' },
-  { to: '/eval', label: 'Eval' },
-  { to: '/synthetic', label: 'Synthetic' },
+const links: { to: string; label: string; icon: IconName }[] = [
+  { to: '/', label: 'Inspect', icon: 'scan' },
+  { to: '/profiles', label: 'Profiles', icon: 'sliders' },
+  { to: '/eval', label: 'Eval', icon: 'chart' },
+  { to: '/synthetic', label: 'Synthetic', icon: 'sparkles' },
 ]
 
 export default function App() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
-      <header>
-        <h1 className="text-2xl font-bold">ZeroShot QC</h1>
-        <nav className="mt-3 flex gap-4 border-b border-neutral-300 pb-2">
+    <>
+      <IconSprite />
+      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-6 border-b border-line bg-surface px-5 max-[640px]:px-3">
+        <div className="flex h-[52px] items-center gap-2 whitespace-nowrap text-[15px] font-semibold">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.8" aria-hidden="true">
+            <circle cx="12" cy="12" r="8" />
+            <circle cx="12" cy="12" r="2.2" fill="var(--accent)" stroke="none" />
+            <path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4" />
+          </svg>
+          <span className="max-[640px]:hidden">ZeroShot QC</span>
+        </div>
+        <nav aria-label="Main" className="flex h-[52px] gap-0.5 max-[640px]:order-3 max-[640px]:-mx-3 max-[640px]:h-10 max-[640px]:basis-full max-[640px]:px-1">
           {links.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
+              end={link.to === '/'}
               className={({ isActive }) =>
-                `text-sm font-medium ${isActive ? 'text-neutral-900 underline' : 'text-neutral-600'}`
+                `relative inline-flex items-center gap-1.5 px-3 text-sm no-underline ${isActive ? 'font-medium text-ink' : 'text-ink-2 hover:text-ink'}`
               }
             >
-              {link.label}
+              {({ isActive }) => (
+                <>
+                  <Icon name={link.icon} className={isActive ? 'text-ink' : 'text-ink-3'} />
+                  {link.label}
+                  {isActive && (
+                    <motion.span layoutId="tab-underline" className="absolute inset-x-0 bottom-0 h-0.5 bg-ink" />
+                  )}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
+        <div className="ml-auto flex items-center gap-4">
+          <HealthDot />
+          <ThemeSwitch />
+        </div>
       </header>
-      <main className="mt-6">
+      <main className="mx-auto max-w-[1360px] px-5 pb-16 pt-5 max-[640px]:px-3">
         <Routes>
           <Route path="/" element={<Inspect />} />
           <Route path="/profiles" element={<Profiles />} />
@@ -38,6 +63,6 @@ export default function App() {
           <Route path="/synthetic" element={<Synthetic />} />
         </Routes>
       </main>
-    </div>
+    </>
   )
 }
