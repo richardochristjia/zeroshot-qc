@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { JSX } from 'react'
-import { ApiError, inspectImage, listProfiles, referenceImageUrl } from '../api.ts'
+import { ApiError, inspectImage, listProfiles } from '../api.ts'
 import type { InspectionResult, ProductProfile } from '../api.ts'
 import { Alert } from '../components/Alert.tsx'
 import { Button } from '../components/Button.tsx'
@@ -72,8 +72,8 @@ export default function Line(): JSX.Element {
   const [entries, setEntries] = useState<Entry[]>([])
   const [selectedN, setSelectedN] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [ghost, setGhost] = useState(true)
-  const [refFailedUrl, setRefFailedUrl] = useState<string | null>(null)
+  const [guideUrl, setGuideUrl] = useState<string | null>(null)
+  const [showGuide, setShowGuide] = useState(true)
   const [muted, setMuted] = useState(readMuted)
   const [flashKey, setFlashKey] = useState(0)
 
@@ -87,6 +87,7 @@ export default function Line(): JSX.Element {
   const entriesRef = useRef<Entry[]>([])
   const profileRef = useRef('')
   const mutedRef = useRef(muted)
+  const guideUrlRef = useRef<string | null>(null)
   useEffect(() => {
     entriesRef.current = entries
     profileRef.current = profileId
@@ -147,6 +148,17 @@ export default function Line(): JSX.Element {
     }
   }
 
+  /** Full-resolution JPEG of the current video frame, or null while there is no picture. */
+  const grabFrame = useCallback((): Promise<Blob | null> => {
+    const video = videoRef.current
+    if (video === null || video.videoWidth === 0) return Promise.resolve(null)
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d')?.drawImage(video, 0, 0)
+    return toBlob(canvas)
+  }, [])
+
   const capture = useCallback(async (): Promise<void> => {
     const video = videoRef.current
     const activeProfile = profileRef.current
@@ -160,11 +172,7 @@ export default function Line(): JSX.Element {
     const controller = new AbortController()
     abortRef.current = controller
     try {
-      const canvas = document.createElement('canvas')
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-      canvas.getContext('2d')?.drawImage(video, 0, 0)
-      const blob = await toBlob(canvas)
+      const blob = await grabFrame()
       if (blob === null) throw new Error('Could not capture the frame.')
       const result = await inspectImage({ image: blob, filename: `line-${n}.jpg`, profileId: activeProfile, signal: controller.signal })
       nextNRef.current = n + 1
@@ -191,7 +199,7 @@ export default function Line(): JSX.Element {
         setBusyN(null)
       }
     }
-  }, [setTrigger])
+  }, [grabFrame, setTrigger])
 
   // Camera stream and sampling loop. Restarts on profile change; cleanup
   // stops the tracks, the timer and any in-flight request.
@@ -252,14 +260,12 @@ export default function Line(): JSX.Element {
   const releaseAll = useCallback((): void => {
     void audioRef.current?.close()
     entriesRef.current.forEach((e) => e.thumbUrl !== null && URL.revokeObjectURL(e.thumbUrl))
+    if (guideUrlRef.current !== null) URL.revokeObjectURL(guideUrlRef.current)
   }, [])
   useEffect(() => releaseAll, [releaseAll])
 
   const live = cam.kind === 'live'
   const inspecting = busyN !== null
-  const profile = profiles.find((p) => p.id === profileId) ?? null
-  const refUrl = profile?.referenceImage ? referenceImageUrl(profile.referenceImage) : null
-  const refMissing = refUrl === null || refFailedUrl === refUrl
   const shownPhase: Phase | 'inspecting' = inspecting ? 'inspecting' : phase
 
   const toggleArm = (): void => {
@@ -270,6 +276,20 @@ export default function Line(): JSX.Element {
     ensureAudio()
     const frame = sampleFrame()
     if (frame !== null) setTrigger(arm(frame))
+  }
+
+  /** Swap the guide (or clear it with null), revoking only the URL being replaced. */
+  const storeGuide = (url: string | null): void => {
+    if (guideUrlRef.current !== null) URL.revokeObjectURL(guideUrlRef.current)
+    guideUrlRef.current = url
+    setGuideUrl(url)
+  }
+
+  const setGuide = async (): Promise<void> => {
+    const blob = await grabFrame()
+    if (blob === null) return
+    storeGuide(URL.createObjectURL(blob))
+    setShowGuide(true)
   }
 
   const captureNow = (): void => {
@@ -310,23 +330,28 @@ export default function Line(): JSX.Element {
     <section aria-label="Line">
       <PageHeader title="Line" subtitle="Point a camera at the line. Each part is inspected once.">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <select className="ctl w-auto!" aria-label="Profile" value={profileId} onChange={(event) => setProfileId(event.target.value)}>
+          <select className="ctl w-auto!" aria-label="Profile" value={profileId} onChange={(event) => {
+              storeGuide(null)
+              setProfileId(event.target.value)
+            }}>
             {profiles.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name} ({p.id})
               </option>
             ))}
           </select>
+          <Button icon="camera" onClick={() => void setGuide()} disabled={!live} title="Use the current frame as the framing guide">
+            Set guide
+          </Button>
           <label className="inline-flex min-h-9 items-center gap-2 text-sm text-ink-2">
             <input
               type="checkbox"
               className="accent-accent"
-              checked={ghost && !refMissing}
-              disabled={refMissing}
-              title={refMissing ? 'No reference image for this profile' : undefined}
-              onChange={(event) => setGhost(event.target.checked)}
+              checked={guideUrl !== null && showGuide}
+              disabled={guideUrl === null}
+              onChange={(event) => setShowGuide(event.target.checked)}
             />
-            Reference ghost
+            Guide
           </label>
           <label className="inline-flex min-h-9 items-center gap-2 text-sm text-ink-2">
             <input type="checkbox" className="accent-accent" checked={muted} onChange={(event) => toggleMute(event.target.checked)} />
@@ -344,13 +369,8 @@ export default function Line(): JSX.Element {
       <div className="grid items-start gap-4 grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] max-[860px]:grid-cols-1">
         <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-[#26272b]">
           <video ref={videoRef} poster="data:image/gif;base64,R0lGODlhAQABAAAAACw=" muted playsInline aria-label="Camera feed" className="absolute inset-0 h-full w-full object-cover" />
-          {refUrl !== null && ghost && !refMissing && (
-            <img
-              src={refUrl}
-              alt=""
-              onError={() => setRefFailedUrl(refUrl)}
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-30"
-            />
+          {guideUrl !== null && showGuide && (
+            <img src={guideUrl} alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-30" />
           )}
           {live && (
             <>
