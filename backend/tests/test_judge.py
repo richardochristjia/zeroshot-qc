@@ -238,6 +238,33 @@ def test_malformed_first_response_retries_once_then_validates(
     assert STRICT_RULES in _request_text(calls[0])
 
 
+def test_missing_part_matches_retries_then_validates(
+    image: Image.Image,
+    profile: ProductProfile,
+    configured_judge: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list = []
+    incomplete = _valid_payload()
+    del incomplete["part_matches"]
+    payloads = [incomplete, _valid_payload()]
+
+    def _stub(*args, **kwargs):  # type: ignore[no-untyped-def]
+        calls.append(kwargs.get("json") or {})
+        return _StubResponse(_responses_envelope(payloads[len(calls) - 1]))
+
+    monkeypatch.setattr(httpx, "post", _stub)
+    MuseSparkJudge().judge(image, image, None, [], profile)
+    assert len(calls) == 2
+    assert "failed validation" in _request_text(calls[1])
+
+
+def test_prompt_contains_product_name_and_identity_step() -> None:
+    prompt = render_judge_prompt("rules", [], "Widget {x}")
+    assert "The product is: Widget {x}" in prompt
+    assert "First check the part" in prompt
+
+
 def test_malformed_twice_raises_judge_validation_error(
     image: Image.Image,
     profile: ProductProfile,
@@ -497,7 +524,7 @@ def test_rendered_prompt_carries_rules_table_and_schema(
     profile: ProductProfile, image: Image.Image
 ) -> None:
     detections = _detections(image)
-    prompt = render_judge_prompt(profile.rules, detections)
+    prompt = render_judge_prompt(profile.rules, detections, profile.name)
     assert STRICT_RULES in prompt
     assert "d1 | scratch" in prompt
     assert '"verdict"' in prompt
@@ -528,4 +555,4 @@ def test_detections_table_empty_and_mm_dash() -> None:
 
 def test_rules_containing_slot_literal_render_verbatim() -> None:
     rules = "reject if {detections_table} appears"
-    assert rules in render_judge_prompt(rules, [])
+    assert rules in render_judge_prompt(rules, [], "Bottle")

@@ -88,7 +88,7 @@ class MuseSparkJudge:
         require_configured(
             model_id=settings.judge_model_id, model_field="JUDGE_MODEL_ID", adapter="Judge"
         )
-        prompt = render_judge_prompt(profile.rules, detections)
+        prompt = render_judge_prompt(profile.rules, detections, profile.name)
         try:
             data = self._judge_via_meta_api(
                 image, overlay, reference, detections, profile, prompt
