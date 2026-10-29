@@ -47,6 +47,7 @@ export default function Profiles(): JSX.Element {
   const [sopCategory, setSopCategory] = useState<string>('')
   const [sopBusy, setSopBusy] = useState<boolean>(false)
   const [sopError, setSopError] = useState<string | null>(null)
+  const sopAbort = useRef<AbortController | null>(null)
 
   const [existing, setExisting] = useState<ProductProfile | null>(null)
   const [replace, setReplace] = useState<boolean>(false)
@@ -173,14 +174,19 @@ export default function Profiles(): JSX.Element {
     if (sopText.trim() === '' || sopCategory.trim() === '' || sopBusy) return
     setSopBusy(true)
     setSopError(null)
-    draftProfileFromSop({ sopText: sopText.trim(), categoryName: sopCategory.trim() })
+    const controller = new AbortController()
+    sopAbort.current = controller
+    draftProfileFromSop({ sopText: sopText.trim(), categoryName: sopCategory.trim() }, controller.signal)
       .then((drafted) => {
         open(drafted, true)
         setSopOpen(false)
         setSopText('')
         setSopCategory('')
       })
-      .catch((err: unknown) => setSopError(errorDetail(err, 'Could not draft a profile from the SOP text.')))
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setSopError(errorDetail(err, 'Could not draft a profile from the SOP text.'))
+      })
       .finally(() => setSopBusy(false))
   }
 
@@ -207,7 +213,7 @@ export default function Profiles(): JSX.Element {
   return (
     <section aria-label="Profiles">
       <PageHeader title="Profiles" subtitle="What each product is checked for, and the rules the judge applies.">
-        <Button icon="sparkles" onClick={() => guard(() => setSopOpen(true))}>
+        <Button icon="sparkles" onClick={() => guard(() => setSopOpen(true))} disabled={saving}>
           New from SOP
         </Button>
       </PageHeader>
@@ -239,7 +245,7 @@ export default function Profiles(): JSX.Element {
         <div className="grid items-start gap-4 min-[1001px]:grid-cols-[260px_minmax(0,1fr)]">
           <Panel>
             <PanelHeader title={`${profiles.length} ${profiles.length === 1 ? 'profile' : 'profiles'}`}>
-              <Button variant="ghost" icon="refresh" onClick={() => guard(handleReload)} className="!min-h-8 !px-2">
+              <Button variant="ghost" icon="refresh" onClick={() => guard(handleReload)} disabled={saving} className="!min-h-8 !px-2">
                 Reload
               </Button>
             </PanelHeader>
@@ -276,6 +282,7 @@ export default function Profiles(): JSX.Element {
                   <li key={profile.id} className="border-b border-line last:border-b-0">
                     <button
                       type="button"
+                      disabled={saving}
                       onClick={() => {
                         if (!selected) guard(() => open(profile, false))
                       }}
@@ -308,7 +315,7 @@ export default function Profiles(): JSX.Element {
                 </EmptyState>
               </div>
             ) : (
-              <>
+              <fieldset disabled={saving} className="contents">
                 <PanelHeader title={form.name || 'Untitled'}>
                   {isNew ? (
                     <span className="rounded-sm border border-line px-1.5 py-0.5 text-xs font-medium text-ink-2">New</span>
@@ -334,7 +341,7 @@ export default function Profiles(): JSX.Element {
                           onChange={(event) => edit({ id: event.target.value })}
                         />
                       </Field>
-                      {existing !== null && !replace && (
+                      {existing !== null && (
                         <label className="flex items-center gap-2 text-sm text-ink-2">
                           <input type="checkbox" checked={replace} onChange={(event) => setReplace(event.target.checked)} />
                           Replace the existing profile “{existing.name}”
@@ -384,38 +391,40 @@ export default function Profiles(): JSX.Element {
                         onChange={(event) => edit({ minScore: event.target.value })}
                       />
                     </Field>
-                    <Field
-                      label="Reference image"
-                      hint="Path under data/; blank = none"
-                      error={
-                        form.referenceImage.trim() !== '' && badRef === form.referenceImage.trim()
-                          ? 'Image not found: the judge runs without a reference.'
-                          : undefined
-                      }
-                    >
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          className="ctl"
-                          value={form.referenceImage}
-                          onChange={(event) => edit({ referenceImage: event.target.value })}
-                        />
-                        {form.referenceImage.trim() !== '' &&
-                          (badRef === form.referenceImage.trim() ? (
-                            <span className="grid size-14 shrink-0 place-items-center rounded-sm border border-dashed border-line-strong text-center text-[10px] text-ink-3">
-                              Not found
-                            </span>
-                          ) : (
-                            <img
-                              key={form.referenceImage.trim()}
-                              src={referenceImageUrl(form.referenceImage.trim())}
-                              alt=""
-                              className="size-14 shrink-0 rounded-sm border border-line object-cover"
-                              onError={() => setBadRef(form.referenceImage.trim())}
-                            />
-                          ))}
+                    <div className="flex items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        <Field
+                          label="Reference image"
+                          hint="Path under data/; blank = none"
+                          error={
+                            form.referenceImage.trim() !== '' && badRef === form.referenceImage.trim()
+                              ? 'Image not found: the judge runs without a reference.'
+                              : undefined
+                          }
+                        >
+                          <input
+                            type="text"
+                            className="ctl"
+                            value={form.referenceImage}
+                            onChange={(event) => edit({ referenceImage: event.target.value })}
+                          />
+                        </Field>
                       </div>
-                    </Field>
+                      {form.referenceImage.trim() !== '' &&
+                        (badRef === form.referenceImage.trim() ? (
+                          <span className="grid size-14 shrink-0 place-items-center rounded-sm border border-dashed border-line-strong text-center text-[10px] text-ink-3">
+                            Not found
+                          </span>
+                        ) : (
+                          <img
+                            key={form.referenceImage.trim()}
+                            src={referenceImageUrl(form.referenceImage.trim())}
+                            alt=""
+                            className="size-14 shrink-0 rounded-sm border border-line object-cover"
+                            onError={() => setBadRef(form.referenceImage.trim())}
+                          />
+                        ))}
+                    </div>
                   </div>
                 </div>
                 <div className="sticky bottom-0 flex flex-wrap items-center gap-3 rounded-b-md border-t border-line bg-surface px-3.5 py-2.5">
@@ -433,13 +442,21 @@ export default function Profiles(): JSX.Element {
                     {status}
                   </span>
                 </div>
-              </>
+              </fieldset>
             )}
           </Panel>
         </div>
       )}
 
-      <Dialog open={sopOpen} title="New profile from SOP" onClose={() => setSopOpen(false)}>
+      <Dialog
+        open={sopOpen}
+        title="New profile from SOP"
+        onClose={() => {
+          // The native dialog is already closed here, so drop any draft still in flight.
+          sopAbort.current?.abort()
+          setSopOpen(false)
+        }}
+      >
         <div className="flex flex-col gap-4 p-3.5">
           <p className="text-[13px] text-ink-2">
             Draft a profile from an SOP paragraph. Nothing is saved: you review the draft in the editor first.
