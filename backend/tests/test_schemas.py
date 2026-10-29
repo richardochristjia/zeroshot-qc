@@ -15,6 +15,7 @@ def _verdict_payload(**overrides: object) -> dict:
         "confidence": 0.5,
         "rulings": [],
         "missed_defects": [],
+        "part_matches": True,
         "summary": "ok",
     }
     payload.update(overrides)

@@ -103,6 +103,7 @@ def _pass_verdict() -> Verdict:
         confidence=0.9,
         rulings=[],
         missed_defects=[],
+        part_matches=True,
         summary="stub: pass",
     )
 
@@ -205,6 +206,7 @@ def _valid_payload() -> dict:
         "confidence": 0.8,
         "rulings": [],
         "missed_defects": [],
+        "part_matches": True,
         "summary": "ok",
     }
 
@@ -270,6 +272,7 @@ def test_real_defect_ruling_with_model_pass_forces_fail() -> None:
             )
         ],
         missed_defects=[],
+        part_matches=True,
         summary="model wrongly passed",
     )
     forced = enforce_consistency(model_says_pass)
@@ -283,9 +286,22 @@ def test_missed_defects_with_model_pass_forces_fail() -> None:
         confidence=0.9,
         rulings=[],
         missed_defects=["unoutlined crack near the rim"],
+        part_matches=True,
         summary="model wrongly passed",
     )
     assert enforce_consistency(model_says_pass).verdict == "FAIL"
+
+
+def test_part_mismatch_with_model_pass_forces_fail() -> None:
+    wrong_part = Verdict(
+        verdict="PASS",
+        confidence=0.9,
+        rulings=[],
+        missed_defects=[],
+        part_matches=False,
+        summary="this is a mug",
+    )
+    assert enforce_consistency(wrong_part).verdict == "FAIL"
 
 
 def test_real_defect_without_cited_rule_keeps_model_pass() -> None:
@@ -301,6 +317,7 @@ def test_real_defect_without_cited_rule_keeps_model_pass() -> None:
             )
         ],
         missed_defects=[],
+        part_matches=True,
         summary="no rule covers it",
     )
     assert enforce_consistency(uncovered).verdict == "PASS"
@@ -322,6 +339,7 @@ def test_pipeline_forces_fail_on_model_pass_with_violation(
             )
         ],
         missed_defects=[],
+        part_matches=True,
         summary="model pass",
     )
     _, verdict = run_inspection(

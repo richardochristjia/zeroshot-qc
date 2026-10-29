@@ -286,6 +286,7 @@ def test_https_base_url_reaches_stubbed_http(
                             "confidence": 0.5,
                             "rulings": [],
                             "missed_defects": [],
+                            "part_matches": True,
                             "summary": "ok",
                         }
                     )

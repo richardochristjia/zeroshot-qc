@@ -228,6 +228,7 @@ def test_smoke_judge_validation_failure_exits_one(
                 "confidence": 99,
                 "rulings": [],
                 "missed_defects": [],
+                "part_matches": True,
                 "summary": "bad confidence",
             }
         )
