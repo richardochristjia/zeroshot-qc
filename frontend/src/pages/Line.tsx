@@ -219,6 +219,8 @@ export default function Line(): JSX.Element {
           video.srcObject = stream
           await video.play().catch(() => undefined)
         }
+        // Cleanup may have run during play(); it already stopped the stream.
+        if (cancelled) return
         setCam({ kind: 'live' })
         timer = window.setInterval(() => {
           if (triggerRef.current.phase === 'idle') return
