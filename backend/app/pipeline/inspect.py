@@ -136,10 +136,11 @@ def enforce_consistency(verdict: Verdict) -> Verdict:
     does not match the product, means FAIL. Returns the input unchanged
     when it already agrees.
     """
-    must_fail = any(
-        ruling.is_real_defect and ruling.rule_violated
-        for ruling in verdict.rulings
-    ) or bool(verdict.missed_defects) or not verdict.part_matches
+    must_fail = (
+        any(r.is_real_defect and r.rule_violated for r in verdict.rulings)
+        or bool(verdict.missed_defects)
+        or not verdict.part_matches
+    )
     if must_fail and verdict.verdict != "FAIL":
         return verdict.model_copy(update={"verdict": "FAIL"})
     return verdict
