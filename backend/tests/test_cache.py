@@ -151,6 +151,24 @@ def test_judge_changed_profile_is_miss(
     assert inner.calls == 3
 
 
+def test_judge_changed_template_is_miss(
+    image: Image.Image,
+    profile: ProductProfile,
+    cache_dir: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    inner = CountingJudge()
+    cached = CachedJudge(inner, JUDGE_MODEL, DiskCache(cache_dir))
+    detections = _detections(image)
+    cached.judge(image, image, None, detections, profile)
+    edited = tmp_path / "judge.md"
+    edited.write_text("different template", encoding="utf-8")
+    monkeypatch.setattr("app.pipeline.cache.JUDGE_TEMPLATE", edited)
+    cached.judge(image, image, None, detections, profile)
+    assert inner.calls == 2
+
+
 def test_hit_survives_fresh_wrapper_and_cache_instances(
     image: Image.Image, cache_dir: Path
 ) -> None:
