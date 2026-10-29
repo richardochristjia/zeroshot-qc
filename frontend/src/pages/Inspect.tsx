@@ -408,6 +408,7 @@ export default function Inspect(): JSX.Element {
                   <div className="flex items-baseline gap-3">
                     <VerdictBadge verdict={verdict.verdict} />
                     <span className="num text-sm text-ink-2">confidence {(verdict.confidence * 100).toFixed(1)}%</span>
+                    {!verdict.partMatches && <span className="text-sm font-medium text-fail">Wrong part</span>}
                   </div>
                   <p className="mt-2 text-sm">{verdict.summary}</p>
                 </div>

@@ -48,6 +48,7 @@ export interface Verdict {
   confidence: number;
   rulings: DefectRuling[];
   missedDefects: string[];
+  partMatches: boolean;
   summary: string;
 }
 
@@ -322,6 +323,7 @@ function parseVerdict(value: unknown, path: string): Verdict {
       parseDefectRuling(r, `${path}.rulings[${i}]`),
     ),
     missedDefects: reqStringArray(value, "missed_defects", path),
+    partMatches: reqBoolean(value, "part_matches", path),
     summary: reqString(value, "summary", path),
   };
 }
