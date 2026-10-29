@@ -1,7 +1,7 @@
 """Judge prompt rendering (M3).
 
 ``judge.md`` is the HANDOFF §7 prompt verbatim with ``{schema}``,
-``{rules}``, and ``{detections_table}`` slots. ``render_judge_prompt``
+``{rules}``, ``{product_name}``, and ``{detections_table}`` slots. ``render_judge_prompt``
 fills them; ``build_detections_table`` formats the candidates the
 judge sees (same ids as the overlay labels). Slots are replaced with
 plain string substitution so JSON braces in the schema value can
