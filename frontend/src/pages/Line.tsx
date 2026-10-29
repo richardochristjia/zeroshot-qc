@@ -88,6 +88,7 @@ export default function Line(): JSX.Element {
   const profileRef = useRef('')
   const mutedRef = useRef(muted)
   const guideUrlRef = useRef<string | null>(null)
+  const guideSeqRef = useRef(0)
   useEffect(() => {
     entriesRef.current = entries
     profileRef.current = profileId
@@ -260,6 +261,7 @@ export default function Line(): JSX.Element {
   const releaseAll = useCallback((): void => {
     void audioRef.current?.close()
     entriesRef.current.forEach((e) => e.thumbUrl !== null && URL.revokeObjectURL(e.thumbUrl))
+    guideSeqRef.current++
     if (guideUrlRef.current !== null) URL.revokeObjectURL(guideUrlRef.current)
   }, [])
   useEffect(() => releaseAll, [releaseAll])
@@ -280,14 +282,17 @@ export default function Line(): JSX.Element {
 
   /** Swap the guide (or clear it with null), revoking only the URL being replaced. */
   const storeGuide = (url: string | null): void => {
+    guideSeqRef.current++
     if (guideUrlRef.current !== null) URL.revokeObjectURL(guideUrlRef.current)
     guideUrlRef.current = url
     setGuideUrl(url)
   }
 
   const setGuide = async (): Promise<void> => {
+    // A newer press, a profile change or unmount bumps the seq while we wait; then this frame is stale.
+    const seq = ++guideSeqRef.current
     const blob = await grabFrame()
-    if (blob === null) return
+    if (blob === null || guideSeqRef.current !== seq) return
     storeGuide(URL.createObjectURL(blob))
     setShowGuide(true)
   }
