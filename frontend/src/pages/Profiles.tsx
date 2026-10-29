@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import type { JSX } from 'react'
 import {
@@ -8,16 +8,18 @@ import {
   getProfile,
   listProfiles,
   putProfile,
+  referenceImageUrl,
 } from '../api.ts'
-import { referenceImageUrl } from '../api.ts'
 import type { ProductProfile } from '../api.ts'
 import { Alert } from '../components/Alert.tsx'
 import { Button } from '../components/Button.tsx'
+import { Dialog } from '../components/Dialog.tsx'
 import { EmptyState } from '../components/EmptyState.tsx'
 import { Field } from '../components/Field.tsx'
 import { PageHeader } from '../components/PageHeader.tsx'
-import { Icon } from '../components/Icon.tsx'
 import { Panel, PanelHeader } from '../components/Panel.tsx'
+import { fromForm, isDirty, promptLines, toForm, validateForm } from '../profile-form.ts'
+import type { ProfileForm } from '../profile-form.ts'
 
 type LoadStatus = 'loading' | 'ready'
 
@@ -26,44 +28,29 @@ function errorDetail(err: unknown, fallback: string): string {
   return fallback
 }
 
-function promptsToText(prompts: string[]): string {
-  return prompts.join('\n')
-}
-
-function textToPrompts(text: string): string[] {
-  return text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-}
-
-function parseNullableNumber(text: string): number | null {
-  const trimmed = text.trim()
-  if (trimmed === '') return null
-  const parsed = Number(trimmed)
-  return Number.isNaN(parsed) ? null : parsed
-}
+const sortById = (list: ProductProfile[]): ProductProfile[] => [...list].sort((a, b) => a.id.localeCompare(b.id))
 
 export default function Profiles(): JSX.Element {
   const [profiles, setProfiles] = useState<ProductProfile[]>([])
   const [selectedId, setSelectedId] = useState<string>('')
-  const [draft, setDraft] = useState<ProductProfile | null>(null)
+  const [form, setForm] = useState<ProfileForm | null>(null)
+  const [isNew, setIsNew] = useState<boolean>(false)
+  const [filter, setFilter] = useState<string>('')
   const [loadStatus, setLoadStatus] = useState<LoadStatus>('loading')
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const [saving, setSaving] = useState<boolean>(false)
+  const [justSaved, setJustSaved] = useState<boolean>(false)
+  const [badRef, setBadRef] = useState<string | null>(null)
 
+  const [sopOpen, setSopOpen] = useState<boolean>(false)
   const [sopText, setSopText] = useState<string>('')
   const [sopCategory, setSopCategory] = useState<string>('')
-  const [sopDraft, setSopDraft] = useState<ProductProfile | null>(null)
-  const [saveAsId, setSaveAsId] = useState<string>('')
   const [sopBusy, setSopBusy] = useState<boolean>(false)
   const [sopError, setSopError] = useState<string | null>(null)
-  const [sopNotice, setSopNotice] = useState<string | null>(null)
-  const [existingProfile, setExistingProfile] = useState<ProductProfile | null>(null)
-  const [overwriteArmed, setOverwriteArmed] = useState<boolean>(false)
-  const sopPanelRef = useRef<HTMLDivElement>(null)
-  const sopCategoryRef = useRef<HTMLInputElement>(null)
+
+  const [existing, setExisting] = useState<ProductProfile | null>(null)
+  const [replace, setReplace] = useState<boolean>(false)
+  const [pending, setPending] = useState<(() => void) | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -72,7 +59,7 @@ export default function Profiles(): JSX.Element {
         setProfiles(loaded)
         if (loaded.length > 0) {
           setSelectedId(loaded[0].id)
-          setDraft(loaded[0])
+          setForm(toForm(loaded[0]))
         }
         setLoadStatus('ready')
       })
@@ -84,155 +71,144 @@ export default function Profiles(): JSX.Element {
     return () => controller.abort()
   }, [])
 
-  const selectProfile = useCallback(
-    (id: string): void => {
-      setSelectedId(id)
-      setNotice(null)
-      setError(null)
-      const found = profiles.find((profile) => profile.id === id) ?? null
-      setDraft(found)
-    },
-    [profiles],
-  )
+  const savedProfile = isNew ? null : (profiles.find((p) => p.id === selectedId) ?? null)
+  const saved = savedProfile === null ? null : toForm(savedProfile)
+  const dirty = form !== null && isDirty(form, saved)
+  const errors = form === null ? {} : validateForm(form, { checkId: isNew })
+  const errorCount = Object.keys(errors).length
+  const idError = errors.id ?? (existing !== null && !replace ? `Id “${existing.id}” already exists.` : undefined)
+  const canSave = dirty && errorCount === 0 && !saving && !(existing !== null && !replace)
 
-  const refreshList = useCallback(async (): Promise<void> => {
-    const loaded = await listProfiles()
-    setProfiles(loaded)
-    return
-  }, [])
+  useEffect(() => {
+    if (!dirty) return
+    const warn = (event: BeforeUnloadEvent): void => event.preventDefault()
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [dirty])
 
-  const handleSaveEdit = (): void => {
-    if (draft === null || saving) return
+  const edit = (patch: Partial<ProfileForm>): void => {
+    if (form === null) return
+    setForm({ ...form, ...patch })
+    setJustSaved(false)
+    if ('id' in patch) {
+      setExisting(null)
+      setReplace(false)
+    }
+  }
+
+  const open = (profile: ProductProfile | null, asNew: boolean): void => {
+    setIsNew(asNew)
+    setSelectedId(profile === null || asNew ? '' : profile.id)
+    setForm(profile === null ? null : toForm(profile))
+    setExisting(null)
+    setReplace(false)
+    setJustSaved(false)
+    setError(null)
+  }
+
+  // Run an action now, or after the user confirms discarding edits.
+  const guard = (action: () => void): void => {
+    if (dirty) setPending(() => action)
+    else action()
+  }
+
+  const handleReload = (): void => {
+    setError(null)
+    listProfiles()
+      .then((loaded) => {
+        setProfiles(loaded)
+        open(loaded.find((p) => p.id === selectedId) ?? null, false)
+      })
+      .catch((err: unknown) => setError(errorDetail(err, 'Could not reload profiles.')))
+  }
+
+  const finishSave = (toSave: ProductProfile): Promise<void> =>
+    putProfile(toSave).then((savedOne) => {
+      setProfiles((prev) => sortById([...prev.filter((p) => p.id !== savedOne.id), savedOne]))
+      open(savedOne, false)
+      setJustSaved(true)
+    })
+
+  const handleSave = (): void => {
+    if (form === null || !canSave) return
     setSaving(true)
     setError(null)
-    setNotice(null)
-    putProfile(draft)
-      .then((saved) => {
-        setProfiles((prev) =>
-          prev.some((profile) => profile.id === saved.id)
-            ? prev.map((profile) => (profile.id === saved.id ? saved : profile))
-            : [...prev, saved].sort((a, b) => a.id.localeCompare(b.id)),
-        )
-        setDraft(saved)
-        setNotice(`Saved profile “${saved.id}”.`)
+    const toSave = fromForm(form)
+    const done = (): void => setSaving(false)
+    const fail = (err: unknown): void => {
+      setError(errorDetail(err, 'Could not save the profile.'))
+      done()
+    }
+    if (!isNew || replace) {
+      finishSave(toSave).catch(fail).finally(done)
+      return
+    }
+    // PUT overwrites silently, so check existence first for a new draft.
+    getProfile(toSave.id)
+      .then((found) => {
+        setExisting(found)
+        done()
       })
       .catch((err: unknown) => {
-        setError(errorDetail(err, 'Could not save the profile.'))
+        if (err instanceof NotFoundError) finishSave(toSave).catch(fail).finally(done)
+        else fail(err)
       })
-      .finally(() => setSaving(false))
   }
+
+  const saveRef = useRef(handleSave)
+  useEffect(() => {
+    saveRef.current = handleSave
+  })
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 's') return
+      event.preventDefault()
+      if (!sopOpen && pending === null) saveRef.current()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [sopOpen, pending])
 
   const handleDraftFromSop = (): void => {
     if (sopText.trim() === '' || sopCategory.trim() === '' || sopBusy) return
     setSopBusy(true)
     setSopError(null)
-    setSopNotice(null)
-    setExistingProfile(null)
-    setOverwriteArmed(false)
     draftProfileFromSop({ sopText: sopText.trim(), categoryName: sopCategory.trim() })
       .then((drafted) => {
-        setSopDraft(drafted)
-        setSaveAsId(drafted.id)
-      })
-      .catch((err: unknown) => {
-        setSopDraft(null)
-        setSopError(errorDetail(err, 'Could not draft a profile from the SOP text.'))
-      })
-      .finally(() => setSopBusy(false))
-  }
-
-  const handleSaveDraftAsNew = (): void => {
-    if (sopDraft === null || sopBusy) return
-    const targetId = saveAsId.trim()
-    if (targetId === '') {
-      setSopError('Choose an id to save the draft under.')
-      return
-    }
-    // PUT overwrites silently, so check existence first when not confirmed.
-    if (!overwriteArmed) {
-      setSopBusy(true)
-      setSopError(null)
-      setSopNotice(null)
-      getProfile(targetId)
-        .then((existing) => {
-          // An id already exists: stop and ask for explicit confirmation.
-          setExistingProfile(existing)
-          setSopBusy(false)
-        })
-        .catch((err: unknown) => {
-          if (err instanceof NotFoundError) {
-            persistDraft(targetId)
-            return
-          }
-          setSopError(errorDetail(err, 'Could not check whether that id exists.'))
-          setSopBusy(false)
-        })
-      return
-    }
-    setSopBusy(true)
-    setSopError(null)
-    setSopNotice(null)
-    persistDraft(targetId)
-  }
-
-  const persistDraft = (targetId: string): void => {
-    if (sopDraft === null) {
-      setSopBusy(false)
-      return
-    }
-    const toSave: ProductProfile = { ...sopDraft, id: targetId }
-    putProfile(toSave)
-      .then((saved) => {
-        setProfiles((prev) =>
-          prev.some((profile) => profile.id === saved.id)
-            ? prev.map((profile) => (profile.id === saved.id ? saved : profile))
-            : [...prev, saved].sort((a, b) => a.id.localeCompare(b.id)),
-        )
-        setSelectedId(saved.id)
-        setDraft(saved)
-        setSopDraft(null)
-        setSaveAsId('')
-        setExistingProfile(null)
-        setOverwriteArmed(false)
+        open(drafted, true)
+        setSopOpen(false)
         setSopText('')
         setSopCategory('')
-        setSopNotice(`Saved new profile “${saved.id}”.`)
       })
-      .catch((err: unknown) => {
-        setSopError(errorDetail(err, 'Could not save the drafted profile.'))
-      })
+      .catch((err: unknown) => setSopError(errorDetail(err, 'Could not draft a profile from the SOP text.')))
       .finally(() => setSopBusy(false))
   }
 
-  const jumpToSop = (): void => {
-    sopPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    sopCategoryRef.current?.focus({ preventScroll: true })
+  const discardDraft = (): void => {
+    if (isNew) open(profiles.find((p) => p.id === selectedId) ?? profiles[0] ?? null, false)
+    else if (saved !== null) setForm(saved)
+    setJustSaved(false)
   }
 
-  const handleRefresh = (): void => {
-    setError(null)
-    refreshList()
-      .then(() => {
-        setProfiles((prev) => {
-          const stillThere = prev.find((profile) => profile.id === selectedId) ?? null
-          setDraft(stillThere)
-          return prev
-        })
-      })
-      .catch((err: unknown) => {
-        setError(errorDetail(err, 'Could not reload profiles.'))
-      })
-  }
-
-  const loaded = profiles.find((profile) => profile.id === selectedId) ?? null
-  const dirty = draft !== null && loaded !== null && JSON.stringify(draft) !== JSON.stringify(loaded)
+  const needle = filter.trim().toLowerCase()
+  const visible = profiles.filter((p) => needle === '' || p.name.toLowerCase().includes(needle) || p.id.toLowerCase().includes(needle))
   const fade = { initial: { opacity: 0, y: -4 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0 }, transition: { duration: 0.15 } }
+  const dot = <span className="size-2 shrink-0 rounded-full bg-detect" role="img" aria-label="Unsaved changes" />
+  const status =
+    errorCount > 0
+      ? `${errorCount} ${errorCount === 1 ? 'field needs' : 'fields need'} attention`
+      : dirty
+        ? 'Unsaved changes · ⌘S'
+        : justSaved
+          ? 'Saved'
+          : 'No changes'
+  const discardName = isNew ? null : (savedProfile?.name ?? 'this profile')
 
   return (
     <section aria-label="Profiles">
       <PageHeader title="Profiles" subtitle="What each product is checked for, and the rules the judge applies.">
-        <Button icon="file" onClick={jumpToSop}>
-          Draft from SOP
+        <Button icon="sparkles" onClick={() => guard(() => setSopOpen(true))}>
+          New from SOP
         </Button>
       </PageHeader>
 
@@ -242,60 +218,90 @@ export default function Profiles(): JSX.Element {
             <Alert>{error}</Alert>
           </motion.div>
         )}
-        {notice !== null && (
-          <motion.div key="notice" {...fade} className="mb-4">
-            <Alert kind="notice">{notice}</Alert>
-          </motion.div>
-        )}
       </AnimatePresence>
 
       {loadStatus === 'loading' ? (
         <EmptyState title="Loading profiles…" />
-      ) : profiles.length === 0 ? (
+      ) : profiles.length === 0 && !isNew ? (
         <EmptyState
           icon="sliders"
           title="No profiles yet."
           action={
-            <Button icon="refresh" onClick={handleRefresh}>
+            <Button icon="refresh" onClick={handleReload}>
               Reload
             </Button>
           }
         >
-          Import your first profile from an SOP paragraph below, or add a profile JSON file to the backend
-          profiles directory and press Reload.
+          Draft your first profile with New from SOP, or add a profile JSON file to the backend profiles directory and
+          press Reload.
         </EmptyState>
       ) : (
         <div className="grid items-start gap-4 min-[1001px]:grid-cols-[260px_minmax(0,1fr)]">
           <Panel>
             <PanelHeader title={`${profiles.length} ${profiles.length === 1 ? 'profile' : 'profiles'}`}>
-              <Button variant="ghost" icon="refresh" onClick={handleRefresh} className="!min-h-8 !px-2">
+              <Button variant="ghost" icon="refresh" onClick={() => guard(handleReload)} className="!min-h-8 !px-2">
                 Reload
               </Button>
             </PanelHeader>
+            <div className="border-b border-line p-2">
+              <input
+                type="search"
+                className="ctl"
+                aria-label="Filter profiles"
+                placeholder="Filter by name or id"
+                value={filter}
+                onChange={(event) => setFilter(event.target.value)}
+              />
+            </div>
             <ul>
-              {profiles.map((profile) => (
-                <li key={profile.id} className="border-b border-line last:border-b-0">
-                  <button
-                    type="button"
-                    onClick={() => selectProfile(profile.id)}
-                    aria-current={profile.id === selectedId ? 'true' : undefined}
-                    className={`flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left text-sm ${
-                      profile.id === selectedId ? 'bg-sunken' : 'hover:bg-sunken'
-                    }`}
+              {isNew && form !== null && (
+                <li className="border-b border-line">
+                  <div
+                    aria-current="true"
+                    className="flex items-center justify-between gap-3 border-l-[3px] border-accent bg-sunken px-3 py-2.5 text-sm"
                   >
                     <span className="min-w-0">
-                      <span className="block truncate font-medium text-ink">{profile.name}</span>
-                      <span className="block truncate font-mono text-xs text-ink-3">{profile.id}</span>
+                      <span className="block truncate font-medium text-ink">{form.name || 'Untitled'}</span>
+                      <span className="block truncate font-mono text-xs text-ink-3">{form.id || 'new'}</span>
                     </span>
-                    <span className="num shrink-0 text-xs text-ink-3">{profile.defectPrompts.length} prompts</span>
-                  </button>
+                    <span className="flex items-center gap-2 text-xs text-ink-3">
+                      New {dot}
+                    </span>
+                  </div>
                 </li>
-              ))}
+              )}
+              {visible.map((profile) => {
+                const selected = !isNew && profile.id === selectedId
+                return (
+                  <li key={profile.id} className="border-b border-line last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!selected) guard(() => open(profile, false))
+                      }}
+                      aria-current={selected ? 'true' : undefined}
+                      className={`flex w-full items-center justify-between gap-3 border-l-[3px] px-3 py-2.5 text-left text-sm ${
+                        selected ? 'border-accent bg-sunken' : 'border-transparent hover:bg-sunken'
+                      }`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-ink">{profile.name}</span>
+                        <span className="block truncate font-mono text-xs text-ink-3">{profile.id}</span>
+                      </span>
+                      <span className="num flex shrink-0 items-center gap-2 text-xs text-ink-3">
+                        {selected && dirty && dot}
+                        {profile.defectPrompts.length} prompts
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+              {visible.length === 0 && <li className="px-3.5 py-3 text-sm text-ink-3">No profiles match.</li>}
             </ul>
           </Panel>
 
           <Panel>
-            {draft === null ? (
+            {form === null ? (
               <div className="p-3.5">
                 <EmptyState icon="sliders" title="Select a profile">
                   Pick a profile on the left to edit it.
@@ -303,92 +309,129 @@ export default function Profiles(): JSX.Element {
               </div>
             ) : (
               <>
-                <PanelHeader title={draft.name || 'Untitled'}>
-                  <span className="text-xs text-ink-3">
-                    <span className="font-mono">{draft.id}</span> · Ids are fixed once created
-                  </span>
+                <PanelHeader title={form.name || 'Untitled'}>
+                  {isNew ? (
+                    <span className="rounded-sm border border-line px-1.5 py-0.5 text-xs font-medium text-ink-2">New</span>
+                  ) : (
+                    <span className="text-xs text-ink-3">
+                      <span className="font-mono">{form.id}</span> · Ids are fixed once created
+                    </span>
+                  )}
                 </PanelHeader>
                 <div className="flex flex-col gap-4 p-3.5">
-                  <Field label="Name">
-                    <input
-                      type="text"
-                      className="ctl"
-                      value={draft.name}
-                      onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-                    />
+                  {isNew && (
+                    <Alert kind="notice">
+                      Drafted from SOP. Nothing is saved yet: review the fields, choose an id and press Save.
+                    </Alert>
+                  )}
+                  {isNew && (
+                    <>
+                      <Field label="Id" hint="Letters, digits, - and _. Cannot change after saving." error={idError}>
+                        <input
+                          type="text"
+                          className="ctl font-mono"
+                          value={form.id}
+                          onChange={(event) => edit({ id: event.target.value })}
+                        />
+                      </Field>
+                      {existing !== null && !replace && (
+                        <label className="flex items-center gap-2 text-sm text-ink-2">
+                          <input type="checkbox" checked={replace} onChange={(event) => setReplace(event.target.checked)} />
+                          Replace the existing profile “{existing.name}”
+                        </label>
+                      )}
+                    </>
+                  )}
+                  <Field label="Name" error={errors.name}>
+                    <input type="text" className="ctl" value={form.name} onChange={(event) => edit({ name: event.target.value })} />
                   </Field>
-                  <Field label="Defect prompts" hint="What the segmenter looks for, one per line">
+                  <Field
+                    label={
+                      <span className="flex items-baseline justify-between">
+                        Defect prompts
+                        <span className="num text-xs font-normal text-ink-3">{promptLines(form.prompts).length} prompts</span>
+                      </span>
+                    }
+                    hint="What the segmenter looks for, one per line"
+                    error={errors.prompts}
+                  >
                     <textarea
                       className="ctl font-mono"
                       rows={4}
-                      value={promptsToText(draft.defectPrompts)}
-                      onChange={(event) => setDraft({ ...draft, defectPrompts: textToPrompts(event.target.value) })}
+                      value={form.prompts}
+                      onChange={(event) => edit({ prompts: event.target.value })}
                     />
                   </Field>
                   <Field label="Rules" hint="Plain English. The judge cites these when it fails a part.">
-                    <textarea
-                      className="ctl"
-                      rows={4}
-                      value={draft.rules}
-                      onChange={(event) => setDraft({ ...draft, rules: event.target.value })}
-                    />
+                    <textarea className="ctl" rows={4} value={form.rules} onChange={(event) => edit({ rules: event.target.value })} />
                   </Field>
                   <div className="grid gap-4 min-[641px]:grid-cols-3">
-                    <Field label="mm per px" hint="Blank = report pixels only">
+                    <Field label="mm per px" hint="Blank = report pixels only" error={errors.mmPerPx}>
                       <input
                         type="text"
                         inputMode="decimal"
                         className="ctl num"
-                        value={draft.mmPerPx === null ? '' : String(draft.mmPerPx)}
-                        onChange={(event) => setDraft({ ...draft, mmPerPx: parseNullableNumber(event.target.value) })}
+                        value={form.mmPerPx}
+                        onChange={(event) => edit({ mmPerPx: event.target.value })}
                       />
                     </Field>
-                    <Field label="Min score" hint="Candidates below this are dropped">
+                    <Field label="Min score" hint="Candidates below this are dropped" error={errors.minScore}>
                       <input
-                        type="number"
-                        step="0.05"
-                        min="0"
-                        max="1"
+                        type="text"
+                        inputMode="decimal"
                         className="ctl num"
-                        value={draft.minScore}
-                        onChange={(event) => {
-                          const parsed = Number(event.target.value)
-                          setDraft({ ...draft, minScore: Number.isNaN(parsed) ? 0 : parsed })
-                        }}
+                        value={form.minScore}
+                        onChange={(event) => edit({ minScore: event.target.value })}
                       />
                     </Field>
-                    <Field label="Reference image" hint="Path under data/; blank = none">
+                    <Field
+                      label="Reference image"
+                      hint="Path under data/; blank = none"
+                      error={
+                        form.referenceImage.trim() !== '' && badRef === form.referenceImage.trim()
+                          ? 'Image not found: the judge runs without a reference.'
+                          : undefined
+                      }
+                    >
                       <div className="flex items-center gap-2">
                         <input
                           type="text"
                           className="ctl"
-                          value={draft.referenceImage ?? ''}
-                          onChange={(event) =>
-                            setDraft({
-                              ...draft,
-                              referenceImage: event.target.value.trim() === '' ? null : event.target.value.trim(),
-                            })
-                          }
+                          value={form.referenceImage}
+                          onChange={(event) => edit({ referenceImage: event.target.value })}
                         />
-                        {draft.referenceImage !== null && (
-                          <img
-                            src={referenceImageUrl(draft.referenceImage)}
-                            alt=""
-                            className="size-14 shrink-0 rounded-sm border border-line object-cover"
-                            onError={(event) => {
-                              event.currentTarget.style.visibility = 'hidden'
-                            }}
-                          />
-                        )}
+                        {form.referenceImage.trim() !== '' &&
+                          (badRef === form.referenceImage.trim() ? (
+                            <span className="grid size-14 shrink-0 place-items-center rounded-sm border border-dashed border-line-strong text-center text-[10px] text-ink-3">
+                              Not found
+                            </span>
+                          ) : (
+                            <img
+                              key={form.referenceImage.trim()}
+                              src={referenceImageUrl(form.referenceImage.trim())}
+                              alt=""
+                              className="size-14 shrink-0 rounded-sm border border-line object-cover"
+                              onError={() => setBadRef(form.referenceImage.trim())}
+                            />
+                          ))}
                       </div>
                     </Field>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 border-t border-line px-3.5 py-2.5">
-                  <Button variant="primary" icon="save" onClick={handleSaveEdit} disabled={saving || draft.name.trim() === ''}>
-                    {saving ? 'Saving…' : 'Save profile'}
+                <div className="sticky bottom-0 flex flex-wrap items-center gap-3 rounded-b-md border-t border-line bg-surface px-3.5 py-2.5">
+                  <Button
+                    variant={existing !== null ? 'secondary' : 'primary'}
+                    icon="save"
+                    onClick={handleSave}
+                    disabled={!canSave}
+                    className={existing !== null ? '!border-fail !bg-fail !text-on-fail' : ''}
+                  >
+                    {saving ? 'Saving…' : existing !== null ? `Replace ${existing.id}` : 'Save profile'}
                   </Button>
-                  {dirty && <span className="text-xs text-ink-3">Unsaved changes</span>}
+                  {dirty && <Button onClick={discardDraft}>{isNew ? 'Discard draft' : 'Discard changes'}</Button>}
+                  <span className="text-xs text-ink-3" role="status">
+                    {status}
+                  </span>
                 </div>
               </>
             )}
@@ -396,33 +439,24 @@ export default function Profiles(): JSX.Element {
         </div>
       )}
 
-      <div ref={sopPanelRef} className="mt-4 scroll-mt-20">
-      <Panel>
-        <PanelHeader title={<><Icon name="file" />Import from SOP</>} />
+      <Dialog open={sopOpen} title="New profile from SOP" onClose={() => setSopOpen(false)}>
         <div className="flex flex-col gap-4 p-3.5">
           <p className="text-[13px] text-ink-2">
-            Draft a profile from an SOP paragraph. Drafting never saves anything: review the draft, then save it
-            under a new id.
+            Draft a profile from an SOP paragraph. Nothing is saved: you review the draft in the editor first.
           </p>
           <Field label="Category name">
-            <input
-              ref={sopCategoryRef}
-              type="text"
-              className="ctl"
-              value={sopCategory}
-              onChange={(event) => setSopCategory(event.target.value)}
-              placeholder="bottle"
-            />
+            <input type="text" className="ctl" value={sopCategory} onChange={(event) => setSopCategory(event.target.value)} placeholder="bottle" />
           </Field>
           <Field label="SOP text">
             <textarea
               className="ctl"
-              rows={5}
+              rows={6}
               value={sopText}
               onChange={(event) => setSopText(event.target.value)}
               placeholder="Paste the SOP paragraph describing defects and rules…"
             />
           </Field>
+          {sopError !== null && <Alert>{sopError}</Alert>}
           <div>
             <Button
               variant="primary"
@@ -430,87 +464,34 @@ export default function Profiles(): JSX.Element {
               onClick={handleDraftFromSop}
               disabled={sopText.trim() === '' || sopCategory.trim() === '' || sopBusy}
             >
-              {sopBusy && sopDraft === null ? 'Drafting…' : 'Draft from SOP'}
+              {sopBusy ? 'Drafting…' : 'Draft profile'}
             </Button>
           </div>
-
-          <AnimatePresence>
-            {sopError !== null && (
-              <motion.div key="serr" {...fade}>
-                <Alert>{sopError}</Alert>
-              </motion.div>
-            )}
-            {sopNotice !== null && (
-              <motion.div key="snotice" {...fade}>
-                <Alert kind="notice">{sopNotice}</Alert>
-              </motion.div>
-            )}
-            {sopDraft !== null && (
-              <motion.div key="draft" {...fade} className="rounded-md border border-line p-3.5">
-                <h3 className="text-[13px] font-semibold text-ink-2">Draft preview</h3>
-                <dl className="mt-2 space-y-1.5 text-sm">
-                  <div className="flex gap-3">
-                    <dt className="w-28 shrink-0 text-ink-3">Name</dt>
-                    <dd>{sopDraft.name}</dd>
-                  </div>
-                  <div className="flex gap-3">
-                    <dt className="w-28 shrink-0 text-ink-3">Suggested id</dt>
-                    <dd className="font-mono text-xs">{sopDraft.id}</dd>
-                  </div>
-                  <div className="flex gap-3">
-                    <dt className="w-28 shrink-0 text-ink-3">Rules</dt>
-                    <dd>{sopDraft.rules}</dd>
-                  </div>
-                  <div className="flex gap-3">
-                    <dt className="w-28 shrink-0 text-ink-3">Prompts</dt>
-                    <dd>{sopDraft.defectPrompts.join(', ')}</dd>
-                  </div>
-                </dl>
-                <div className="mt-4 flex flex-col gap-4">
-                  <Field label="Save as id">
-                    <input
-                      type="text"
-                      className="ctl font-mono"
-                      value={saveAsId}
-                      onChange={(event) => {
-                        setSaveAsId(event.target.value)
-                        setExistingProfile(null)
-                        setOverwriteArmed(false)
-                      }}
-                    />
-                  </Field>
-                  <AnimatePresence>
-                    {existingProfile !== null && !overwriteArmed && (
-                      <motion.div key="overwrite" {...fade}>
-                        <Alert>
-                          <p>
-                            Id <span className="font-mono font-medium">{existingProfile.id}</span> already exists (“
-                            {existingProfile.name}”). Saving would overwrite it.
-                          </p>
-                          <Button className="mt-2" onClick={() => setOverwriteArmed(true)}>
-                            I understand — overwrite this profile
-                          </Button>
-                        </Alert>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  {overwriteArmed && (
-                    <p className="text-sm font-medium text-fail">
-                      Overwrite confirmed. Press save to replace the existing profile.
-                    </p>
-                  )}
-                  <div>
-                    <Button variant="primary" icon="save" onClick={handleSaveDraftAsNew} disabled={saveAsId.trim() === '' || sopBusy}>
-                      {sopBusy ? 'Saving…' : overwriteArmed ? 'Overwrite existing profile' : 'Save as new profile'}
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
-      </Panel>
-      </div>
+      </Dialog>
+
+      <Dialog
+        open={pending !== null}
+        title={discardName === null ? 'Discard the unsaved SOP draft?' : `Discard your changes to ${discardName}?`}
+        onClose={() => setPending(null)}
+      >
+        <div className="flex flex-col gap-4 p-3.5">
+          <p className="text-[13px] text-ink-2">Your edits have not been saved and will be lost.</p>
+          <div className="flex gap-2">
+            <Button onClick={() => setPending(null)}>Keep editing</Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                const run = pending
+                setPending(null)
+                run?.()
+              }}
+            >
+              Discard changes
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </section>
   )
 }
