@@ -5,11 +5,13 @@ import { Icon, IconSprite, type IconName } from './components/Icon.tsx'
 import { ThemeSwitch } from './components/ThemeSwitch.tsx'
 import Eval from './pages/Eval.tsx'
 import Inspect from './pages/Inspect.tsx'
+import Line from './pages/Line.tsx'
 import Profiles from './pages/Profiles.tsx'
 import Synthetic from './pages/Synthetic.tsx'
 
 const links: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: 'Inspect', icon: 'scan' },
+  { to: '/line', label: 'Line', icon: 'camera' },
   { to: '/profiles', label: 'Profiles', icon: 'sliders' },
   { to: '/eval', label: 'Eval', icon: 'chart' },
   { to: '/synthetic', label: 'Synthetic', icon: 'sparkles' },
@@ -60,6 +62,7 @@ export default function App() {
         <motion.div key={pathname} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
         <Routes>
           <Route path="/" element={<Inspect />} />
+          <Route path="/line" element={<Line />} />
           <Route path="/profiles" element={<Profiles />} />
           <Route path="/eval" element={<Eval />} />
           <Route path="/synthetic" element={<Synthetic />} />
