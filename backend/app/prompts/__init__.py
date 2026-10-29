@@ -14,7 +14,7 @@ from pathlib import Path
 
 from app.schemas import Detection, ProductProfile, Verdict
 
-_JUDGE_TEMPLATE = Path(__file__).resolve().parent / "judge.md"
+JUDGE_TEMPLATE = Path(__file__).resolve().parent / "judge.md"
 _SOP_TEMPLATE = Path(__file__).resolve().parent / "sop_to_profile.md"
 
 
@@ -54,16 +54,19 @@ def render_sop_prompt(sop_text: str, category_name: str) -> str:
     )
 
 
-def render_judge_prompt(rules: str, detections: list[Detection]) -> str:
-    """Render ``judge.md`` with the Verdict schema, rules, and table."""
-    template = _JUDGE_TEMPLATE.read_text(encoding="utf-8")
+def render_judge_prompt(
+    rules: str, detections: list[Detection], product_name: str
+) -> str:
+    """Render ``judge.md`` with the Verdict schema, rules, product, and table."""
+    template = JUDGE_TEMPLATE.read_text(encoding="utf-8")
     values = {
         "{schema}": json.dumps(Verdict.model_json_schema(), sort_keys=True),
         "{rules}": rules,
+        "{product_name}": product_name,
         "{detections_table}": build_detections_table(detections),
     }
     return re.sub(
-        r"\{schema\}|\{rules\}|\{detections_table\}",
+        r"\{schema\}|\{rules\}|\{product_name\}|\{detections_table\}",
         lambda match: values[match.group(0)],
         template,
     )
