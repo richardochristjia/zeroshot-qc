@@ -103,3 +103,7 @@ textarea.ctl { resize: vertical; line-height: 1.45; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Line mode: hold bar fill and capture flash. */
+@keyframes line-hold { from { width: 0; } to { width: 100%; } }
+@keyframes line-flash { from { opacity: 0.6; } to { opacity: 0; } }
