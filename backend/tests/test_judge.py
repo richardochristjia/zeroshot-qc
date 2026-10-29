@@ -236,6 +236,7 @@ def test_malformed_first_response_retries_once_then_validates(
     assert len(calls) == 2
     assert "failed validation" in _request_text(calls[1])
     assert STRICT_RULES in _request_text(calls[0])
+    assert profile.name in _request_text(calls[0])
 
 
 def test_missing_part_matches_retries_then_validates(
