@@ -440,6 +440,7 @@ export default function Line(): JSX.Element {
                   <span>Confidence {shown.result.verdict.confidence.toFixed(2)}</span>
                   <span>{(shown.result.timingsMs.total / 1000).toFixed(1)} s</span>
                 </p>
+                {!shown.result.verdict.partMatches && <p className="text-sm font-medium text-fail">Wrong part</p>}
                 <p className="max-w-[60ch] text-base">{shown.result.verdict.summary}</p>
                 {shown.verdict === 'FAIL' && firstViolated !== null && (
                   <p className="text-sm text-ink-2">
