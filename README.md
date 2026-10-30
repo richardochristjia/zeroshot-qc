@@ -44,4 +44,4 @@ The bundled demo set includes a downscaled subset of the [MVTec AD](https://www.
 
 ## Development
 
-Manual run, container probes and the submission checklist: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+Manual run and container probes: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).

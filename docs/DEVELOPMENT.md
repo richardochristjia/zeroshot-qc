@@ -1,6 +1,6 @@
 # Development
 
-Manual run, container probes, deployment and the M7 checklist. For the one-command Docker run, see the [README](../README.md).
+Manual run, container probes and deployment. For the one-command Docker run, see the [README](../README.md).
 
 > Requires Python 3.11 (pinned in `.python-version`). Model IDs and API keys are read from `.env` (see `.env.example`); never hardcode them.
 
@@ -119,16 +119,3 @@ Notes:
 - Keyless: with no `META_API_KEY`, bundled samples replay real cached verdicts and other inputs fall back to placeholder models (flagged `demo: true`). `USE_FAKE_ADAPTERS=true` forces fakes everywhere.
 - Data persists in the `zqc-data` volume across `down`/`up` (`down -v` deletes it).
 - Stop the dev servers (`uvicorn :8000`, Vite) first if the host ports are taken.
-
-## Submission checklist state (M7)
-
-Source: the hackathon `ROADMAP.md` submission checklist. State as of this README rewrite:
-
-- [ ] A fresh clone runs with `docker compose up --build` — verify on a clean machine (open `http://localhost:8080`, click a sample).
-- [ ] Demo video uploaded and link tested — NOT DONE. Out of scope for this repo change.
-- [~] README: problem, architecture diagram, models used, metrics table, how to run — PARTIAL. Run instructions rewritten here (verified below); problem + models at the top of this file; MVTec license below; eval numbers live in `docs/EVAL_NOTES.md`. Still missing: an architecture diagram and a metrics table in this file.
-- [x] MVTec AD license noted (CC BY-NC-SA 4.0, non-commercial) — DONE (`Data & licensing` above).
-- [x] No API keys in the repo — DONE (`.env` and `data/` gitignored; `.dockerignore` keeps both out of the image; `frontend/dist/` bundle grep clean per the M7 Phase 2 verification).
-- [ ] Submitted before 5 PM ET Nov 4 — NOT DONE. Submission-day step.
-
-Reader test: `cp .env.example .env`, backend venv `uvicorn` + `/api/health`, frontend `npm run dev` + page/proxy fetch, `docker build` + `docker run` with the flags above + health/CORS-trace/traversal/inspect probes.
