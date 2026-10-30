@@ -56,3 +56,34 @@ test('the run is aborted on unmount', async () => {
   unmount()
   expect(signal?.aborted).toBe(true)
 })
+
+test('picking a new file mid-run aborts the old run and drops its verdict', async () => {
+  let resolve: (value: api.InspectionResult) => void = () => {}
+  // Like real fetch: rejects with AbortError once its signal aborts.
+  vi.mocked(api.inspectImage).mockImplementation(({ signal }) => new Promise((r, reject) => {
+    resolve = r
+    signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
+  }))
+  render(<MemoryRouter><Inspect /></MemoryRouter>)
+  fireEvent.click(await screen.findByRole('button', { name: /Sample one/ }))
+  await waitFor(() => expect(api.inspectImage).toHaveBeenCalled())
+  const { signal } = vi.mocked(api.inspectImage).mock.calls[0][0]
+  const next = new File(['y'], 'other.png', { type: 'image/png' })
+  fireEvent.change(screen.getByLabelText('Image file'), { target: { files: { item: () => next } } })
+  expect(signal?.aborted).toBe(true)
+  resolve(result)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(screen.queryByText('FAIL')).toBeNull()
+  expect((screen.getByRole('button', { name: 'Inspect' }) as HTMLButtonElement).disabled).toBe(false)
+})
+
+test('picking a new file cancels a pending rules re-run', async () => {
+  render(<MemoryRouter><Inspect /></MemoryRouter>)
+  fireEvent.click(await screen.findByRole('button', { name: /Sample one/ }))
+  await screen.findByText('FAIL')
+  fireEvent.change(screen.getByPlaceholderText(/Edit rules/), { target: { value: 'stricter' } })
+  const next = new File(['y'], 'other.png', { type: 'image/png' })
+  fireEvent.change(screen.getByLabelText('Image file'), { target: { files: { item: () => next } } })
+  await new Promise((r) => setTimeout(r, 700))
+  expect(api.inspectImage).toHaveBeenCalledTimes(1)
+})

@@ -152,6 +152,10 @@ export default function Inspect(): JSX.Element {
 
   const pickFile = (picked: File | null): void => {
     if (previewUrl !== null) URL.revokeObjectURL(previewUrl)
+    // A new image cancels the old run and any pending rules re-run.
+    abortRef.current?.abort()
+    if (debounceRef.current !== null) window.clearTimeout(debounceRef.current)
+    setStatus('ready')
     setResult(null)
     setError(null)
     setHoveredId(null)
