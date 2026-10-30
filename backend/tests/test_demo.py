@@ -114,6 +114,20 @@ def test_unknown_image_falls_back(keyless: Path) -> None:
     assert _inspect(keyless / e["file"], e["profile_id"]).json()["demo"] is False
 
 
+def test_key_with_bad_base_url_is_not_demo(
+    keyless: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "meta_api_key", "sk-real")
+    monkeypatch.setattr(settings, "meta_api_base_url", "http://typo")
+    from PIL import Image
+
+    other = keyless / "other.png"
+    Image.new("RGB", (64, 64), (10, 200, 10)).save(other)
+    res = _inspect(other, "screw")
+    assert res.status_code == 503
+    assert "META_API_BASE_URL" in res.json()["detail"]
+
+
 @needs_bundle
 def test_rules_override_is_demo(keyless: Path) -> None:
     seed_demo(DEMO_DIR, keyless)

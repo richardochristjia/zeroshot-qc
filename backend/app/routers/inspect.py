@@ -121,7 +121,10 @@ def inspect_image(
                 judge=judge,  # type: ignore[arg-type]
                 rules=(rules or None),
             )
-        except AdapterNotConfiguredError:
+        except AdapterNotConfiguredError as exc:
+            if settings.meta_api_key:
+                # A key means a live setup: surface the misconfiguration, never fake it.
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
             # No key and a cache miss: fakes use their own ids, so real keys stay clean.
             segmenter = _TimedSegmenter(build_segmenter(True, cache))
             judge = _TimedJudge(build_judge(True, cache))
