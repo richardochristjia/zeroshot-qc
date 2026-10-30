@@ -128,3 +128,20 @@ def test_bundle_size() -> None:
         pytest.skip("backend/demo not built")
     total = sum(f.stat().st_size for f in DEMO_DIR.rglob("*") if f.is_file())
     assert total <= 40 * 1024 * 1024
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_readme_is_docker_only() -> None:
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    for banned in ("uvicorn", "npm run dev", "venv", "docker run"):
+        assert banned not in text
+    assert "uvicorn" in (ROOT / "docs" / "DEVELOPMENT.md").read_text(encoding="utf-8")
+
+
+def test_env_example_has_defaults_and_no_key() -> None:
+    lines = (ROOT / ".env.example").read_text(encoding="utf-8").splitlines()
+    assert "META_API_KEY=" in lines
+    assert "SAM_MODEL_ID=sam-3.1" in lines
+    assert "META_API_BASE_URL=https://api.meta.ai/v1" in lines
