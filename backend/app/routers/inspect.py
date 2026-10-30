@@ -112,15 +112,19 @@ def inspect_image(
     judge = _TimedJudge(_get_judge(cache))
     total_start = time.perf_counter()
     demo = False
+
+    def _run(seg: _TimedSegmenter, jdg: _TimedJudge):
+        return run_inspection(
+            pil_image,
+            profile,
+            seg,  # type: ignore[arg-type]
+            judge=jdg,  # type: ignore[arg-type]
+            rules=(rules or None),
+        )
+
     try:
         try:
-            detections, verdict = run_inspection(
-                pil_image,
-                profile,
-                segmenter,  # type: ignore[arg-type]
-                judge=judge,  # type: ignore[arg-type]
-                rules=(rules or None),
-            )
+            detections, verdict = _run(segmenter, judge)
         except AdapterNotConfiguredError as exc:
             if settings.meta_api_key:
                 # A key means a live setup: surface the misconfiguration, never fake it.
@@ -128,13 +132,7 @@ def inspect_image(
             # No key and a cache miss: fakes use their own ids, so real keys stay clean.
             segmenter = _TimedSegmenter(build_segmenter(True, cache))
             judge = _TimedJudge(build_judge(True, cache))
-            detections, verdict = run_inspection(
-                pil_image,
-                profile,
-                segmenter,  # type: ignore[arg-type]
-                judge=judge,  # type: ignore[arg-type]
-                rules=(rules or None),
-            )
+            detections, verdict = _run(segmenter, judge)
             demo = True
     except JudgeValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
