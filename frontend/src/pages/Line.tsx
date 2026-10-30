@@ -348,16 +348,12 @@ export default function Line(): JSX.Element {
           <Button icon="camera" onClick={() => void setGuide()} disabled={!live} title="Use the current frame as the framing guide">
             Set guide
           </Button>
-          <label className="inline-flex min-h-9 items-center gap-2 text-sm text-ink-2">
-            <input
-              type="checkbox"
-              className="accent-accent"
-              checked={guideUrl !== null && showGuide}
-              disabled={guideUrl === null}
-              onChange={(event) => setShowGuide(event.target.checked)}
-            />
-            Guide
-          </label>
+          {guideUrl !== null && (
+            <label className="inline-flex min-h-9 items-center gap-2 text-sm text-ink-2">
+              <input type="checkbox" className="accent-accent" checked={showGuide} onChange={(event) => setShowGuide(event.target.checked)} />
+              Show guide
+            </label>
+          )}
           <label className="inline-flex min-h-9 items-center gap-2 text-sm text-ink-2">
             <input type="checkbox" className="accent-accent" checked={muted} onChange={(event) => toggleMute(event.target.checked)} />
             Mute
