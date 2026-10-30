@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { DragEvent, JSX } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ApiError, inspectImage, listProfiles, referenceImageUrl, resolveFileUrl } from '../api.ts'
-import type { Detection, DefectRuling, InspectionResult, ProductProfile } from '../api.ts'
+import { ApiError, inspectImage, listProfiles, listSamples, referenceImageUrl, resolveFileUrl } from '../api.ts'
+import type { Detection, DefectRuling, InspectionResult, ProductProfile, Sample } from '../api.ts'
 import { Alert } from '../components/Alert.tsx'
 import { Button } from '../components/Button.tsx'
 import { EmptyState } from '../components/EmptyState.tsx'
@@ -74,6 +74,7 @@ export default function Inspect(): JSX.Element {
   const [rulesText, setRulesText] = useState<string>('')
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [samples, setSamples] = useState<Sample[]>([])
   const [refFailedUrl, setRefFailedUrl] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const debounceRef = useRef<number | null>(null)
@@ -97,6 +98,14 @@ export default function Inspect(): JSX.Element {
         setError(err instanceof ApiError ? err.detail : 'Could not load profiles.')
         setStatus('ready')
       })
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    listSamples(controller.signal)
+      .then(setSamples)
+      .catch(() => undefined)
     return () => controller.abort()
   }, [])
 
@@ -152,6 +161,20 @@ export default function Inspect(): JSX.Element {
     }
     setFile(picked)
     setPreviewUrl(URL.createObjectURL(picked))
+  }
+
+  const trySample = async (sample: Sample): Promise<void> => {
+    try {
+      const response = await fetch(resolveFileUrl(sample.imageUrl))
+      if (!response.ok) throw new Error('sample fetch failed')
+      const blob = await response.blob()
+      const picked = new File([blob], `${sample.id}.png`, { type: blob.type || 'image/png' })
+      pickFile(picked)
+      setProfileId(sample.profileId)
+      void runInspect(picked, sample.profileId)
+    } catch {
+      setError('Could not load that sample.')
+    }
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
@@ -264,6 +287,33 @@ export default function Inspect(): JSX.Element {
           {submit}
         </div>
       </PageHeader>
+
+      {samples.length > 0 && (
+        <div className="mb-4" role="group" aria-label="Try a sample">
+          <h2 className="mb-1.5">Try a sample</h2>
+          <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+            {samples.map((sample) => (
+              <li key={sample.id}>
+                <button
+                  type="button"
+                  onClick={() => void trySample(sample)}
+                  disabled={inspecting}
+                  className="flex items-center gap-2 rounded-md border border-line-strong bg-surface p-1.5 pr-3 text-left text-[13px] text-ink"
+                >
+                  <img src={resolveFileUrl(sample.imageUrl)} alt="" className="h-10 w-10 rounded-[3px] object-cover" />
+                  {sample.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {result?.demo === true && (
+        <Alert kind="notice" className="mb-4">
+          Demo result — no API key is set, so this verdict comes from placeholder models. Bundled samples return real cached verdicts; add META_API_KEY in .env for live inspection.
+        </Alert>
+      )}
 
       <AnimatePresence>
         {error !== null && (

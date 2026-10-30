@@ -75,6 +75,8 @@ export interface InspectionResult {
   verdict: Verdict;
   overlayUrl: string;
   timingsMs: InspectionTimings;
+  /** True when placeholder models answered (no API key, cache miss). */
+  demo: boolean;
 }
 
 /** One `results.jsonl` row (keys per `backend/app/eval/run.py:179-190`)
@@ -348,7 +350,7 @@ function parseProductProfile(value: unknown): ProductProfile {
   };
 }
 
-function parseInspectionResult(value: unknown): InspectionResult {
+export function parseInspectionResult(value: unknown): InspectionResult {
   const path = "InspectionResult";
   if (!isRecord(value)) fail(path);
   const timings = value["timings_ms"];
@@ -366,6 +368,7 @@ function parseInspectionResult(value: unknown): InspectionResult {
       judge: reqNumber(timings, "judge", `${path}.timings_ms`),
       total: reqNumber(timings, "total", `${path}.timings_ms`),
     },
+    demo: value["demo"] === true,
   };
 }
 
@@ -718,6 +721,33 @@ export async function listSyntheticGallery(
   const data = await getJson("/api/synth/gallery", signal);
   if (!Array.isArray(data)) fail("SynthGalleryItem[]");
   return data.map((item, i) => parseSynthGalleryItem(item, i));
+}
+
+export interface Sample {
+  id: string;
+  label: string;
+  profileId: string;
+  imageUrl: string;
+}
+
+/** GET /api/samples: bundled demo samples; `[]` on any failure. */
+export async function listSamples(signal?: AbortSignal): Promise<Sample[]> {
+  try {
+    const data = await getJson("/api/samples", signal);
+    if (!Array.isArray(data)) return [];
+    return data.map((item) => {
+      if (!isRecord(item)) fail("Sample");
+      return {
+        id: reqString(item, "id", "Sample"),
+        label: reqString(item, "label", "Sample"),
+        profileId: reqString(item, "profile_id", "Sample"),
+        imageUrl: reqString(item, "image_url", "Sample"),
+      };
+    });
+  } catch (err: unknown) {
+    if (err instanceof DOMException && err.name === "AbortError") throw err;
+    return [];
+  }
 }
 
 /** GET /api/health. Never throws except for AbortError: any failure is 'down'. */
