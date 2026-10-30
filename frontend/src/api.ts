@@ -473,8 +473,8 @@ function parseSynthGalleryItem(value: unknown, index: number): SynthGalleryItem 
 }
 
 // ---------------------------------------------------------------------------
-// Backend origin (M7 deploy): build-time `VITE_API_URL`, trailing slash
-// stripped once. Empty/unset (dev) keeps same-origin relative URLs.
+// Backend origin: optional build-time `VITE_API_URL` override for a
+// cross-origin backend, trailing slash stripped once. Empty/unset (dev) keeps same-origin relative URLs.
 // ---------------------------------------------------------------------------
 
 export function normalizeApiBase(rawBase: unknown): string {
