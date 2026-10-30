@@ -1,0 +1,99 @@
+{
+  "run_id": "20261027T091346Z-sam_judge",
+  "mode": "sam_judge",
+  "source": "mvtec",
+  "adapter": "real",
+  "seed": 0,
+  "categories": [
+    "bottle",
+    "cable",
+    "capsule",
+    "carpet",
+    "grid"
+  ],
+  "n_good": 10,
+  "n_defective": 20,
+  "rules": "FAIL any visible scratch, stain, or surface damage; PASS otherwise.",
+  "metrics": {
+    "per_category": {
+      "bottle": {
+        "precision": 0.8888888888888888,
+        "recall": 0.8,
+        "f1": 0.8421052631578948,
+        "accuracy": 0.8,
+        "auroc": 0.8525,
+        "n": 30.0,
+        "tp": 16.0,
+        "tn": 8.0,
+        "fp": 2.0,
+        "fn": 4.0,
+        "iou": 0.0
+      },
+      "cable": {
+        "precision": 0.8333333333333334,
+        "recall": 0.5,
+        "f1": 0.625,
+        "accuracy": 0.6,
+        "auroc": 0.75,
+        "n": 30.0,
+        "tp": 10.0,
+        "tn": 8.0,
+        "fp": 2.0,
+        "fn": 10.0,
+        "iou": 0.0
+      },
+      "capsule": {
+        "precision": 0.8888888888888888,
+        "recall": 0.8,
+        "f1": 0.8421052631578948,
+        "accuracy": 0.8,
+        "auroc": 0.9275,
+        "n": 30.0,
+        "tp": 16.0,
+        "tn": 8.0,
+        "fp": 2.0,
+        "fn": 4.0,
+        "iou": 0.0
+      },
+      "carpet": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "accuracy": 1.0,
+        "auroc": 1.0,
+        "n": 30.0,
+        "tp": 20.0,
+        "tn": 10.0,
+        "fp": 0.0,
+        "fn": 0.0,
+        "iou": 0.0
+      },
+      "grid": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "accuracy": 1.0,
+        "auroc": 1.0,
+        "n": 30.0,
+        "tp": 20.0,
+        "tn": 10.0,
+        "fp": 0.0,
+        "fn": 0.0,
+        "iou": 0.0
+      }
+    },
+    "overall": {
+      "precision": 0.9318181818181818,
+      "recall": 0.82,
+      "f1": 0.8723404255319149,
+      "accuracy": 0.84,
+      "auroc": 0.9435,
+      "n": 150.0,
+      "tp": 82.0,
+      "tn": 44.0,
+      "fp": 6.0,
+      "fn": 18.0,
+      "iou": 0.0
+    }
+  }
+}
