@@ -8,7 +8,7 @@ import { Icon } from '../components/Icon.tsx'
 import { PageHeader } from '../components/PageHeader.tsx'
 import { Panel, PanelHeader } from '../components/Panel.tsx'
 import { VerdictBadge } from '../components/VerdictBadge.tsx'
-import { FRAME_H, FRAME_W, HOLD_MS, arm, idleState, pause, step, toGray } from '../line-trigger.ts'
+import { FRAME_H, FRAME_W, HOLD_MS, arm, idleState, pause, shouldBeep, step, toGray } from '../line-trigger.ts'
 import type { Phase, TriggerState } from '../line-trigger.ts'
 
 const SAMPLE_MS = 100
@@ -189,7 +189,7 @@ export default function Line(): JSX.Element {
         })
         return [...kept, { n, verdict: result.verdict.verdict, result, thumbUrl }]
       })
-      if (result.verdict.verdict === 'FAIL') beep()
+      if (shouldBeep(result)) beep()
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === 'AbortError') return
       setError(err instanceof ApiError ? err.detail : err instanceof Error ? err.message : 'Inspection failed.')
@@ -366,6 +366,12 @@ export default function Line(): JSX.Element {
           </Button>
         </div>
       </PageHeader>
+
+      {entries.some((e) => e.result.demo) && (
+        <Alert kind="notice" className="mb-4">
+          Demo results — no API key is set, so these verdicts come from placeholder models. Add META_API_KEY in .env for live inspection.
+        </Alert>
+      )}
 
       <div className="grid items-start gap-4 grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] max-[860px]:grid-cols-1">
         <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-[#26272b]">
