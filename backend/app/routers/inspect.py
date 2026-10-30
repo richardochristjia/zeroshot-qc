@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from PIL import Image
 
-from app.adapters.base import Judge, Segmenter
+from app.adapters.base import AdapterNotConfiguredError, Judge, Segmenter
 from app.adapters.muse_spark import JudgeValidationError
 from app.config import settings
 from app.pipeline.cache import CachedJudge, CachedSegmenter, DiskCache
@@ -111,14 +111,28 @@ def inspect_image(
     segmenter = _TimedSegmenter(_get_segmenter(cache))
     judge = _TimedJudge(_get_judge(cache))
     total_start = time.perf_counter()
+    demo = False
     try:
-        detections, verdict = run_inspection(
-            pil_image,
-            profile,
-            segmenter,  # type: ignore[arg-type]
-            judge=judge,  # type: ignore[arg-type]
-            rules=(rules or None),
-        )
+        try:
+            detections, verdict = run_inspection(
+                pil_image,
+                profile,
+                segmenter,  # type: ignore[arg-type]
+                judge=judge,  # type: ignore[arg-type]
+                rules=(rules or None),
+            )
+        except AdapterNotConfiguredError:
+            # No key and a cache miss: fakes use their own ids, so real keys stay clean.
+            segmenter = _TimedSegmenter(build_segmenter(True, cache))
+            judge = _TimedJudge(build_judge(True, cache))
+            detections, verdict = run_inspection(
+                pil_image,
+                profile,
+                segmenter,  # type: ignore[arg-type]
+                judge=judge,  # type: ignore[arg-type]
+                rules=(rules or None),
+            )
+            demo = True
     except JudgeValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     total_ms = int((time.perf_counter() - total_start) * 1000)
@@ -148,4 +162,5 @@ def inspect_image(
             "judge": judge.elapsed_ms,
             "total": total_ms,
         },
+        demo=demo,
     )

@@ -56,3 +56,4 @@ class InspectionResult(BaseModel):
     verdict: Verdict
     overlay_url: str
     timings_ms: dict[str, int]  # segment, judge, total
+    demo: bool = False  # placeholder models answered (no API key, cache miss)
