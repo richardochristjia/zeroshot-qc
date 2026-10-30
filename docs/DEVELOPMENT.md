@@ -65,12 +65,7 @@ npm run dev
 
 Open http://localhost:5173. The backend must be running on `:8000` alongside it.
 
-Production frontend build (needs `VITE_API_URL` — the backend origin; trailing slashes are stripped once in `frontend/src/api.ts`):
-
-```sh
-cd frontend
-VITE_API_URL=http://localhost:8000 npm run build
-```
+For production, use Docker (below): nginx serves the page and proxies `/api/` and `/files/` to the backend, so both share one origin and no `VITE_API_URL` is needed. Building with `VITE_API_URL` pointed at a cross-origin backend is no longer a supported setup.
 
 ## Run with Docker
 
