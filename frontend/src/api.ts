@@ -490,7 +490,7 @@ function apiUrl(path: string): string {
 }
 
 /** Resolve a backend `/files/...` URL for `img src`; absolute, blob:, and
- * data: URLs pass through untouched (cross-origin Vercel frontend). */
+ * data: URLs pass through untouched. */
 export function resolveFileUrl(url: string): string {
   if (
     url.startsWith("blob:") ||
