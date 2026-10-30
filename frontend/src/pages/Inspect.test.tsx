@@ -87,3 +87,21 @@ test('picking a new file cancels a pending rules re-run', async () => {
   await new Promise((r) => setTimeout(r, 700))
   expect(api.inspectImage).toHaveBeenCalledTimes(1)
 })
+
+test('a rules edit re-runs the inspection and a newer keystroke aborts the stale request', async () => {
+  render(<MemoryRouter><Inspect /></MemoryRouter>)
+  fireEvent.click(await screen.findByRole('button', { name: /Sample one/ }))
+  await screen.findByText('FAIL')
+  vi.mocked(api.inspectImage).mockImplementation(({ signal }) => new Promise((_, reject) => {
+    signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
+  }))
+  const box = screen.getByPlaceholderText(/Edit rules/)
+  fireEvent.change(box, { target: { value: 'a' } })
+  await waitFor(() => expect(api.inspectImage).toHaveBeenCalledTimes(2), { timeout: 1500 })
+  const first = vi.mocked(api.inspectImage).mock.calls[1][0]
+  expect(first.rules).toBe('a')
+  fireEvent.change(box, { target: { value: 'ab' } })
+  expect(first.signal?.aborted).toBe(true)
+  await waitFor(() => expect(api.inspectImage).toHaveBeenCalledTimes(3), { timeout: 1500 })
+  expect(vi.mocked(api.inspectImage).mock.calls[2][0].rules).toBe('ab')
+})
