@@ -1,0 +1,99 @@
+{
+  "run_id": "20261027T094406Z-sam_judge_ref",
+  "mode": "sam_judge_ref",
+  "source": "mvtec",
+  "adapter": "real",
+  "seed": 0,
+  "categories": [
+    "bottle",
+    "cable",
+    "capsule",
+    "carpet",
+    "grid"
+  ],
+  "n_good": 10,
+  "n_defective": 20,
+  "rules": "FAIL any visible scratch, stain, or surface damage; PASS otherwise.",
+  "metrics": {
+    "per_category": {
+      "bottle": {
+        "precision": 0.8095238095238095,
+        "recall": 0.85,
+        "f1": 0.8292682926829269,
+        "accuracy": 0.7666666666666667,
+        "auroc": 0.8925,
+        "n": 30.0,
+        "tp": 17.0,
+        "tn": 6.0,
+        "fp": 4.0,
+        "fn": 3.0,
+        "iou": 0.0
+      },
+      "cable": {
+        "precision": 0.875,
+        "recall": 0.7,
+        "f1": 0.7777777777777777,
+        "accuracy": 0.7333333333333333,
+        "auroc": 0.805,
+        "n": 30.0,
+        "tp": 14.0,
+        "tn": 8.0,
+        "fp": 2.0,
+        "fn": 6.0,
+        "iou": 0.0
+      },
+      "capsule": {
+        "precision": 0.9523809523809523,
+        "recall": 1.0,
+        "f1": 0.975609756097561,
+        "accuracy": 0.9666666666666667,
+        "auroc": 0.9775,
+        "n": 30.0,
+        "tp": 20.0,
+        "tn": 9.0,
+        "fp": 1.0,
+        "fn": 0.0,
+        "iou": 0.0
+      },
+      "carpet": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "accuracy": 1.0,
+        "auroc": 1.0,
+        "n": 30.0,
+        "tp": 20.0,
+        "tn": 10.0,
+        "fp": 0.0,
+        "fn": 0.0,
+        "iou": 0.0
+      },
+      "grid": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "accuracy": 1.0,
+        "auroc": 1.0,
+        "n": 30.0,
+        "tp": 20.0,
+        "tn": 10.0,
+        "fp": 0.0,
+        "fn": 0.0,
+        "iou": 0.0
+      }
+    },
+    "overall": {
+      "precision": 0.9285714285714286,
+      "recall": 0.91,
+      "f1": 0.9191919191919193,
+      "accuracy": 0.8933333333333333,
+      "auroc": 0.9646,
+      "n": 150.0,
+      "tp": 91.0,
+      "tn": 43.0,
+      "fp": 7.0,
+      "fn": 9.0,
+      "iou": 0.0
+    }
+  }
+}

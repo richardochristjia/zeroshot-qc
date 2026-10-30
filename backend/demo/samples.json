@@ -1,0 +1,44 @@
+[
+  {
+    "id": "bottle-good",
+    "label": "Bottle, good",
+    "profile_id": "bottle",
+    "file": "samples/bottle-good.png",
+    "expect": "PASS"
+  },
+  {
+    "id": "bottle-broken_large",
+    "label": "Bottle, broken",
+    "profile_id": "bottle",
+    "file": "samples/bottle-broken_large.png",
+    "expect": "FAIL"
+  },
+  {
+    "id": "screw-good",
+    "label": "Screw, good",
+    "profile_id": "screw",
+    "file": "samples/screw-good.png",
+    "expect": "PASS"
+  },
+  {
+    "id": "screw-scratch_head",
+    "label": "Screw, scratched head",
+    "profile_id": "screw",
+    "file": "samples/screw-scratch_head.png",
+    "expect": "PASS"
+  },
+  {
+    "id": "metal_nut-good",
+    "label": "Metal nut, good",
+    "profile_id": "metal_nut",
+    "file": "samples/metal_nut-good.png",
+    "expect": "PASS"
+  },
+  {
+    "id": "metal_nut-bent",
+    "label": "Metal nut, bent",
+    "profile_id": "metal_nut",
+    "file": "samples/metal_nut-bent.png",
+    "expect": "FAIL"
+  }
+]

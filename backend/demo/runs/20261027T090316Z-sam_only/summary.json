@@ -1,0 +1,99 @@
+{
+  "run_id": "20261027T090316Z-sam_only",
+  "mode": "sam_only",
+  "source": "mvtec",
+  "adapter": "real",
+  "seed": 0,
+  "categories": [
+    "bottle",
+    "cable",
+    "capsule",
+    "carpet",
+    "grid"
+  ],
+  "n_good": 10,
+  "n_defective": 20,
+  "rules": "FAIL any visible scratch, stain, or surface damage; PASS otherwise.",
+  "metrics": {
+    "per_category": {
+      "bottle": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "accuracy": 0.3333333333333333,
+        "auroc": 0.5,
+        "n": 30.0,
+        "tp": 0.0,
+        "tn": 10.0,
+        "fp": 0.0,
+        "fn": 20.0,
+        "iou": 0.0
+      },
+      "cable": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "accuracy": 0.3333333333333333,
+        "auroc": 0.5,
+        "n": 30.0,
+        "tp": 0.0,
+        "tn": 10.0,
+        "fp": 0.0,
+        "fn": 20.0,
+        "iou": 0.0
+      },
+      "capsule": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "accuracy": 0.3333333333333333,
+        "auroc": 0.5,
+        "n": 30.0,
+        "tp": 0.0,
+        "tn": 10.0,
+        "fp": 0.0,
+        "fn": 20.0,
+        "iou": 0.0
+      },
+      "carpet": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "accuracy": 0.3333333333333333,
+        "auroc": 0.5,
+        "n": 30.0,
+        "tp": 0.0,
+        "tn": 10.0,
+        "fp": 0.0,
+        "fn": 20.0,
+        "iou": 0.0
+      },
+      "grid": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "accuracy": 0.3333333333333333,
+        "auroc": 0.5,
+        "n": 30.0,
+        "tp": 0.0,
+        "tn": 10.0,
+        "fp": 0.0,
+        "fn": 20.0,
+        "iou": 0.0
+      }
+    },
+    "overall": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "accuracy": 0.3333333333333333,
+      "auroc": 0.5,
+      "n": 150.0,
+      "tp": 0.0,
+      "tn": 50.0,
+      "fp": 0.0,
+      "fn": 100.0,
+      "iou": 0.0
+    }
+  }
+}

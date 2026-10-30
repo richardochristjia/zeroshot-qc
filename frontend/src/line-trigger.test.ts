@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FRAME_H, FRAME_W, HOLD_MS, PRESENT_DIFF, arm, frameDiff, idleState, step } from './line-trigger.ts'
+import { FRAME_H, FRAME_W, HOLD_MS, PRESENT_DIFF, arm, frameDiff, idleState, shouldBeep, step } from './line-trigger.ts'
 import type { TriggerState } from './line-trigger.ts'
 
 const N = FRAME_W * FRAME_H
@@ -75,5 +75,13 @@ describe('line trigger', () => {
     const r = run(idleState(), Array.from({ length: 20 }, () => patch(220)))
     expect(r.state.phase).toBe('idle')
     expect(r.captures).toBe(0)
+  })
+})
+
+describe('shouldBeep', () => {
+  it('beeps on a real FAIL only', () => {
+    expect(shouldBeep({ demo: false, verdict: { verdict: 'FAIL' } })).toBe(true)
+    expect(shouldBeep({ demo: true, verdict: { verdict: 'FAIL' } })).toBe(false)
+    expect(shouldBeep({ demo: false, verdict: { verdict: 'PASS' } })).toBe(false)
   })
 })

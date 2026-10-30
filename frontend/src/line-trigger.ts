@@ -57,3 +57,8 @@ export function step(state: TriggerState, frame: Uint8Array, nowMs: number): { s
   }
   return { state: next, capture }
 }
+
+/** Beep only for a real FAIL: keyless demo verdicts come from placeholder models. */
+export function shouldBeep(result: { demo: boolean; verdict: { verdict: string } }): boolean {
+  return result.verdict.verdict === 'FAIL' && !result.demo
+}

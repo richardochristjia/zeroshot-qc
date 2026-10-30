@@ -8,9 +8,11 @@ from fastapi.responses import FileResponse
 
 from app.adapters.muse_spark import MuseSparkJudge
 from app.config import settings
+from app.demo import DEMO_DIR, seed_demo
 from app.routers.eval import router as eval_router
 from app.routers.inspect import router as inspect_router
 from app.routers.profiles import router as profiles_router
+from app.routers.samples import router as samples_router
 from app.routers.synth import router as synth_router
 
 app = FastAPI()
@@ -19,6 +21,12 @@ app.include_router(profiles_router)
 app.include_router(inspect_router)
 app.include_router(eval_router)
 app.include_router(synth_router)
+app.include_router(samples_router)
+
+
+@app.on_event("startup")
+def _seed_demo_bundle() -> None:
+    seed_demo(DEMO_DIR, Path(settings.data_dir))
 
 
 def _get_sop_judge() -> MuseSparkJudge:
