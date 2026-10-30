@@ -120,44 +120,20 @@ Then open `http://localhost:8080` (backend health: `curl localhost:8000/api/heal
 
 Notes:
 
-- `CORS_ORIGINS` defaults to include `http://localhost:8080`; a custom `.env` value must keep that origin or the page's API calls fail.
+- The frontend's nginx proxies `/api/` and `/files/` to the backend, so the page and the API share `http://localhost:8080` and CORS does not apply. `CORS_ORIGINS` only matters for direct callers of `:8000` (Vite dev, curl from another origin).
 - Keyless: with no `META_API_KEY`, bundled samples replay real cached verdicts and other inputs fall back to placeholder models (flagged `demo: true`). `USE_FAKE_ADAPTERS=true` forces fakes everywhere.
-- `VITE_API_URL` bakes into the frontend at build time (default `http://localhost:8000`); changing the backend origin needs `docker compose build frontend`, not just `up`.
 - Data persists in the `zqc-data` volume across `down`/`up` (`down -v` deletes it).
 - Stop the dev servers (`uvicorn :8000`, Vite) first if the host ports are taken.
-
-## Push to a public URL (human steps — need YOUR logins; never run by automation)
-
-Backend → Modal:
-
-```sh
-pip install modal
-modal setup
-modal deploy modal_app.py
-```
-
-`modal_app.py` (repo root) imports the same `app` object the container serves (`backend/app/main.py`); it contains no app logic. Note the backend URL it prints — that is the `VITE_API_URL` below.
-
-Frontend → Vercel (from the repo root; `vercel.json` already sets the build command and output dir):
-
-```sh
-npm i -g vercel
-vercel login
-vercel env add VITE_API_URL production
-vercel --prod
-```
-
-When `vercel env add` prompts, paste the Modal backend URL (e.g. `https://<you>--zeroshot-qc.modal.run`). Then confirm the public URL in a private browser window. If the installed CLIs spell a flag differently, follow their `--help` — these commands were written without the CLIs present.
 
 ## Submission checklist state (M7)
 
 Source: the hackathon `ROADMAP.md` submission checklist. State as of this README rewrite:
 
-- [ ] Public URL works in a private window — NOT DONE. Commands above; needs human `modal deploy` + `vercel --prod` with human logins.
+- [ ] A fresh clone runs with `docker compose up --build` — verify on a clean machine (open `http://localhost:8080`, click a sample).
 - [ ] Demo video uploaded and link tested — NOT DONE. Out of scope for this repo change.
-- [~] README: problem, architecture diagram, models used, metrics table, how to run — PARTIAL. Run/deploy rewritten here (verified below); problem + models at the top of this file; MVTec license below; eval numbers live in `docs/EVAL_NOTES.md`. Still missing: an architecture diagram and a metrics table in this file.
+- [~] README: problem, architecture diagram, models used, metrics table, how to run — PARTIAL. Run instructions rewritten here (verified below); problem + models at the top of this file; MVTec license below; eval numbers live in `docs/EVAL_NOTES.md`. Still missing: an architecture diagram and a metrics table in this file.
 - [x] MVTec AD license noted (CC BY-NC-SA 4.0, non-commercial) — DONE (`Data & licensing` above).
 - [x] No API keys in the repo — DONE (`.env` and `data/` gitignored; `.dockerignore` keeps both out of the image; `frontend/dist/` bundle grep clean per the M7 Phase 2 verification).
 - [ ] Submitted before 5 PM ET Nov 4 — NOT DONE. Submission-day step.
 
-Reader test (this section was verified verbatim up to the credential boundary): `cp .env.example .env`, backend venv `uvicorn` + `/api/health`, frontend `npm run dev` + page/proxy fetch, `docker build` + `docker run` with the flags above + health/CORS-trace/traversal/inspect probes, `VITE_API_URL=... npm run build`. Stopped at `modal setup` / `vercel login`: neither CLI is installed here, and both need human credentials — those two commands were not run.
+Reader test: `cp .env.example .env`, backend venv `uvicorn` + `/api/health`, frontend `npm run dev` + page/proxy fetch, `docker build` + `docker run` with the flags above + health/CORS-trace/traversal/inspect probes.
