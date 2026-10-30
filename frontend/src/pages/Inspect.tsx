@@ -111,10 +111,12 @@ export default function Inspect(): JSX.Element {
 
   useEffect(() => {
     return () => {
-      abortRef.current?.abort()
       if (previewUrl !== null) URL.revokeObjectURL(previewUrl)
     }
   }, [previewUrl])
+
+  // Abort only on unmount: a new preview must not kill the run it started.
+  useEffect(() => () => abortRef.current?.abort(), [])
 
   // Structured so the debounced rules edit plugs in: it will call this same
   // runner with (fileRef.current, profileId, editedRules). Empty/omitted
