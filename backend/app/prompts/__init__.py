@@ -1,7 +1,7 @@
 """Judge prompt rendering (M3).
 
 ``judge.md`` is the HANDOFF §7 prompt verbatim with ``{schema}``,
-``{rules}``, and ``{detections_table}`` slots. ``render_judge_prompt``
+``{rules}``, ``{product_name}``, and ``{detections_table}`` slots. ``render_judge_prompt``
 fills them; ``build_detections_table`` formats the candidates the
 judge sees (same ids as the overlay labels). Slots are replaced with
 plain string substitution so JSON braces in the schema value can
@@ -14,7 +14,7 @@ from pathlib import Path
 
 from app.schemas import Detection, ProductProfile, Verdict
 
-_JUDGE_TEMPLATE = Path(__file__).resolve().parent / "judge.md"
+JUDGE_TEMPLATE = Path(__file__).resolve().parent / "judge.md"
 _SOP_TEMPLATE = Path(__file__).resolve().parent / "sop_to_profile.md"
 
 
@@ -54,16 +54,19 @@ def render_sop_prompt(sop_text: str, category_name: str) -> str:
     )
 
 
-def render_judge_prompt(rules: str, detections: list[Detection]) -> str:
-    """Render ``judge.md`` with the Verdict schema, rules, and table."""
-    template = _JUDGE_TEMPLATE.read_text(encoding="utf-8")
+def render_judge_prompt(
+    rules: str, detections: list[Detection], product_name: str
+) -> str:
+    """Render ``judge.md`` with the Verdict schema, rules, product, and table."""
+    template = JUDGE_TEMPLATE.read_text(encoding="utf-8")
     values = {
         "{schema}": json.dumps(Verdict.model_json_schema(), sort_keys=True),
         "{rules}": rules,
+        "{product_name}": product_name,
         "{detections_table}": build_detections_table(detections),
     }
     return re.sub(
-        r"\{schema\}|\{rules\}|\{detections_table\}",
+        r"\{schema\}|\{rules\}|\{product_name\}|\{detections_table\}",
         lambda match: values[match.group(0)],
         template,
     )

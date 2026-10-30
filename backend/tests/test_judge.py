@@ -103,6 +103,7 @@ def _pass_verdict() -> Verdict:
         confidence=0.9,
         rulings=[],
         missed_defects=[],
+        part_matches=True,
         summary="stub: pass",
     )
 
@@ -205,6 +206,7 @@ def _valid_payload() -> dict:
         "confidence": 0.8,
         "rulings": [],
         "missed_defects": [],
+        "part_matches": True,
         "summary": "ok",
     }
 
@@ -234,6 +236,34 @@ def test_malformed_first_response_retries_once_then_validates(
     assert len(calls) == 2
     assert "failed validation" in _request_text(calls[1])
     assert STRICT_RULES in _request_text(calls[0])
+    assert profile.name in _request_text(calls[0])
+
+
+def test_missing_part_matches_retries_then_validates(
+    image: Image.Image,
+    profile: ProductProfile,
+    configured_judge: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list = []
+    incomplete = _valid_payload()
+    del incomplete["part_matches"]
+    payloads = [incomplete, _valid_payload()]
+
+    def _stub(*args, **kwargs):  # type: ignore[no-untyped-def]
+        calls.append(kwargs.get("json") or {})
+        return _StubResponse(_responses_envelope(payloads[len(calls) - 1]))
+
+    monkeypatch.setattr(httpx, "post", _stub)
+    MuseSparkJudge().judge(image, image, None, [], profile)
+    assert len(calls) == 2
+    assert "failed validation" in _request_text(calls[1])
+
+
+def test_prompt_contains_product_name_and_identity_step() -> None:
+    prompt = render_judge_prompt("rules", [], "Widget {x}")
+    assert "The product is: Widget {x}" in prompt
+    assert "First check the part" in prompt
 
 
 def test_malformed_twice_raises_judge_validation_error(
@@ -270,6 +300,7 @@ def test_real_defect_ruling_with_model_pass_forces_fail() -> None:
             )
         ],
         missed_defects=[],
+        part_matches=True,
         summary="model wrongly passed",
     )
     forced = enforce_consistency(model_says_pass)
@@ -283,9 +314,22 @@ def test_missed_defects_with_model_pass_forces_fail() -> None:
         confidence=0.9,
         rulings=[],
         missed_defects=["unoutlined crack near the rim"],
+        part_matches=True,
         summary="model wrongly passed",
     )
     assert enforce_consistency(model_says_pass).verdict == "FAIL"
+
+
+def test_part_mismatch_with_model_pass_forces_fail() -> None:
+    wrong_part = Verdict(
+        verdict="PASS",
+        confidence=0.9,
+        rulings=[],
+        missed_defects=[],
+        part_matches=False,
+        summary="this is a mug",
+    )
+    assert enforce_consistency(wrong_part).verdict == "FAIL"
 
 
 def test_real_defect_without_cited_rule_keeps_model_pass() -> None:
@@ -301,6 +345,7 @@ def test_real_defect_without_cited_rule_keeps_model_pass() -> None:
             )
         ],
         missed_defects=[],
+        part_matches=True,
         summary="no rule covers it",
     )
     assert enforce_consistency(uncovered).verdict == "PASS"
@@ -322,6 +367,7 @@ def test_pipeline_forces_fail_on_model_pass_with_violation(
             )
         ],
         missed_defects=[],
+        part_matches=True,
         summary="model pass",
     )
     _, verdict = run_inspection(
@@ -479,7 +525,7 @@ def test_rendered_prompt_carries_rules_table_and_schema(
     profile: ProductProfile, image: Image.Image
 ) -> None:
     detections = _detections(image)
-    prompt = render_judge_prompt(profile.rules, detections)
+    prompt = render_judge_prompt(profile.rules, detections, profile.name)
     assert STRICT_RULES in prompt
     assert "d1 | scratch" in prompt
     assert '"verdict"' in prompt
@@ -510,4 +556,4 @@ def test_detections_table_empty_and_mm_dash() -> None:
 
 def test_rules_containing_slot_literal_render_verbatim() -> None:
     rules = "reject if {detections_table} appears"
-    assert rules in render_judge_prompt(rules, [])
+    assert rules in render_judge_prompt(rules, [], "Bottle")

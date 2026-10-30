@@ -89,6 +89,7 @@ class FakeJudge:
                 confidence=0.9,
                 rulings=rulings,
                 missed_defects=[],
+                part_matches=True,
                 summary="Fake judge: all candidates dismissed, part passes.",
             )
         first, rest = detections[0], detections[1:]
@@ -114,6 +115,7 @@ class FakeJudge:
             confidence=0.9,
             rulings=rulings,
             missed_defects=[],
+            part_matches=True,
             summary="Fake judge: first candidate violates the rules, part fails.",
         )
 

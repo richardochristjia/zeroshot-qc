@@ -132,13 +132,15 @@ def enforce_consistency(verdict: Verdict) -> Verdict:
     """Force FAIL in code when the rulings demand it (HANDOFF §7 step 8).
 
     The model's own verdict word is not trusted: any ruling with
-    ``is_real_defect`` and a cited rule, or any missed defect, means
-    FAIL. Returns the input unchanged when it already agrees.
+    ``is_real_defect`` and a cited rule, any missed defect, or a part that
+    does not match the product, means FAIL. Returns the input unchanged
+    when it already agrees.
     """
-    must_fail = any(
-        ruling.is_real_defect and ruling.rule_violated
-        for ruling in verdict.rulings
-    ) or bool(verdict.missed_defects)
+    must_fail = (
+        any(r.is_real_defect and r.rule_violated for r in verdict.rulings)
+        or bool(verdict.missed_defects)
+        or not verdict.part_matches
+    )
     if must_fail and verdict.verdict != "FAIL":
         return verdict.model_copy(update={"verdict": "FAIL"})
     return verdict

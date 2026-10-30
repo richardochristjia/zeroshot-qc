@@ -45,6 +45,7 @@ class Verdict(BaseModel):
     confidence: float = Field(ge=0, le=1)
     rulings: list[DefectRuling]
     missed_defects: list[str]  # defects the judge sees that SAM did not flag
+    part_matches: bool  # false = not the profile's product
     summary: str  # 1–2 sentences for the UI
 
 

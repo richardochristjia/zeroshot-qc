@@ -30,6 +30,7 @@ from typing import Any
 from PIL import Image
 
 from app.adapters.base import Judge, Segmenter
+from app.prompts import JUDGE_TEMPLATE
 from app.schemas import Detection, ProductProfile, RawMask, Verdict
 
 _NONE_MARKER = b"__none__"
@@ -79,13 +80,14 @@ def judge_cache_key(
 ) -> str:
     """Cache key for one judge call.
 
-    Components in order: call kind, image PNG bytes, overlay PNG
-    bytes, reference PNG bytes (or a None marker), detections JSON,
-    profile JSON, then the model id. Any profile/rules edit changes
-    the profile JSON and so is a miss.
+    Components in order: call kind, judge prompt template bytes, image
+    PNG bytes, overlay PNG bytes, reference PNG bytes (or a None
+    marker), detections JSON, profile JSON, then the model id. Any
+    profile/rules edit changes the profile JSON and so is a miss.
     """
     digest = hashlib.sha256()
     _frame(digest, b"judge")
+    _frame(digest, JUDGE_TEMPLATE.read_bytes())
     _frame(digest, _png_bytes(image))
     _frame(digest, _png_bytes(overlay))
     if reference is None:

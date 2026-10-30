@@ -140,6 +140,7 @@ class ReferenceAwareJudge:
                 confidence=0.95 if with_reference else 0.8,
                 rulings=rulings,
                 missed_defects=[],
+                part_matches=True,
                 summary=(
                     "Scripted judge: real defect confirmed"
                     + (" against the reference." if with_reference else ".")
@@ -150,6 +151,7 @@ class ReferenceAwareJudge:
             confidence=0.95 if with_reference else 0.8,
             rulings=rulings,
             missed_defects=[],
+            part_matches=True,
             summary="Scripted judge: no real defect found.",
         )
 
