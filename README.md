@@ -20,8 +20,6 @@
 You need [Docker](https://docs.docker.com/get-docker/) with the daemon running. No API key and no `.env` are required.
 
 ```sh
-git clone <this repo>
-cd <repo folder>
 docker compose up --build
 ```
 
