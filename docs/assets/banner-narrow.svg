@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="722" height="632" viewBox="0 0 722 632" role="img" aria-labelledby="t d">
+<title id="t">ZeroShot QC: zero-training visual inspection</title>
+<desc id="d">Dark banner. ZeroShot QC, zero-training visual inspection: SAM 3.1 finds candidate defects from text prompts and Muse Spark judges the part against plain-English rules and a known-good reference. 0.919 F1 on MVTec AD across 5 categories, 0 training images. Three steps: a text prompt from the screw profile, SAM 3.1 segmenting candidate regions on a screw, and Muse Spark returning FAIL against the rule that any head scratch, thread damage or deformation fails.</desc>
+<defs>
+<pattern id="grid" x="1" y="1" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M0 .5H32M.5 0V32" stroke="#1b1c20" stroke-width="1" fill="none"/></pattern>
+<radialGradient id="glow" gradientUnits="userSpaceOnUse" cx="1" cy="1" r="400"><stop offset="0" stop-color="#9dbce3" stop-opacity="0.14"/><stop offset="1" stop-color="#9dbce3" stop-opacity="0"/></radialGradient>
+<clipPath id="clip"><rect x="1" y="1" width="720" height="630" rx="19"/></clipPath>
+</defs>
+<rect width="722" height="632" rx="20" fill="#111214"/>
+<g clip-path="url(#clip)"><rect width="722" height="632" fill="url(#glow)"/><rect width="722" height="632" fill="url(#grid)"/></g>
+<rect x="0.5" y="0.5" width="721" height="631" rx="19.5" fill="none" stroke="#2d2f34"/>
+<g transform="translate(-33 -16.3)"><text x="57" y="60.4" font-size="13" fill="#8b8e95" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="1.04">ZERO-TRAINING VISUAL INSPECTION</text>
+<svg x="57" y="81.3" width="56" height="56" viewBox="0 0 32 32" fill="none"><rect x="0.5" y="0.5" width="31" height="31" rx="8" fill="#18191c" stroke="#2d2f34"/><circle cx="16" cy="16" r="8" stroke="#9dbce3" stroke-width="2"/><path d="M16 4v4.5M16 23.5V28M4 16h4.5M23.5 16H28" stroke="#9dbce3" stroke-width="2" stroke-linecap="round"/><circle cx="16" cy="16" r="2.4" fill="#ff5c50"/></svg>
+<text x="129" y="128.9" font-size="56" fill="#ebeae6" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="600" letter-spacing="-1.68">ZeroShot QC</text>
+<text x="57" y="174.0" font-size="17" fill="#a3a6ad" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">SAM 3.1 finds candidate defects from text prompts. Muse</text>
+<text x="57" y="199.5" font-size="17" fill="#a3a6ad" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">Spark judges the part against plain-English rules and a</text>
+<text x="57" y="225.0" font-size="17" fill="#a3a6ad" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">known-good reference.</text>
+<rect x="57" y="249.8" width="440" height="1" fill="#2d2f34"/>
+<text x="57" y="286.9" font-size="26" fill="#ebeae6" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="500">0.919</text>
+<text x="57" y="306.9" font-size="13" fill="#8b8e95" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">F1 on MVTec AD, 5 categories</text>
+<text x="264.6" y="286.9" font-size="26" fill="#ebeae6" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="500">0</text>
+<text x="264.6" y="306.9" font-size="13" fill="#8b8e95" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">training images</text>
+<rect x="57.5" y="328.3" width="71.6" height="23" rx="11.5" fill="#18191c" stroke="#3a3c42"/>
+<text x="93.3" y="344" font-size="12" fill="#ebeae6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle">SAM 3.1</text>
+<rect x="138.1" y="328.3" width="93.3" height="23" rx="11.5" fill="#18191c" stroke="#3a3c42"/>
+<text x="184.75" y="344" font-size="12" fill="#ebeae6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle">Muse Spark</text>
+<rect x="240.3" y="328.3" width="93.3" height="23" rx="11.5" fill="#18191c" stroke="#3a3c42"/>
+<text x="286.95" y="344" font-size="12" fill="#ebeae6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle">Muse Image</text></g>
+<g transform="translate(-521 282)"><rect x="545.5" y="82.5" width="189" height="235" rx="6" fill="#18191c" stroke="#2d2f34"/>
+<text x="564" y="113" font-size="13" fill="#a3a6ad" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="600">1 · Text prompt</text>
+<text x="564" y="141.8" font-size="12" fill="#ebeae6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">&quot;scratch on screw</text>
+<text x="564" y="161" font-size="12" fill="#ebeae6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">head&quot;</text>
+<text x="564" y="186.2" font-size="12" fill="#ebeae6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">&quot;damaged screw</text>
+<text x="564" y="205.4" font-size="12" fill="#ebeae6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">thread&quot;</text>
+<text x="564" y="230.6" font-size="12" fill="#ebeae6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">&quot;deformed screw&quot;</text>
+<text x="564" y="294.5" font-size="13" fill="#8b8e95" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">From the product profile</text>
+<svg x="747" y="192" width="28" height="16" viewBox="0 0 28 16" fill="none" stroke="#3a3c42" stroke-width="1.8"><path d="M2 8h22M18 2l6 6-6 6"/></svg>
+<rect x="787.5" y="82.5" width="189" height="235" rx="6" fill="#18191c" stroke="#2d2f34"/>
+<text x="806" y="113" font-size="13" fill="#a3a6ad" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="600">2 · SAM 3.1 segments</text>
+<svg x="816" y="128" width="132" height="132" viewBox="0 0 132 132" fill="none" stroke-width="1.6"><rect x="14" y="46" width="22" height="40" rx="4" stroke="#8b8e95"/><rect x="36" y="57" width="64" height="18" stroke="#3a3c42"/><path d="M42 57l4 18M48 57l4 18M54 57l4 18M60 57l4 18M66 57l4 18M72 57l4 18M78 57l4 18M84 57l4 18M90 57l4 18M96 57l4 18" stroke="#3a3c42"/><path d="M100 57L118 66L100 75" stroke="#3a3c42" stroke-linejoin="round"/><path d="M19 53l9 11-2 7" stroke="#ebeae6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<text x="806" y="294.5" font-size="13" fill="#8b8e95" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">Candidate regions</text>
+<svg x="989" y="192" width="28" height="16" viewBox="0 0 28 16" fill="none" stroke="#3a3c42" stroke-width="1.8"><path d="M2 8h22M18 2l6 6-6 6"/></svg>
+<rect x="1029.5" y="82.5" width="189" height="235" rx="6" fill="#18191c" stroke="#2d2f34"/>
+<text x="1048" y="113" font-size="13" fill="#a3a6ad" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="600">3 · Muse Spark judges</text>
+<rect x="1048" y="128" width="58.9" height="25" rx="4" fill="#ff5c50"/>
+<text x="1060" y="145.8" font-size="15" fill="#111214" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="600" letter-spacing="0.6">FAIL</text>
+<text x="1048" y="180.0" font-size="14" fill="#ebeae6" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">“FAIL a screw with any</text>
+<text x="1048" y="200.3" font-size="14" fill="#ebeae6" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">head scratch, thread</text>
+<text x="1048" y="220.6" font-size="14" fill="#ebeae6" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">damage, or</text>
+<text x="1048" y="240.9" font-size="14" fill="#ebeae6" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">deformation.”</text>
+<text x="1048" y="276.3" font-size="13" fill="#8b8e95" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">Rules + a known-good</text>
+<text x="1048" y="294.5" font-size="13" fill="#8b8e95" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">reference</text></g>
+</svg>
