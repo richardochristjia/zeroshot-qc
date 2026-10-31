@@ -11,6 +11,12 @@
   <a href="backend/demo/LICENSE-MVTEC.md"><img alt="Demo data: CC BY-NC-SA 4.0" src="https://img.shields.io/badge/demo%20data-CC%20BY--NC--SA%204.0-lightgrey"></a>
 </p>
 
+<p align="center">
+  <a href="https://youtu.be/rWs2xwe_d7o"><img src="https://img.youtube.com/vi/rWs2xwe_d7o/maxresdefault.jpg" alt="ZeroShot QC demo video on YouTube" width="720"></a>
+  <br>
+  <a href="https://youtu.be/rWs2xwe_d7o">Watch the 3-minute demo on YouTube</a>
+</p>
+
 - **What it does.** Visual inspection with zero training: SAM 3.1 proposes candidate defects from text prompts, then Muse Spark judges the part against plain-English rules and a known-good reference image. No labelled defect images, no model training.
 - **How well.** On real MVTec AD (5 categories x 30 images), F1 is 0.919 with a reference image, 0.872 without one, and 0.000 for SAM alone. Details and caveats are in [Results](#results).
 - **Where your data goes.** The bundled demo replays cached verdicts offline and sends nothing anywhere. Live mode (you add `META_API_KEY`) sends your images and rules to the Meta Model API endpoint set in `META_API_BASE_URL`.
