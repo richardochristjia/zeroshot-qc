@@ -24,11 +24,7 @@ export default function App() {
       <IconSprite />
       <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-6 border-b border-line bg-surface px-5 max-[640px]:px-4">
         <div className="flex h-[52px] items-center gap-2 whitespace-nowrap text-[15px] font-semibold">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.8" aria-hidden="true">
-            <circle cx="12" cy="12" r="8" />
-            <circle cx="12" cy="12" r="2.2" fill="var(--accent)" stroke="none" />
-            <path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4" />
-          </svg>
+          <img src="/favicon.svg" width="24" height="24" alt="" />
           <span className="max-[640px]:hidden">ZeroShot QC</span>
         </div>
         <nav aria-label="Main" className="flex h-[52px] gap-0.5 max-[640px]:order-3 max-[640px]:-mx-3 max-[640px]:h-10 max-[640px]:basis-full max-[640px]:px-1">
