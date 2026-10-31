@@ -1,4 +1,5 @@
 import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import { FPS } from '../script';
 import { C, SANS } from '../theme';
 
 const STEPS = [
@@ -7,7 +8,7 @@ const STEPS = [
   { title: 'Muse Spark', body: 'Judges each against your rules and a known-good reference', color: C.accent },
   { title: 'Verdict', body: 'FAIL forced in code on any violated rule, missed defect, or wrong part', color: C.fail },
 ];
-const GAP = 4 * 30;
+const GAP = 4 * FPS;
 
 export const Pipeline = () => {
   const frame = useCurrentFrame();
