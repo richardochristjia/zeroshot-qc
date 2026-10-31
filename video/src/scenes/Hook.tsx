@@ -23,7 +23,7 @@ export const Hook = ({ captions }: { captions: string[] }) => {
               fontFamily: SANS,
               fontSize: i === 0 ? 96 : 72,
               textAlign: 'center',
-              maxWidth: 1500,
+              maxWidth: i === 0 ? 1700 : 1500,
               lineHeight: 1.2,
             }}
           >
