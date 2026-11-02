@@ -211,9 +211,8 @@ class SamSegmenter:
         image_url = "data:image/png;base64," + encode_image_b64(image)
         content: list[dict] = [{"type": "input_image", "image_url": image_url}]
         for prompt in prompts:
-            content.append(
-                {"type": "input_text", "text": f"Segment every instance of: {prompt}"}
-            )
+            # bare noun phrases only: instruction wrappers make SAM 3.1 return nothing
+            content.append({"type": "input_text", "text": prompt})
         payload = {
             "model": settings.sam_model_id,
             "input": [{"role": "user", "content": content}],

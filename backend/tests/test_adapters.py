@@ -414,3 +414,19 @@ def test_sam_malformed_mask_never_reaches_disk_cache(
         text = path.read_text(encoding="utf-8")
         assert donor.mask_rle["counts"] not in text
         assert "200" not in text
+
+
+def test_sam_sends_each_prompt_as_bare_input_text(
+    image: Image.Image, sam_http: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sent: dict = {}
+
+    def _capture(*args, **kwargs):  # type: ignore[no-untyped-def]
+        sent.update(kwargs["json"])
+        return _StubResponse({"masks": []})
+
+    monkeypatch.setattr(httpx, "post", _capture)
+    SamSegmenter().segment(image, PROMPTS)
+    content = sent["input"][0]["content"]
+    texts = [c["text"] for c in content if c["type"] == "input_text"]
+    assert texts == PROMPTS
