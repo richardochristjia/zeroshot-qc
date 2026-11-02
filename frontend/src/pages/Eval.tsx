@@ -28,6 +28,8 @@ const GLOSSARY: Record<string, string> = {
   Missed: 'Defective image wrongly passed (a defect that slipped through).',
   Ablation: 'Same images scored three ways: SAM only (segmentation alone), + judge (a model reviews each detection), + reference (the judge also compares against a known-good image).',
   IoU: 'Overlap between the detected region and the true defect mask, from 0 to 1.',
+  'Hit rate': 'Share of defective images where a judge-drawn box covers at least half of the true defect.',
+  'Box IoU': 'Best overlap between a judge-drawn box and the true defect box, from 0 to 1.',
   confidence: 'How sure the system is that the image is defective.',
 }
 
@@ -49,6 +51,7 @@ const MODE_NAMES: Record<string, string> = {
   sam_only: 'SAM only',
   sam_judge: 'SAM + judge',
   sam_judge_ref: 'SAM + judge + reference',
+  grounded: 'Grounded judge',
 }
 
 function modeName(mode: string): string {
@@ -359,6 +362,8 @@ export default function Eval(): JSX.Element {
                         <Kpi label="Recall" value={metrics.overall.recall} delta={bestOtherDelta(summary, ablation, 'recall')} />
                         <Kpi label="AUROC" value={metrics.overall.auroc} delta={bestOtherDelta(summary, ablation, 'auroc')} />
                         <Kpi label="Accuracy" value={metrics.overall.accuracy} delta={bestOtherDelta(summary, ablation, 'accuracy')} />
+                        <Kpi label="Hit rate" value={metrics.overall.localization?.hitRate ?? null} delta={null} />
+                        <Kpi label="Box IoU" value={metrics.overall.localization?.boxIou ?? null} delta={null} />
                       </dl>
                       <ConfusionMatrix
                         counts={metrics.overall}

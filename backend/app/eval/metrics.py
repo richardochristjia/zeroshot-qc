@@ -138,6 +138,40 @@ def pixel_iou(
     return float(intersection / total) if total else 0.0
 
 
+def localization(
+    boxes: list[tuple[int, int, int, int]], ground_truth: np.ndarray
+) -> tuple[bool, float] | None:
+    """(hit, box_iou) of judge boxes (x, y, w, h) vs the truth mask; None without truth.
+
+    hit: any box covers at least half the truth pixels. box_iou: best IoU
+    against the truth's bounding box.
+    """
+    truth = np.asarray(ground_truth).astype(bool)
+    if not truth.any():
+        return None
+    ys, xs = np.nonzero(truth)
+    tx0, ty0, tx1, ty1 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
+    hit, best = False, 0.0
+    for x, y, w, h in boxes:
+        covered = truth[y : y + h, x : x + w].sum()
+        hit = hit or covered >= 0.5 * truth.sum()
+        iw = max(0, min(x + w, tx1) - max(x, tx0))
+        ih = max(0, min(y + h, ty1) - max(y, ty0))
+        union = w * h + (tx1 - tx0) * (ty1 - ty0) - iw * ih
+        best = max(best, iw * ih / union if union else 0.0)
+    return bool(hit), float(best)
+
+
+def _mean_localization(records: list[dict]) -> dict | None:
+    kept = [r for r in records if r.get("hit") is not None]
+    if not kept:
+        return None
+    return {
+        "hit_rate": sum(1.0 for r in kept if r["hit"]) / len(kept),
+        "box_iou": sum(r["box_iou"] for r in kept) / len(kept),
+    }
+
+
 def mean_iou(values: list[float | None]) -> float | None:
     """Mean over defective images; ``None`` when no image contributed."""
     kept = [value for value in values if value is not None]
@@ -162,6 +196,7 @@ def summarize(records: list[dict]) -> dict:
         scores = [float(r["fail_score"]) for r in group]
         metrics = image_metrics(labels, predictions, scores)
         metrics["iou"] = mean_iou([r["iou"] for r in group])
+        metrics["localization"] = _mean_localization(group)
         metrics["n"] = float(len(group))
         per_category[category] = metrics
     labels = [r["label"] == "defective" for r in records]
@@ -169,5 +204,6 @@ def summarize(records: list[dict]) -> dict:
     scores = [float(r["fail_score"]) for r in records]
     overall = image_metrics(labels, predictions, scores)
     overall["iou"] = mean_iou([r["iou"] for r in records])
+    overall["localization"] = _mean_localization(records)
     overall["n"] = float(len(records))
     return {"per_category": per_category, "overall": overall}

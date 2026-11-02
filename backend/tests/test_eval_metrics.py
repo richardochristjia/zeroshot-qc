@@ -114,3 +114,17 @@ def test_summarize_groups_per_category_and_overall() -> None:
     assert summary["per_category"]["b"]["recall"] == 0.0
     assert summary["overall"]["n"] == 3.0
     assert summary["overall"]["iou"] == 0.5
+
+
+def test_localization_hit_and_box_iou() -> None:
+    import numpy as np
+
+    from app.eval.metrics import localization
+
+    truth = np.zeros((20, 20), dtype=bool)
+    truth[5:15, 5:15] = True
+    assert localization([(5, 5, 10, 10)], truth) == (True, 1.0)
+    hit, iou = localization([(5, 5, 10, 4), (0, 0, 2, 2)], truth)  # 40% coverage
+    assert hit is False and iou == pytest.approx(0.4)
+    assert localization([], truth) == (False, 0.0)
+    assert localization([(0, 0, 5, 5)], np.zeros((20, 20), dtype=bool)) is None
