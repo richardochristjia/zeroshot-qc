@@ -18,7 +18,7 @@
 </p>
 
 - **What it does.** Visual inspection with zero training: SAM 3.1 proposes candidate defects from text prompts, then Muse Spark judges the part against plain-English rules and a known-good reference image. No labelled defect images, no model training.
-- **How well.** On real MVTec AD (5 categories x 30 images), F1 is 0.919 with a reference image, 0.872 without one, and 0.000 for SAM alone. Details and caveats are in [Results](#results).
+- **How well.** On real MVTec AD (5 categories x 30 images), F1 is 0.918 in grounded mode, which also puts a box on 63% of real defects. It is 0.919 with a reference image but no boxes, 0.872 without a reference, and 0.000 for SAM alone. Rule tuning raised cable from 0.743 to 0.842. Details and caveats are in [Results](#results).
 - **Where your data goes.** The bundled demo replays cached verdicts offline and sends nothing anywhere. Live mode (you add `META_API_KEY`) sends your images and rules to the Meta Model API endpoint set in `META_API_BASE_URL`.
 
 ## Quickstart
@@ -55,13 +55,30 @@ Real MVTec AD, real adapters, F1 per category (the demo's Eval page shows the sa
 | SAM only | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
 | SAM + judge | 0.842 | 0.625 | 0.842 | 1.000 | 1.000 | 0.872 |
 | SAM + judge + reference | 0.829 | 0.778 | 0.976 | 1.000 | 1.000 | **0.919** |
+| Grounded (part crop + judge boxes) | 0.850 | 0.743 | 0.976 | 1.000 | 1.000 | **0.918** |
+
+Grounded mode also locates defects. Hit rate is the share of defects where a box covers at least half of the true defect:
+
+| | bottle | cable | capsule | carpet | grid | Overall |
+|---|---|---|---|---|---|---|
+| Hit rate | 0.400 | 0.550 | 0.600 | 0.900 | 0.700 | **0.630** |
+| Box IoU | 0.334 | 0.340 | 0.360 | 0.578 | 0.431 | 0.409 |
+| Pixel IoU | 0.303 | 0.205 | 0.317 | 0.407 | 0.250 | 0.296 |
+
+Rule tuning, scored on held-out real images that tuning never saw:
+
+| Category | F1 before | F1 after | Rounds kept |
+|---|---|---|---|
+| cable | 0.743 | **0.842** | 1 of 2 |
+| bottle | 0.850 | 0.850 | 0 of 1 |
 
 Read these with the caveats in mind:
 
-- SAM proposes no defect-level masks on these categories, so IoU is 0.000 throughout. It returns object-level boxes or nothing.
-- The judge carries the system, through its missed-defect path. The reference image adds recall (0.820 to 0.910); the segmenter adds nothing on these categories.
+- SAM proposes no defect-level masks on these categories. In the older modes IoU is 0.000 throughout. Grounded mode uses SAM to find the part, crops to it, and turns the judge's boxes into detections. All of its localization comes from those boxes.
+- The judge carries the system, through its missed-defect path. The reference image adds recall (0.820 to 0.910).
+- Tuning sees only good images and Muse Image synthetic defects, no real defect labels. Its held-out set is the same 30 images per category as the eval. The cable gain comes from one accepted revision, so treat it as one data point.
 - 30 images per category is small, and this is a single seed.
-- A real probe of a scratched screw head was a silent PASS on a defective part (confidence 0.85).
+- A scratched screw head is still a silent PASS on a defective part in the demo samples. So is the bent metal nut since the grounded re-record (it was a FAIL before).
 - The banner's screw is an example. Screw is not in this eval yet.
 
 <details>
@@ -108,7 +125,7 @@ Inspect, after clicking "Bottle, broken": the judge fails the part through a mis
 
 ![Inspect page showing a FAIL verdict on a broken bottle](docs/assets/screens/inspect.png)
 
-Eval: the three runs, F1 ablation, confusion matrix and failure examples. Try the "False fail" and "Missed" filters.
+Eval: the four runs, F1 ablation, confusion matrix and failure examples. Try the "False fail" and "Missed" filters.
 
 ![Eval page showing the F1 ablation, confusion matrix and failures](docs/assets/screens/eval.png)
 

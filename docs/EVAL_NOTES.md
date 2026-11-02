@@ -119,7 +119,6 @@ which caps the total defective images per category.
 
 ## Grounded mode and rule tuning (commands)
 
-Results are added after the real runs; nothing below has been run with real keys yet.
 
 - Grounded eval: SAM finds the part, the judge sees the padded crop and returns
   0-1000 boxes for missed defects, which become `j1..` detections. Adds
@@ -134,3 +133,23 @@ Results are added after the real runs; nothing below has been run with real keys
   `cd backend && .venv/bin/python -m app.tune.run --category bottle --adapter real --rounds 3 --seed 0`
   (`--adapter scripted` or `fake` makes no API calls).
 
+
+## Real grounded eval and tuning (2026-11-02, real adapters, seed 0)
+
+- Grounded run `20261102T083055Z-grounded` (same 150 images as above):
+  F1 0.918 overall (bottle 0.850, cable 0.743, capsule 0.976, carpet and grid
+  1.000). Hit rate 0.630, box IoU 0.409, pixel IoU 0.296. Carpet locates best
+  (hit 0.900); bottle worst (0.400). Pass/fail accuracy matches
+  `sam_judge_ref` (0.919), so asking for boxes did not cost verdict quality.
+- Before this run, the SAM segment cache was moved to
+  `data/cache-stale-sam-20261102/`. Judge entries were kept.
+- Tune `20261102T092832Z-cable`: round 1 accepted (tune-set F1 0.952), round 2
+  rejected (0.824). Held-out F1 0.743 to 0.842 (recall 0.650 to 0.800,
+  precision 0.867 to 0.889).
+- Tune `20261102T100501Z-bottle`: round 1 rejected (tune-set F1 0.571), rules
+  unchanged, held-out 0.850 both ways.
+- Caveat: the held-out set is the eval's own sample (seed 0, 10 good + 20
+  defective). Tuning never reads it, but there is one seed and one accepted
+  revision.
+- Demo re-record: screw scratch_head is still a silent PASS. metal_nut bent
+  flipped from FAIL to PASS under part crop. Both are single images.
