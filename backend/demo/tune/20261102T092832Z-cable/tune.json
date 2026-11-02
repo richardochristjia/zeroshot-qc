@@ -1,0 +1,54 @@
+{
+  "run_id": "20261102T092832Z-cable",
+  "category": "cable",
+  "adapter": "real",
+  "seed": 0,
+  "counts": {
+    "n_good": 10,
+    "n_synth": 10,
+    "heldout_good": 10,
+    "heldout_defective": 20
+  },
+  "initial_rules": "FAIL any visible scratch, stain, or surface damage; PASS otherwise.",
+  "final_rules": "Inspect only the cable: white outer sheath with blue, brown and yellow-green inner conductors and copper strands. PASS as GOOD normal manufacturing and lighting variation: fine hairline longitudinal extrusion marks, minor surface texture and pores, glare, and diffuse off-white to light-brown mottling or small dark speckles embedded in the sheath material. FAIL for real surface damage or contamination: cuts, open cracks, gouges, deep scratches, concentrated stains, insulation nicks, damaged copper, and any distinct thin lines, criss-cross fibers, dust, specks or particles lying on the cable surface. Do not dismiss lines or specks visible on the cable as dirty optics, camera artifacts or background noise even if a faint pattern also appears off the part - if it is on the part, FAIL it. No external scale chips, ICs, tools or reference objects belong in the scene - any discrete solid or chip-like object on, in or touching the cable is foreign material and FAIL, never excuse it as a scale reference. Base the verdict on the cable itself.",
+  "rounds": [
+    {
+      "round": 1,
+      "rules": "Inspect only the cable: white outer sheath with blue, brown and yellow-green inner conductors and copper strands. PASS as GOOD normal manufacturing and lighting variation: fine hairline longitudinal extrusion marks, minor surface texture and pores, glare, and diffuse off-white to light-brown mottling or small dark speckles embedded in the sheath material. FAIL for real surface damage or contamination: cuts, open cracks, gouges, deep scratches, concentrated stains, insulation nicks, damaged copper, and any distinct thin lines, criss-cross fibers, dust, specks or particles lying on the cable surface. Do not dismiss lines or specks visible on the cable as dirty optics, camera artifacts or background noise even if a faint pattern also appears off the part - if it is on the part, FAIL it. No external scale chips, ICs, tools or reference objects belong in the scene - any discrete solid or chip-like object on, in or touching the cable is foreign material and FAIL, never excuse it as a scale reference. Base the verdict on the cable itself.",
+      "rationale": "Relaxed the strict any-scratch/stain rule to accept normal hairline extrusion marks and diffuse sheath mottling/speckling that caused false FAILs. Added explicit FAIL for overlay fibers/specks even if seen in background and for any chip-like solid object, blocking the artifact and scale-reference excuses that caused false PASSes.",
+      "metrics": {
+        "precision": 0.9090909090909091,
+        "recall": 1.0,
+        "f1": 0.9523809523809523,
+        "accuracy": 0.95
+      },
+      "accepted": true
+    },
+    {
+      "round": 2,
+      "rules": "Inspect only the cable - white outer sheath with blue, brown and yellow-green inner conductors with exposed copper strands at the cut face. PASS as GOOD normal manufacturing and lighting variation: fine hairline longitudinal extrusion marks, minor surface texture and pores, glare and reflections, diffuse off-white to light-brown mottling and small dark speckles embedded in the sheath material. Also PASS thin copper-colored or reddish-brown filaments or hairline strands that originate at the exposed copper conductor ends and extend over adjacent insulation, filler or sheath at the cut face - this is normal exposed copper, not a foreign fiber or contamination. FAIL for real damage or contamination: cuts, open cracks, gouges, deep scratches, insulation nicks, crushed, blackened or damaged copper, concentrated stains, and distinct opaque foreign fibers, lint, dust clumps or raised particles clearly localized and sharply focused on the cable sheath. If a faint, translucent line, fiber pattern or speckling is visible both on the cable and off the cable in the background, treat it as lens dust, lighting artifact or background noise and do not FAIL on that basis alone. Any discrete solid chip-like object, tool or reference part on, in or touching the cable is foreign material - FAIL. Base the verdict on the cable itself.",
+      "rationale": "Relaxed the fail-any-line-on-cable and never-excuse-as-optics rules to PASS normal copper filaments from conductor ends and faint artifacts seen on and off the part, fixing the false FAIL while keeping FAIL for true damage and distinct foreign fibers.",
+      "metrics": {
+        "precision": 1.0,
+        "recall": 0.7,
+        "f1": 0.8235294117647058,
+        "accuracy": 0.85
+      },
+      "accepted": false
+    }
+  ],
+  "heldout": {
+    "before": {
+      "precision": 0.8666666666666667,
+      "recall": 0.65,
+      "f1": 0.7428571428571429,
+      "accuracy": 0.7
+    },
+    "after": {
+      "precision": 0.8888888888888888,
+      "recall": 0.8,
+      "f1": 0.8421052631578948,
+      "accuracy": 0.8
+    }
+  }
+}

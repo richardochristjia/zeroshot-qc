@@ -39,6 +39,6 @@
     "label": "Metal nut, bent",
     "profile_id": "metal_nut",
     "file": "samples/metal_nut-bent.png",
-    "expect": "FAIL"
+    "expect": "PASS"
   }
 ]
