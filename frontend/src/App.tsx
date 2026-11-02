@@ -8,12 +8,14 @@ import Inspect from './pages/Inspect.tsx'
 import Line from './pages/Line.tsx'
 import Profiles from './pages/Profiles.tsx'
 import Synthetic from './pages/Synthetic.tsx'
+import Tune from './pages/Tune.tsx'
 
 const links: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: 'Inspect', icon: 'scan' },
   { to: '/line', label: 'Line', icon: 'camera' },
   { to: '/profiles', label: 'Profiles', icon: 'sliders' },
   { to: '/eval', label: 'Eval', icon: 'chart' },
+  { to: '/tune', label: 'Tune', icon: 'gauge' },
   { to: '/synthetic', label: 'Synthetic', icon: 'sparkles' },
 ]
 
@@ -61,6 +63,7 @@ export default function App() {
           <Route path="/line" element={<Line />} />
           <Route path="/profiles" element={<Profiles />} />
           <Route path="/eval" element={<Eval />} />
+          <Route path="/tune" element={<Tune />} />
           <Route path="/synthetic" element={<Synthetic />} />
         </Routes>
         </motion.div>

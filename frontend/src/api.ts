@@ -142,6 +142,37 @@ export interface EvalRunDetail {
   results: EvalResultRow[];
 }
 
+/** One `GET /api/tune/runs` entry. */
+export interface TuneRunSummary {
+  runId: string;
+  category: string;
+  adapter: string;
+  beforeF1: number;
+  afterF1: number;
+  roundsAccepted: number;
+}
+
+export interface TuneRound {
+  round: number;
+  rules: string;
+  rationale: string;
+  f1: number;
+  accepted: boolean;
+}
+
+/** A `tune.json` record (`app/tune/run.py`). */
+export interface TuneRunDetail {
+  runId: string;
+  category: string;
+  adapter: string;
+  seed: number | null;
+  initialRules: string;
+  finalRules: string;
+  rounds: TuneRound[];
+  heldoutBefore: number;
+  heldoutAfter: number;
+}
+
 /** One `GET /api/synth/gallery` entry (`routers/synth.py`). */
 export interface SynthGalleryItem {
   category: string;
@@ -740,6 +771,63 @@ export async function getEvalRun(
     signal,
   );
   return parseEvalRunDetail(data);
+}
+
+function parseTuneRunSummary(value: unknown): TuneRunSummary {
+  const path = "TuneRunSummary";
+  if (!isRecord(value)) fail(path);
+  return {
+    runId: reqString(value, "run_id", path),
+    category: reqString(value, "category", path),
+    adapter: optString(value["adapter"]) ?? "",
+    beforeF1: reqNumber(value, "before_f1", path),
+    afterF1: reqNumber(value, "after_f1", path),
+    roundsAccepted: reqNumber(value, "rounds_accepted", path),
+  };
+}
+
+export function parseTuneRunDetail(value: unknown): TuneRunDetail {
+  const path = "TuneRunDetail";
+  if (!isRecord(value) || !Array.isArray(value["rounds"])) fail(path);
+  const heldout = value["heldout"];
+  if (!isRecord(heldout) || !isRecord(heldout["before"]) || !isRecord(heldout["after"])) {
+    fail(`${path}.heldout`);
+  }
+  return {
+    runId: reqString(value, "run_id", path),
+    category: reqString(value, "category", path),
+    adapter: optString(value["adapter"]) ?? "",
+    seed: optNumber(value["seed"]),
+    initialRules: reqString(value, "initial_rules", path),
+    finalRules: reqString(value, "final_rules", path),
+    rounds: value["rounds"].map((round, i) => {
+      const rpath = `${path}.rounds[${i}]`;
+      if (!isRecord(round) || !isRecord(round["metrics"])) fail(rpath);
+      return {
+        round: reqNumber(round, "round", rpath),
+        rules: reqString(round, "rules", rpath),
+        rationale: optString(round["rationale"]) ?? "",
+        f1: reqNumber(round["metrics"], "f1", `${rpath}.metrics`),
+        accepted: reqBoolean(round, "accepted", rpath),
+      };
+    }),
+    heldoutBefore: reqNumber(heldout["before"], "f1", `${path}.heldout.before`),
+    heldoutAfter: reqNumber(heldout["after"], "f1", `${path}.heldout.after`),
+  };
+}
+
+/** GET /api/tune/runs: list of recorded tune runs. */
+export async function listTuneRuns(signal?: AbortSignal): Promise<TuneRunSummary[]> {
+  const data = await getJson("/api/tune/runs", signal);
+  if (!Array.isArray(data)) fail("TuneRunSummary[]");
+  return data.map((item) => parseTuneRunSummary(item));
+}
+
+/** GET /api/tune/runs/:id; throws {@link NotFoundError} when missing. */
+export async function getTuneRun(runId: string, signal?: AbortSignal): Promise<TuneRunDetail> {
+  return parseTuneRunDetail(
+    await getJson(`/api/tune/runs/${encodeURIComponent(runId)}`, signal),
+  );
 }
 
 /** GET /api/synth/gallery: every `{category, defect, image_url,
