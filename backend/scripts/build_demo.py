@@ -96,7 +96,9 @@ def main() -> None:
         _save_small(SRC / "mvtec" / rel, OUT / "samples" / name, 512)
         with Image.open(OUT / "samples" / name) as im:
             img = im.convert("RGB").copy()
-        _, verdict = run_inspection(img, load_profile(pid), segmenter, judge=judge)
+        _, verdict = run_inspection(
+            img, load_profile(pid), segmenter, judge=judge, part_crop=True
+        )
         manifest.append(
             {"id": f"{pid}-{kind}", "label": label, "profile_id": pid,
              "file": f"samples/{name}", "expect": verdict.verdict}
