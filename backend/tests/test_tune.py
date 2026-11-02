@@ -118,8 +118,10 @@ def test_heldout_untouched_before_loop_ends(tmp_path: Path, monkeypatch) -> None
     seen.clear()
     run_tune(**kw)
     test_dir = FIXTURE_ROOT / "widget" / "test"
-    first_heldout = next(i for i, p in enumerate(seen) if test_dir in p.parents)
-    assert all(test_dir not in p.parents for p in seen[:first_heldout])
+    held = [i for i, p in enumerate(seen) if test_dir in p.parents]
+    tune = [i for i, p in enumerate(seen) if test_dir not in p.parents]
+    # Every held-out read comes after the last tune-set read.
+    assert held and tune and min(held) > max(tune)
     # Tune set never reads test/ and never the reference as a tune item.
     ref = sorted((FIXTURE_ROOT / "widget/train/good").glob("*.png"))[0]
     items = build_tune_set(
