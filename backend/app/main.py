@@ -14,6 +14,7 @@ from app.routers.inspect import router as inspect_router
 from app.routers.profiles import router as profiles_router
 from app.routers.samples import router as samples_router
 from app.routers.synth import router as synth_router
+from app.routers.tune import router as tune_router
 
 app = FastAPI()
 
@@ -22,6 +23,7 @@ app.include_router(inspect_router)
 app.include_router(eval_router)
 app.include_router(synth_router)
 app.include_router(samples_router)
+app.include_router(tune_router)
 
 
 @app.on_event("startup")

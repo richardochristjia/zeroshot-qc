@@ -16,6 +16,7 @@ from app.schemas import Detection, ProductProfile, Verdict
 
 JUDGE_TEMPLATE = Path(__file__).resolve().parent / "judge.md"
 _SOP_TEMPLATE = Path(__file__).resolve().parent / "sop_to_profile.md"
+_TUNE_TEMPLATE = Path(__file__).resolve().parent / "tune_rules.md"
 
 
 def _format_mm(value: float | None) -> str:
@@ -67,6 +68,21 @@ def render_judge_prompt(
     }
     return re.sub(
         r"\{schema\}|\{rules\}|\{product_name\}|\{detections_table\}",
+        lambda match: values[match.group(0)],
+        template,
+    )
+
+
+def render_tune_prompt(rules: str, errors: list[dict], product_name: str) -> str:
+    """Render ``tune_rules.md`` with the current rules and the judge's errors."""
+    template = _TUNE_TEMPLATE.read_text(encoding="utf-8")
+    values = {
+        "{rules}": rules,
+        "{product_name}": product_name,
+        "{errors}": "\n".join(json.dumps(error) for error in errors) or "(none)",
+    }
+    return re.sub(
+        r"\{rules\}|\{product_name\}|\{errors\}",
         lambda match: values[match.group(0)],
         template,
     )

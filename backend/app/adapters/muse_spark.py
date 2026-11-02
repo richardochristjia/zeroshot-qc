@@ -25,8 +25,8 @@ from app.adapters.base import (
     require_configured,
 )
 from app.config import settings
-from app.prompts import render_judge_prompt, render_sop_prompt
-from app.schemas import Detection, ProductProfile, Verdict
+from app.prompts import render_judge_prompt, render_sop_prompt, render_tune_prompt
+from app.schemas import Detection, ProductProfile, RuleRevision, Verdict
 
 
 def _responses_payload(model_id: str, prompt: str, images: list[Image.Image]) -> dict:
@@ -183,3 +183,39 @@ class MuseSparkJudge:
         response = httpx.post(url, json=payload, headers=headers, timeout=120.0)
         response.raise_for_status()
         return _verdict_json(response.json())
+
+
+class MuseSparkRuleReviser:
+    """Rewrites inspection rules from the judge's errors (tune loop)."""
+
+    def revise(self, rules: str, errors: list[dict], product_name: str) -> RuleRevision:
+        require_configured(
+            model_id=settings.judge_model_id,
+            model_field="JUDGE_MODEL_ID",
+            adapter="Judge",
+        )
+        prompt = render_tune_prompt(rules, errors, product_name)
+        try:
+            return self._revise(prompt)
+        except ValueError as first_error:  # ValidationError is a ValueError
+            retry = (
+                f"{prompt}\n\nYour previous response failed validation:\n"
+                f"{first_error}\nReturn only JSON matching the schema."
+            )
+            try:
+                return self._revise(retry)
+            except ValueError as second_error:
+                raise JudgeValidationError(
+                    f"rule revision failed validation twice: {second_error}"
+                ) from second_error
+
+    def _revise(self, prompt: str) -> RuleRevision:
+        url = settings.meta_api_base_url.rstrip("/") + "/responses"
+        payload = _responses_payload(settings.judge_model_id, prompt, [])
+        headers = {"Authorization": f"Bearer {settings.meta_api_key}"}
+        response = httpx.post(url, json=payload, headers=headers, timeout=120.0)
+        response.raise_for_status()
+        revision = RuleRevision.model_validate(_verdict_json(response.json()))
+        if not revision.rules.strip() or len(revision.rules) > 2000:
+            raise ValueError("rules must be 1-2000 non-blank characters")
+        return revision
