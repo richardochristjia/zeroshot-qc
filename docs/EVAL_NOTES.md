@@ -116,3 +116,21 @@ which caps the total defective images per category.
   scratches with aligned masks; 1 returned clean (empty-diff path keeps the
   image, omits the mask). Real SOP draft for bottle returns usable prompts
   and rules, unsaved.
+
+## Grounded mode and rule tuning (commands)
+
+Results are added after the real runs; nothing below has been run with real keys yet.
+
+- Grounded eval: SAM finds the part, the judge sees the padded crop and returns
+  0-1000 boxes for missed defects, which become `j1..` detections. Adds
+  `localization.hit_rate` (a box covers at least 50% of the true defect) and
+  `box_iou` per category.
+  `cd backend && .venv/bin/python -m app.eval.run --mode grounded --adapter real --categories bottle cable capsule carpet grid --seed 0`
+  (`--adapter scripted` runs the committed fixture with no API calls).
+- Rule tuning: revises the rules from the judge's errors on train/good plus
+  Muse Image synthetic defects (accept only on a strict tune-set F1 gain, at
+  most `--rounds` rounds), then scores initial and final rules once on held-out
+  test images. Writes `data/tune/<run_id>/tune.json`, shown on the Tune page.
+  `cd backend && .venv/bin/python -m app.tune.run --category bottle --adapter real --rounds 3 --seed 0`
+  (`--adapter scripted` or `fake` makes no API calls).
+
