@@ -164,6 +164,13 @@ def test_router_list_detail_and_guards(tmp_path: Path, monkeypatch) -> None:
     assert client.get("/api/tune/runs/v1.0").status_code == 404
 
 
+@pytest.mark.parametrize("run_id", ["v1.0", "../escaped"])
+def test_cli_rejects_run_id_the_router_cannot_serve(tmp_path: Path, run_id: str) -> None:
+    with pytest.raises(SystemExit):
+        tune_run.main(["--category", "x", "--run-id", run_id, "--out-dir", str(tmp_path)])
+    assert not any(tmp_path.iterdir())
+
+
 def test_reviser_retries_once_then_raises(monkeypatch) -> None:
     import app.adapters.muse_spark as ms
 

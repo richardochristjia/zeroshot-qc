@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -181,6 +182,9 @@ def main(argv: list[str] | None = None) -> int:
     run_id = args.run_id or (
         datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + f"-{args.category}"
     )
+    # Same pattern the tune router serves, so every written run can be opened.
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", run_id):
+        parser.error(f"--run-id {run_id!r} must match [A-Za-z0-9_-]+")
     if args.adapter == "real":
         from app.adapters.muse_image import MuseImageGenerator
         from app.adapters.muse_spark import MuseSparkRuleReviser
