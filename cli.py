@@ -51,7 +51,7 @@ def _print_verdict_block(verdict) -> None:
             f"rule_violated={violated} reason={ruling.reason}"
         )
     for missed in verdict.missed_defects:
-        print(f"missed: {missed}")
+        print(f"missed: {missed.description}")
     print(f"summary: {verdict.summary}")
 
 
@@ -94,6 +94,7 @@ def cmd_inspect(args: argparse.Namespace) -> int:
                 judge=judge,
                 rules=args.rules,
                 reference=reference,
+                part_crop=True,
             )
     except AdapterNotConfiguredError as exc:
         print(f"error: {exc}", file=sys.stderr)
