@@ -410,6 +410,19 @@ def test_part_crop_judges_padded_part_box(image, profile) -> None:  # type: igno
     )
 
 
+def test_part_crop_ignores_stray_small_mask(image, profile) -> None:  # type: ignore[no-untyped-def]
+    part = _rect_mask(50, 30, 50, 40, "bottle", 0.9)
+    stray = _rect_mask(2, 2, 4, 4, "bottle", 0.35)
+
+    class TwoMasks:
+        def segment(self, image, prompts):  # type: ignore[no-untyped-def]
+            return [stray, part] if prompts == ["bottle"] else []
+
+    judge = SizeJudge()
+    run_inspection(image, profile, TwoMasks(), judge=judge, part_crop=True)
+    assert judge.sizes == ((58, 48), (58, 48), None)
+
+
 def test_part_crop_part_not_found_judges_full_image(image, profile) -> None:  # type: ignore[no-untyped-def]
     assert _crop_run(profile, image, None) == ((IMG_W, IMG_H), (IMG_W, IMG_H), None)
 

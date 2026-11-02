@@ -158,7 +158,10 @@ def part_noun(profile: ProductProfile) -> str:
 def locate_part(
     image: Image.Image, profile: ProductProfile, segmenter: Segmenter
 ) -> tuple[int, int, int, int] | None:
-    """Padded (x0, y0, x1, y1) box of the part, or None when absent or ~whole frame."""
+    """Padded (x0, y0, x1, y1) box of the part, or None when absent or ~whole frame.
+
+    Uses the largest mask only, so a stray small mask cannot widen the crop.
+    """
     width, height = image.size
     masks = segmenter.segment(image, [part_noun(profile)])
     boxes = []
@@ -166,11 +169,11 @@ def locate_part(
         [m for m in masks if m.score >= profile.min_score], width, height
     ):
         ys, xs = np.nonzero(binary)
-        boxes.append((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+        if xs.size:
+            boxes.append((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
     if not boxes:
         return None
-    x0, y0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
-    x1, y1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
+    x0, y0, x1, y1 = max(boxes, key=lambda b: (b[2] - b[0]) * (b[3] - b[1]))
     pad = PART_PAD * max(x1 - x0, y1 - y0)
     x0, y0 = max(0, round(x0 - pad)), max(0, round(y0 - pad))
     x1, y1 = min(width, round(x1 + pad)), min(height, round(y1 + pad))
