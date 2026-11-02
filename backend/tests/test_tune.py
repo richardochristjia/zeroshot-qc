@@ -158,6 +158,10 @@ def test_router_list_detail_and_guards(tmp_path: Path, monkeypatch) -> None:
     assert client.get("/api/tune/runs/missing").status_code == 404
     assert client.get("/api/tune/runs/bad").status_code == 404
     assert client.get("/api/tune/runs/%2E%2E").status_code == 404
+    # Readable on disk but id outside [A-Za-z0-9_-]+: only the regex can reject it.
+    (tmp_path / "tune" / "v1.0").mkdir()
+    (tmp_path / "tune" / "v1.0" / "tune.json").write_text((tmp_path / "tune" / "run-a" / "tune.json").read_text())
+    assert client.get("/api/tune/runs/v1.0").status_code == 404
 
 
 def test_reviser_retries_once_then_raises(monkeypatch) -> None:

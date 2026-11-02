@@ -569,3 +569,9 @@ def test_unboxed_missed_defect_still_fails_and_legacy_strings_parse() -> None:
     )
     assert verdict.missed_defects[0].box is None
     assert enforce_consistency(verdict).verdict == "FAIL"
+
+
+def test_malformed_box_keeps_description() -> None:
+    for bad in (["a", "b", 1, 2], [[1, 2], [3, 4]]):
+        md = MissedDefect(description="crack", box=bad)
+        assert md.box is None and md.description == "crack"

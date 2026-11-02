@@ -221,5 +221,7 @@ def test_grounded_mode_writes_localization(tmp_path: Path) -> None:
     metrics = summary["metrics"]
     for row in (*metrics["per_category"].values(), metrics["overall"]):
         assert set(row["localization"]) == {"hit_rate", "box_iou"}
+    hits = [bool(r["hit"]) for r in defective]
+    assert metrics["overall"]["localization"]["hit_rate"] == pytest.approx(sum(hits) / len(hits))
     plain = _run_mode(tmp_path, "sam_judge_ref", "run-plain")[1]["metrics"]["overall"]
     assert plain["localization"] is None

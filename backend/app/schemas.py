@@ -45,6 +45,15 @@ class MissedDefect(BaseModel):
     description: str
     box: list[float] | None = None  # x1, y1, x2, y2 in 0-1000 judged-image coordinates
 
+    @field_validator("box", mode="before")
+    @classmethod
+    def _malformed_box_is_none(cls, value):
+        # A box the judge garbled keeps the description and drops the location.
+        try:
+            return [float(v) for v in value] if value is not None else None
+        except (TypeError, ValueError):
+            return None
+
 
 class Verdict(BaseModel):
     verdict: Literal["PASS", "FAIL"]
