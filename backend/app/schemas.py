@@ -63,6 +63,11 @@ class Verdict(BaseModel):
         return value
 
 
+class RuleRevision(BaseModel):
+    rules: str
+    rationale: str = ""
+
+
 class InspectionResult(BaseModel):
     id: str
     profile_id: str

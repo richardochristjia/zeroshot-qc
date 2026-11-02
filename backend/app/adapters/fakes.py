@@ -14,7 +14,14 @@ import numpy as np
 from PIL import Image, ImageDraw
 from pycocotools import mask as mask_api
 
-from app.schemas import DefectRuling, Detection, ProductProfile, RawMask, Verdict
+from app.schemas import (
+    DefectRuling,
+    Detection,
+    ProductProfile,
+    RawMask,
+    RuleRevision,
+    Verdict,
+)
 
 
 def _seed_digest(image: Image.Image, prompts: list[str]) -> bytes:
@@ -181,3 +188,21 @@ class FakeImageGenerator:
                 [x0, y0, x1, y1], fill=255, width=max(1, min(box_w, box_h) // 3)
             )
         return result, mask
+
+
+class FakeRuleReviser:
+    """Returns scripted revisions in order; the last one repeats when spent."""
+
+    def __init__(self, revisions: list[RuleRevision] | None = None) -> None:
+        self.revisions = revisions or [
+            RuleRevision(rules="", rationale="Scripted revision.")
+        ]
+        self.calls: list[tuple[str, list[dict], str]] = []
+
+    def revise(self, rules: str, errors: list[dict], product_name: str) -> RuleRevision:
+        self.calls.append((rules, errors, product_name))
+        revision = self.revisions[min(len(self.calls), len(self.revisions)) - 1]
+        # An empty scripted rule set means "append a sentence to the current rules".
+        return revision if revision.rules else revision.model_copy(
+            update={"rules": rules + " Ignore marks that match the reference."}
+        )
