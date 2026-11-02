@@ -28,6 +28,7 @@ RUNS = [
     "20261027T090316Z-sam_only",
     "20261027T091346Z-sam_judge",
     "20261027T094406Z-sam_judge_ref",
+    "20261102T083055Z-grounded",
 ]
 # (profile, test subdir, index) -> one good and one defective each
 SAMPLES = [
@@ -77,8 +78,11 @@ def main() -> None:
         for line in (SRC / "runs" / run / "results.jsonl").read_text().splitlines():
             if line.strip():
                 images.add(json.loads(line)["image"])
-    if (SRC / "tune").is_dir():
-        shutil.copytree(SRC / "tune", OUT / "tune")
+    # Only tune.json: the Tune page never shows the synth images (46 MB).
+    for record in sorted((SRC / "tune").glob("*/tune.json")):
+        dst = OUT / record.relative_to(SRC)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(record, dst)
     for img in sorted(images):
         _save_small(SRC / "mvtec" / img, OUT / "mvtec" / img, 256)
 
