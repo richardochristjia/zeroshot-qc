@@ -146,6 +146,38 @@ def enforce_consistency(verdict: Verdict) -> Verdict:
     return verdict
 
 
+PART_PAD = 0.08
+NO_CROP_AREA = 0.95
+
+
+def part_noun(profile: ProductProfile) -> str:
+    return profile.name.replace("_", " ").replace("-", " ").strip().lower()
+
+
+def locate_part(
+    image: Image.Image, profile: ProductProfile, segmenter: Segmenter
+) -> tuple[int, int, int, int] | None:
+    """Padded (x0, y0, x1, y1) box of the part, or None when absent or ~whole frame."""
+    width, height = image.size
+    masks = segmenter.segment(image, [part_noun(profile)])
+    boxes = []
+    for mask, binary in _decode_valid_masks(
+        [m for m in masks if m.score >= profile.min_score], width, height
+    ):
+        ys, xs = np.nonzero(binary)
+        boxes.append((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
+    if not boxes:
+        return None
+    x0, y0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
+    x1, y1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
+    pad = PART_PAD * max(x1 - x0, y1 - y0)
+    x0, y0 = max(0, round(x0 - pad)), max(0, round(y0 - pad))
+    x1, y1 = min(width, round(x1 + pad)), min(height, round(y1 + pad))
+    if (x1 - x0) * (y1 - y0) >= NO_CROP_AREA * width * height:
+        return None
+    return int(x0), int(y0), int(x1), int(y1)
+
+
 def run_inspection(
     image: Image.Image,
     profile: ProductProfile,
@@ -153,6 +185,7 @@ def run_inspection(
     judge: Judge | None = None,
     rules: str | None = None,
     reference: Image.Image | None = None,
+    part_crop: bool = False,
 ) -> list[Detection] | tuple[list[Detection], Verdict]:
     """Segment, filter, merge, measure, and optionally judge.
 
@@ -164,7 +197,9 @@ def run_inspection(
     ``rules`` replaces ``profile.rules`` for this call only (the
     profile object is never mutated); ``reference`` overrides
     ``profile.reference_image`` for this call, which is otherwise
-    loaded from disk when set.
+    loaded from disk when set. ``part_crop`` judges a zoomed crop of the
+    part SAM finds (image, overlay and the reference's own part box);
+    detections stay in full-image pixels.
     """
     if image.mode != "RGB":
         image = image.convert("RGB")
@@ -216,8 +251,17 @@ def run_inspection(
     if effective_reference is None and profile.reference_image:
         effective_reference = _load_reference_image(profile.reference_image)
     overlay = make_overlay(image, detections)
+    judged_image = image
+    if part_crop:
+        box = locate_part(image, profile, segmenter)
+        if box:
+            judged_image, overlay = image.crop(box), overlay.crop(box)
+        if box and effective_reference is not None:
+            ref_box = locate_part(effective_reference, profile, segmenter)
+            if ref_box:
+                effective_reference = effective_reference.crop(ref_box)
     verdict = judge.judge(
-        image, overlay, effective_reference, detections, effective_profile
+        judged_image, overlay, effective_reference, detections, effective_profile
     )
     return detections, enforce_consistency(verdict)
 

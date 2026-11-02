@@ -120,6 +120,7 @@ def inspect_image(
             seg,  # type: ignore[arg-type]
             judge=jdg,  # type: ignore[arg-type]
             rules=(rules or None),
+            part_crop=True,
         )
 
     try:

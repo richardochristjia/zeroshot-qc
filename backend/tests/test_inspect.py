@@ -359,3 +359,67 @@ def test_inspect_image_loads_image_and_profile_from_disk(
     assert len(detections) == 1
     assert detections[0].id == "d1"
     assert detections[0].area_px == 100 * 50
+
+
+# --- part_crop ---------------------------------------------------------
+
+
+class PartSegmenter:
+    """Returns ``part`` for the part noun (when given) and nothing for defects."""
+
+    def __init__(self, part: RawMask | None) -> None:
+        self._part = part
+
+    def segment(self, image: Image.Image, prompts: list[str]) -> list[RawMask]:
+        if prompts == ["bottle"] and self._part is not None:
+            return [self._part]
+        return []
+
+
+class SizeJudge:
+    def __init__(self) -> None:
+        self.sizes: tuple | None = None
+
+    def judge(self, image, overlay, reference, detections, profile):  # type: ignore[no-untyped-def]
+        from app.schemas import Verdict
+
+        ref = reference.size if reference is not None else None
+        self.sizes = (image.size, overlay.size, ref)
+        return Verdict(
+            verdict="PASS", confidence=0.9, rulings=[], missed_defects=[],
+            part_matches=True, summary="ok",
+        )
+
+
+def _crop_run(profile, image, part, reference=None, part_crop=True):  # type: ignore[no-untyped-def]
+    judge = SizeJudge()
+    run_inspection(
+        image, profile, PartSegmenter(part), judge=judge,
+        reference=reference, part_crop=part_crop,
+    )
+    return judge.sizes
+
+
+def test_part_crop_judges_padded_part_box(image, profile) -> None:  # type: ignore[no-untyped-def]
+    part = _rect_mask(50, 30, 50, 40, "bottle", 0.9)
+    # pad = 8% of 50 = 4 -> x 46..104, y 26..74
+    assert _crop_run(profile, image, part) == ((58, 48), (58, 48), None)
+    assert _crop_run(profile, image, part, part_crop=False) == (
+        (IMG_W, IMG_H), (IMG_W, IMG_H), None,
+    )
+
+
+def test_part_crop_part_not_found_judges_full_image(image, profile) -> None:  # type: ignore[no-untyped-def]
+    assert _crop_run(profile, image, None) == ((IMG_W, IMG_H), (IMG_W, IMG_H), None)
+
+
+def test_part_crop_skipped_when_part_fills_frame(image, profile) -> None:  # type: ignore[no-untyped-def]
+    part = _rect_mask(2, 2, IMG_W - 4, IMG_H - 4, "bottle", 0.9)
+    assert _crop_run(profile, image, part) == ((IMG_W, IMG_H), (IMG_W, IMG_H), None)
+
+
+def test_part_crop_reference_uses_own_box_or_stays_whole(image, profile) -> None:  # type: ignore[no-untyped-def]
+    part = _rect_mask(50, 30, 50, 40, "bottle", 0.9)
+    # the same segmenter answers for the reference, so it gets the same box
+    assert _crop_run(profile, image, part, reference=image)[2] == (58, 48)
+    assert _crop_run(profile, image, None, reference=image)[2] == (IMG_W, IMG_H)

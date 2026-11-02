@@ -118,12 +118,12 @@ def test_inspect_same_image_new_rules_is_judge_only_cache_hit(
     raw = _png_bytes()
     strict = _post_inspect(raw)
     assert strict.status_code == 200
-    assert inner.calls == 1
+    assert inner.calls == 3  # defects + part + reference part
     strict_verdict = strict.json()["verdict"]["verdict"]
 
     flipped = _post_inspect(raw, rules="lenient: pass everything for this check")
     assert flipped.status_code == 200
-    assert inner.calls == 1  # segment cache hit; judge alone re-ran
+    assert inner.calls == 3  # segment cache hit; judge alone re-ran
     assert flipped.json()["verdict"]["verdict"] != strict_verdict
 
 
