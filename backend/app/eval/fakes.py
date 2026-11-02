@@ -28,7 +28,14 @@ import numpy as np
 from PIL import Image
 from pycocotools import mask as mask_api
 
-from app.schemas import DefectRuling, Detection, ProductProfile, RawMask, Verdict
+from app.schemas import (
+    DefectRuling,
+    Detection,
+    MissedDefect,
+    ProductProfile,
+    RawMask,
+    Verdict,
+)
 
 REAL_SCORE = 0.9
 FALSE_POSITIVE_SCORE = 0.55
@@ -95,6 +102,32 @@ def _region_differs(
     return bool(np.abs(crop - ref_crop).mean() > REFERENCE_DIFF_MEAN)
 
 
+MISSED_DIFF_LEVEL = 40
+
+
+def _uncovered_diff(
+    image: Image.Image, reference: Image.Image, detections: list[Detection]
+) -> list[MissedDefect]:
+    """One 0-1000 box around reference differences that no detection covers."""
+    current = np.asarray(image.convert("RGB")).astype(np.int16)
+    baseline = np.asarray(reference.convert("RGB").resize(image.size)).astype(np.int16)
+    diff = np.abs(current - baseline).max(axis=2) > MISSED_DIFF_LEVEL
+    for det in detections:
+        x, y, w, h = det.bbox
+        diff[y : y + h, x : x + w] = False
+    ys, xs = np.nonzero(diff)
+    if len(xs) < KEEP_AREA_PX:
+        return []
+    height, width = diff.shape
+    box = [
+        1000 * xs.min() / width,
+        1000 * ys.min() / height,
+        1000 * (xs.max() + 1) / width,
+        1000 * (ys.max() + 1) / height,
+    ]
+    return [MissedDefect(description="Scripted judge: region differs from the reference.", box=[float(v) for v in box])]
+
+
 class ReferenceAwareJudge:
     """Size filter without a reference; reference diff check with one."""
 
@@ -134,12 +167,13 @@ class ReferenceAwareJudge:
             for detection in dismissed
         ]
         with_reference = reference is not None
-        if kept:
+        missed = _uncovered_diff(image, reference, detections) if with_reference else []
+        if kept or missed:
             return Verdict(
                 verdict="FAIL",
                 confidence=0.95 if with_reference else 0.8,
                 rulings=rulings,
-                missed_defects=[],
+                missed_defects=missed,
                 part_matches=True,
                 summary=(
                     "Scripted judge: real defect confirmed"
