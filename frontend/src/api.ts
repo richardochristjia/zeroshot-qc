@@ -32,6 +32,12 @@ export interface Detection {
   lengthPx: number;
   areaMm2: number | null;
   lengthMm: number | null;
+  source: "sam" | "judge";
+}
+
+export interface MissedDefect {
+  description: string;
+  box: number[] | null;
 }
 
 export interface DefectRuling {
@@ -47,7 +53,7 @@ export interface Verdict {
   verdict: VerdictWord;
   confidence: number;
   rulings: DefectRuling[];
-  missedDefects: string[];
+  missedDefects: MissedDefect[];
   partMatches: boolean;
   summary: string;
 }
@@ -302,6 +308,21 @@ function parseDetection(value: unknown, path: string): Detection {
     areaMm2: value["area_mm2"] == null ? null : reqNumber(value, "area_mm2", path),
     lengthMm:
       value["length_mm"] == null ? null : reqNumber(value, "length_mm", path),
+    source: value["source"] === "judge" ? "judge" : "sam",
+  };
+}
+
+function parseMissedDefect(value: unknown, path: string): MissedDefect {
+  // Old recorded verdicts stored bare strings.
+  if (typeof value === "string") return { description: value, box: null };
+  if (!isRecord(value)) fail(path);
+  const box = value["box"];
+  if (box != null && (!Array.isArray(box) || box.some((v) => typeof v !== "number"))) {
+    fail(`${path}.box`);
+  }
+  return {
+    description: reqString(value, "description", path),
+    box: box == null ? null : (box as number[]),
   };
 }
 
@@ -324,7 +345,9 @@ function parseVerdict(value: unknown, path: string): Verdict {
     rulings: reqArray(value, "rulings", path).map((r, i) =>
       parseDefectRuling(r, `${path}.rulings[${i}]`),
     ),
-    missedDefects: reqStringArray(value, "missed_defects", path),
+    missedDefects: reqArray(value, "missed_defects", path).map((m, i) =>
+      parseMissedDefect(m, `${path}.missed_defects[${i}]`),
+    ),
     partMatches: reqBoolean(value, "part_matches", path),
     summary: reqString(value, "summary", path),
   };

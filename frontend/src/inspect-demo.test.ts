@@ -21,6 +21,19 @@ describe('parseInspectionResult demo flag', () => {
   })
 })
 
+describe('parseInspectionResult judge fields', () => {
+  it('defaults source to sam and parses missed defects, legacy strings included', () => {
+    const det = { id: 'j1', label: 'judge', score: 0.5, bbox: [1, 2, 3, 4], mask_rle: { size: [1, 1], counts: '0' }, area_px: 1, length_px: 1 }
+    const out = parseInspectionResult({
+      ...base,
+      detections: [det, { ...det, id: 'j2', source: 'judge' }],
+      verdict: { ...base.verdict, missed_defects: [{ description: 'crack', box: [0, 0, 5, 5] }, 'old'] },
+    })
+    expect(out.detections.map((d) => d.source)).toEqual(['sam', 'judge'])
+    expect(out.verdict.missedDefects).toEqual([{ description: 'crack', box: [0, 0, 5, 5] }, { description: 'old', box: null }])
+  })
+})
+
 describe('listSamples', () => {
   it('maps entries and swallows failures', async () => {
     const body = [{ id: 'a', label: 'A', profile_id: 'bottle', image_url: '/files/samples/a.png' }]
