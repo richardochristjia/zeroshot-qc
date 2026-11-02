@@ -18,6 +18,7 @@ from app.pipeline.cache import CachedJudge, DiskCache
 from app.pipeline.inspect import enforce_consistency, run_inspection
 from app.prompts import build_detections_table, render_judge_prompt
 from app.schemas import (
+    MissedDefect,
     DefectRuling,
     Detection,
     ProductProfile,
@@ -313,7 +314,7 @@ def test_missed_defects_with_model_pass_forces_fail() -> None:
         verdict="PASS",
         confidence=0.9,
         rulings=[],
-        missed_defects=["unoutlined crack near the rim"],
+        missed_defects=[MissedDefect(description="unoutlined crack near the rim", box=[1, 1, 5, 5])],
         part_matches=True,
         summary="model wrongly passed",
     )
@@ -557,3 +558,14 @@ def test_detections_table_empty_and_mm_dash() -> None:
 def test_rules_containing_slot_literal_render_verbatim() -> None:
     rules = "reject if {detections_table} appears"
     assert rules in render_judge_prompt(rules, [], "Bottle")
+
+
+def test_unboxed_missed_defect_still_fails_and_legacy_strings_parse() -> None:
+    verdict = Verdict.model_validate(
+        {
+            "verdict": "PASS", "confidence": 0.9, "rulings": [],
+            "missed_defects": ["old style string"], "part_matches": True, "summary": "x",
+        }
+    )
+    assert verdict.missed_defects[0].box is None
+    assert enforce_consistency(verdict).verdict == "FAIL"

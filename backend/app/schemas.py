@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class RawMask(BaseModel):
@@ -21,6 +21,7 @@ class Detection(BaseModel):
     length_px: float  # longest side of min-area rotated rect
     area_mm2: float | None = None
     length_mm: float | None = None
+    source: Literal["sam", "judge"] = "sam"
 
 
 class ProductProfile(BaseModel):
@@ -40,13 +41,26 @@ class DefectRuling(BaseModel):
     reason: str
 
 
+class MissedDefect(BaseModel):
+    description: str
+    box: list[float] | None = None  # x1, y1, x2, y2 in 0-1000 judged-image coordinates
+
+
 class Verdict(BaseModel):
     verdict: Literal["PASS", "FAIL"]
     confidence: float = Field(ge=0, le=1)
     rulings: list[DefectRuling]
-    missed_defects: list[str]  # defects the judge sees that SAM did not flag
+    missed_defects: list[MissedDefect]  # defects the judge sees that SAM did not flag
     part_matches: bool  # false = not the profile's product
     summary: str  # 1–2 sentences for the UI
+
+    @field_validator("missed_defects", mode="before")
+    @classmethod
+    def _plain_strings(cls, value):
+        # Old recorded verdicts stored bare strings.
+        if isinstance(value, list):
+            return [{"description": v} if isinstance(v, str) else v for v in value]
+        return value
 
 
 class InspectionResult(BaseModel):

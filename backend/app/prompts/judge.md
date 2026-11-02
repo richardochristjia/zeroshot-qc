@@ -6,7 +6,7 @@ reference image (when given). Normal variation, lighting, and angle are not a
 mismatch.
 
 You receive:
-1. The part image.
+1. The part image. It may be a zoomed crop of the part.
 2. The same image with candidate defects outlined and labeled d1, d2, ...
 3. A known-good reference image of the same product (may be absent).
 4. A table of candidates: id, label, score, size in px and mm.
@@ -17,7 +17,9 @@ For each candidate:
   normal variation also visible in the reference image).
 - If real, quote the exact rule it violates, or null if no rule covers it.
 
-Then list any clear defects you see that have no candidate outline.
+Then list any clear defects you see that have no candidate outline. For each, return
+`description` and `box`: [x1, y1, x2, y2] in 0-1000 coordinates of image 1 (0,0 is the
+top-left, 1000,1000 the bottom-right), or null if you cannot place it.
 
 Verdict is FAIL if the part does not match, any real defect violates a rule, or any
 missed defect exists.

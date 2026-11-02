@@ -25,7 +25,8 @@ from app.pipeline.inspect import (
     run_inspection,
 )
 from app.pipeline.measure import decode_rle
-from app.schemas import ProductProfile, RawMask
+from app.pipeline.inspect import judge_box_to_pixels
+from app.schemas import MissedDefect, ProductProfile, RawMask, Verdict
 
 IMG_W, IMG_H = 200, 120
 PROMPTS = ["scratch", "crack"]
@@ -423,3 +424,61 @@ def test_part_crop_reference_uses_own_box_or_stays_whole(image, profile) -> None
     # the same segmenter answers for the reference, so it gets the same box
     assert _crop_run(profile, image, part, reference=image)[2] == (58, 48)
     assert _crop_run(profile, image, None, reference=image)[2] == (IMG_W, IMG_H)
+
+
+@pytest.mark.parametrize(
+    "box,expected",
+    [
+        ([0, 0, 1000, 1000], (46, 26, 58, 48)),
+        ([500, 500, 1000, 1000], (75, 50, 29, 24)),
+        ([600, 0, 400, 1000], None),  # inverted
+        ([0, 0, 1001, 10], None),  # out of range
+        ([0, 0, float("nan"), 10], None),
+        ([10, 10, 10, 20], None),  # zero width
+        ([0, 0, 1], None),  # wrong length
+        (None, None),
+    ],
+)
+def test_judge_box_to_pixels(box, expected) -> None:  # type: ignore[no-untyped-def]
+    assert judge_box_to_pixels(box, (46, 26, 104, 74)) == expected
+
+
+class MissedJudge:
+    def __init__(self, boxes) -> None:  # type: ignore[no-untyped-def]
+        self.boxes = boxes
+
+    def judge(self, image, overlay, reference, detections, profile):  # type: ignore[no-untyped-def]
+        return Verdict(
+            verdict="PASS", confidence=0.7, rulings=[],
+            missed_defects=[MissedDefect(description="d", box=b) for b in self.boxes],
+            part_matches=True, summary="s",
+        )
+
+
+def test_judge_boxes_become_j_detections_and_invalid_still_fails(image, profile) -> None:  # type: ignore[no-untyped-def]
+    part = _rect_mask(50, 30, 50, 40, "bottle", 0.9)
+    dets, verdict = run_inspection(
+        image, profile, PartSegmenter(part),
+        judge=MissedJudge([[0, 0, 1000, 1000], [9, 9, 3, 3]]), part_crop=True,
+    )
+    assert verdict.verdict == "FAIL"
+    assert [(d.id, d.source, d.bbox) for d in dets] == [("j1", "judge", (46, 26, 58, 48))]
+    dets, verdict = run_inspection(
+        image, profile, PartSegmenter(part), judge=MissedJudge([None]), part_crop=True
+    )
+    assert dets == [] and verdict.verdict == "FAIL"
+
+
+def test_overlay_outlines_judge_detection_without_tint() -> None:
+    from app.pipeline.overlay import make_overlay
+    from app.schemas import Detection
+
+    rle = _rle_of(_rect_binary(10, 10, 20, 20))
+    det = Detection(
+        id="j1", label="judge", score=0.5, bbox=(10, 10, 20, 20), mask_rle=rle,
+        area_px=400, length_px=20.0, source="judge",
+    )
+    base = Image.new("RGB", (IMG_W, IMG_H), (10, 10, 10))
+    out = make_overlay(base, [det])
+    assert out.getpixel((10, 28)) == (179, 38, 30)  # outline
+    assert out.getpixel((20, 24)) == (10, 10, 10)  # interior untouched

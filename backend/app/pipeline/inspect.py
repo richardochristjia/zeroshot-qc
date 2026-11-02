@@ -9,6 +9,7 @@ consistency rule (HANDOFF §7 step 8).
 """
 
 import json
+import math
 import os
 import re
 import tempfile
@@ -178,6 +179,57 @@ def locate_part(
     return int(x0), int(y0), int(x1), int(y1)
 
 
+def judge_box_to_pixels(
+    box: list[float] | None, crop: tuple[int, int, int, int]
+) -> tuple[int, int, int, int] | None:
+    """Map a 0-1000 judge box inside ``crop`` (x0, y0, x1, y1) to full-image (x, y, w, h)."""
+    if box is None or len(box) != 4 or not all(math.isfinite(v) for v in box):
+        return None
+    x1, y1, x2, y2 = box
+    if not (0 <= x1 < x2 <= 1000 and 0 <= y1 < y2 <= 1000):
+        return None
+    cx0, cy0, cx1, cy1 = crop
+    cw, ch = cx1 - cx0, cy1 - cy0
+    px0, px1 = round(cx0 + x1 * cw / 1000), round(cx0 + x2 * cw / 1000)
+    py0, py1 = round(cy0 + y1 * ch / 1000), round(cy0 + y2 * ch / 1000)
+    px0, px1 = max(cx0, px0), min(cx1, px1)
+    py0, py1 = max(cy0, py0), min(cy1, py1)
+    if px1 - px0 < 1 or py1 - py0 < 1:
+        return None
+    return px0, py0, px1 - px0, py1 - py0
+
+
+def _judge_detections(
+    verdict: Verdict, crop: tuple[int, int, int, int], size: tuple[int, int], mm_per_px: float | None
+) -> list[Detection]:
+    width, height = size
+    found = []
+    for index, missed in enumerate(verdict.missed_defects, start=1):
+        mapped = judge_box_to_pixels(missed.box, crop)
+        if mapped is None:
+            continue
+        x, y, w, h = mapped
+        binary = np.zeros((height, width), dtype=np.uint8)
+        binary[y : y + h, x : x + w] = 1
+        mask_rle = _encode_mask_text(binary)
+        sizes = measure_mask(mask_rle, mm_per_px)
+        found.append(
+            Detection(
+                id=f"j{index}",
+                label="judge",
+                score=verdict.confidence,
+                bbox=sizes["bbox"],
+                mask_rle=mask_rle,
+                area_px=sizes["area_px"],
+                length_px=sizes["length_px"],
+                area_mm2=sizes["area_mm2"],
+                length_mm=sizes["length_mm"],
+                source="judge",
+            )
+        )
+    return found
+
+
 def run_inspection(
     image: Image.Image,
     profile: ProductProfile,
@@ -252,16 +304,21 @@ def run_inspection(
         effective_reference = _load_reference_image(profile.reference_image)
     overlay = make_overlay(image, detections)
     judged_image = image
+    crop = (0, 0, width, height)
     if part_crop:
         box = locate_part(image, profile, segmenter)
         if box:
             judged_image, overlay = image.crop(box), overlay.crop(box)
+            crop = box
         if box and effective_reference is not None:
             ref_box = locate_part(effective_reference, profile, segmenter)
             if ref_box:
                 effective_reference = effective_reference.crop(ref_box)
     verdict = judge.judge(
         judged_image, overlay, effective_reference, detections, effective_profile
+    )
+    detections = detections + _judge_detections(
+        verdict, crop, (width, height), profile.mm_per_px
     )
     return detections, enforce_consistency(verdict)
 

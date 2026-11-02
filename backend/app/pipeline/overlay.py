@@ -17,6 +17,7 @@ _TINT_COLORS: dict[str, tuple[int, int, int]] = {
 }
 
 _FALLBACK_COLOR = (255, 200, 0)
+JUDGE_COLOR = (179, 38, 30)
 
 
 def make_overlay(image: Image.Image, detections: list[Detection]) -> Image.Image:
@@ -37,6 +38,9 @@ def make_overlay(image: Image.Image, detections: list[Detection]) -> Image.Image
         )
         if binary is None:
             continue
+        if det.source == "judge":
+            drawn.append(det)
+            continue
         sel = binary.astype(bool)
         if sel.any():
             tint = np.array(
@@ -51,7 +55,9 @@ def make_overlay(image: Image.Image, detections: list[Detection]) -> Image.Image
         font = ImageFont.load_default()
         draw = ImageDraw.Draw(overlay)
         for det in drawn:
-            x, y, _, _ = det.bbox
+            x, y, w, h = det.bbox
+            if det.source == "judge":
+                draw.rectangle([x, y, x + w - 1, y + h - 1], outline=JUDGE_COLOR, width=3)
             tx = min(max(int(x), 0), max(width - 1, 0))
             ty = min(max(int(y), 0), max(height - 1, 0))
             draw.text(
