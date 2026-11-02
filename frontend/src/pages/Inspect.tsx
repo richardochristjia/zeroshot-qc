@@ -41,12 +41,12 @@ function DetectionBox({ detection, index, real, highlighted, naturalWidth, natur
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
       tabIndex={0}
-      aria-label={`${index}: ${detection.label}, ${real ? 'defect' : 'cleared'}`}
+      aria-label={detection.source === 'judge' ? `${index}: found by judge` : `${index}: ${detection.label}, ${real ? 'defect' : 'cleared'}`}
       onPointerEnter={() => onHover(detection.id)}
       onPointerLeave={() => onHover(null)}
       onFocus={() => onHover(detection.id)}
       onBlur={() => onHover(null)}
-      className={`absolute rounded-[2px] border-2 transition-shadow ${real ? 'border-fail' : 'border-detect'} ${highlighted ? HIGHLIGHT : ''}`}
+      className={`absolute rounded-[2px] border-2 transition-shadow ${detection.source === 'judge' ? 'border-dashed border-fail' : real ? 'border-fail' : 'border-detect'} ${highlighted ? HIGHLIGHT : ''}`}
       style={{ left: `${pos.left}%`, top: `${pos.top}%`, width: `${pos.width}%`, height: `${pos.height}%` }}
     >
       <span
@@ -425,7 +425,7 @@ export default function Inspect(): JSX.Element {
                         key={det.id}
                         detection={det}
                         index={i + 1}
-                        real={rulingById.get(det.id)?.isRealDefect ?? false}
+                        real={det.source === 'judge' || (rulingById.get(det.id)?.isRealDefect ?? false)}
                         highlighted={hoveredId === det.id}
                         naturalWidth={naturalSize.w}
                         naturalHeight={naturalSize.h}
@@ -529,7 +529,21 @@ export default function Inspect(): JSX.Element {
                   <p className="px-4 py-3 text-sm text-ink-2">No rulings: nothing was detected.</p>
                 )}
                 {verdict.missedDefects.length > 0 && (
-                  <p className="px-4 pb-3 text-sm text-ink-2">Missed defects: {verdict.missedDefects.join(', ')}</p>
+                  <ul className="m-0 list-none px-4 pb-3 text-sm text-ink-2">
+                    {verdict.missedDefects.map((missed, i) => {
+                      const linked = result.detections.find((d) => d.id === `j${i + 1}`)
+                      return (
+                        <li
+                          key={i}
+                          onPointerEnter={() => linked && setHoveredId(linked.id)}
+                          onPointerLeave={() => linked && setHoveredId(null)}
+                        >
+                          Missed: {missed.description}
+                          {linked && <span className="num text-fail"> (found by judge, {linked.id})</span>}
+                        </li>
+                      )
+                    })}
+                  </ul>
                 )}
                 <dl className="m-0 grid grid-cols-3 border-t border-line">
                   {([['Segment', result.timingsMs.segment], ['Judge', result.timingsMs.judge], ['Total', result.timingsMs.total]] as const).map(([name, ms], i) => (

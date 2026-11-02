@@ -105,3 +105,19 @@ test('a rules edit re-runs the inspection and a newer keystroke aborts the stale
   await waitFor(() => expect(api.inspectImage).toHaveBeenCalledTimes(3), { timeout: 1500 })
   expect(vi.mocked(api.inspectImage).mock.calls[2][0].rules).toBe('ab')
 })
+
+test('judge detections render dashed with a missed-defect row linked to them', async () => {
+  const judgeDet: api.Detection = {
+    id: 'j1', label: 'judge', score: 0.9, bbox: [1, 1, 5, 5], maskRle: { size: [10, 10], counts: '0' },
+    areaPx: 25, lengthPx: 5, areaMm2: null, lengthMm: null, source: 'judge',
+  }
+  vi.mocked(api.inspectImage).mockResolvedValue({
+    ...result,
+    detections: [judgeDet],
+    verdict: { ...result.verdict, missedDefects: [{ description: 'hairline crack', box: [0, 0, 500, 500] }] },
+  })
+  render(<MemoryRouter><Inspect /></MemoryRouter>)
+  fireEvent.click(await screen.findByRole('button', { name: /Sample one/ }))
+  expect(await screen.findByText(/hairline crack/)).toBeTruthy()
+  expect(screen.getByText(/found by judge, j1/)).toBeTruthy()
+})
