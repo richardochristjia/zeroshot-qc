@@ -87,16 +87,20 @@ Records are in `backend/demo/runs/*/summary.json`; notes and failure patterns ar
 
 ```mermaid
 flowchart LR
-    P[Product profile<br/>prompts, rules, reference] --> S[SAM 3.1<br/>candidate boxes]
-    S --> F[Size filter]
-    F --> J[Muse Spark judge<br/>rules + reference image]
+    P[Product profile<br/>prompts, rules, reference] --> S[SAM 3.1<br/>finds the part, then candidates]
+    S --> K[Crop to the part<br/>+ size filter]
+    K --> J[Muse Spark judge<br/>rules + reference image]
     P --> J
-    J --> V[PASS / FAIL<br/>+ overlay]
+    J --> B[Boxes for defects<br/>SAM missed]
+    B --> V[PASS / FAIL<br/>+ overlay]
+    J --> V
     C[(Cache)] -.replays.-> S
     C -.replays.-> J
 ```
 
 The cache stores model responses so the demo replays real verdicts without a key.
+
+The Tune page replays offline rule tuning: the judge's rules are rewritten from its mistakes on good images plus synthetic defects, kept only when F1 improves, and scored on held-out real images (`python -m app.tune.run`).
 
 ## Screens
 

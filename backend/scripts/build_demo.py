@@ -77,6 +77,8 @@ def main() -> None:
         for line in (SRC / "runs" / run / "results.jsonl").read_text().splitlines():
             if line.strip():
                 images.add(json.loads(line)["image"])
+    if (SRC / "tune").is_dir():
+        shutil.copytree(SRC / "tune", OUT / "tune")
     for img in sorted(images):
         _save_small(SRC / "mvtec" / img, OUT / "mvtec" / img, 256)
 
