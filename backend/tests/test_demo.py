@@ -139,6 +139,13 @@ def test_rules_override_is_demo(keyless: Path) -> None:
     assert res.json()["demo"] is True
 
 
+def test_keyless_serves_tune_runs(keyless: Path) -> None:
+    seed_demo(DEMO_DIR, keyless)
+    res = client.get("/api/tune/runs")
+    assert res.status_code == 200
+    assert isinstance(res.json(), list)
+
+
 def test_bundle_size() -> None:
     if not DEMO_DIR.is_dir():
         pytest.skip("backend/demo not built")
