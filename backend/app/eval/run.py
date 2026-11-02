@@ -6,6 +6,7 @@ sampling, ``run_inspection``, cache — is shared::
     sam_only       no judge; FAIL on any detection above min_score
     sam_judge      judge without a reference image
     sam_judge_ref  judge with the category reference image (full system)
+    grounded       sam_judge_ref on a part crop; judge boxes become detections
 
 Writes ``<out-dir>/<run-id>/results.jsonl`` (one line per image) plus
 ``summary.json`` (per-category and overall metrics) and prints the
@@ -31,13 +32,13 @@ from PIL import Image
 from app.config import settings
 from app.eval.dataset import DatasetError, sample_dataset, sample_synth_dataset
 from app.eval.fakes import ReferenceAwareJudge, ScriptedFixtureSegmenter
-from app.eval.metrics import fail_score, pixel_iou, summarize
+from app.eval.metrics import fail_score, localization, pixel_iou, summarize
 from app.pipeline.cache import CachedJudge, CachedSegmenter, DiskCache
 from app.pipeline.inspect import run_inspection
 from app.pipeline.wiring import build_judge, build_segmenter
 from app.schemas import ProductProfile
 
-MODES = ("sam_only", "sam_judge", "sam_judge_ref")
+MODES = ("sam_only", "sam_judge", "sam_judge_ref", "grounded")
 ADAPTER_CHOICES = ("real", "fake", "scripted")
 DATA_CHOICES = ("mvtec", "synth")
 
@@ -145,7 +146,7 @@ def run_eval(
     for sample in samples:
         profile = build_eval_profile(sample.category, rules)
         reference = None
-        if mode == "sam_judge_ref":
+        if mode in ("sam_judge_ref", "grounded"):
             with Image.open(sample.reference_path) as raw:
                 reference = raw.convert("RGB").copy()
         for item in sample.items:
@@ -157,7 +158,8 @@ def run_eval(
                 confidence = SAM_ONLY_CONFIDENCE
             else:
                 detections, verdict = run_inspection(
-                    image, profile, segmenter, judge=judge, reference=reference
+                    image, profile, segmenter, judge=judge, reference=reference,
+                    part_crop=mode == "grounded",
                 )
                 verdict_word = verdict.verdict
                 confidence = verdict.confidence
@@ -170,6 +172,13 @@ def run_eval(
                     image.size[1],
                 )
                 if truth is not None
+                else None
+            )
+            loc = (
+                localization(
+                    [d.bbox for d in detections if d.source == "judge"], truth
+                )
+                if mode == "grounded" and truth is not None
                 else None
             )
             try:
@@ -187,6 +196,8 @@ def run_eval(
                     "fail_score": fail_score(verdict_word, confidence),
                     "n_detections": len(detections),
                     "iou": iou,
+                    "hit": loc[0] if loc else None,
+                    "box_iou": loc[1] if loc else None,
                 }
             )
 
@@ -224,7 +235,7 @@ def run_eval(
 def format_table(summary: dict) -> str:
     """Render the per-category plus overall metrics table."""
     metrics = summary["metrics"]
-    header = f"{'category':<12}{'n':>4}{'P':>7}{'R':>7}{'F1':>7}{'AUROC':>7}{'IoU':>7}"
+    header = f"{'category':<12}{'n':>4}{'P':>7}{'R':>7}{'F1':>7}{'AUROC':>7}{'IoU':>7}{'Hit':>7}{'BoxIoU':>8}"
     lines = [
         f"run {summary['run_id']} mode={summary['mode']} "
         f"adapter={summary['adapter']} seed={summary['seed']}",
@@ -234,10 +245,13 @@ def format_table(summary: dict) -> str:
     rows["overall"] = metrics["overall"]
     for name, row in rows.items():
         iou = "-" if row["iou"] is None else f"{row['iou']:.3f}"
+        loc = row.get("localization")
+        hit = "-" if loc is None else f"{loc['hit_rate']:.3f}"
+        box = "-" if loc is None else f"{loc['box_iou']:.3f}"
         lines.append(
             f"{name:<12}{row['n']:>4.0f}{row['precision']:>7.3f}"
             f"{row['recall']:>7.3f}{row['f1']:>7.3f}"
-            f"{row['auroc']:>7.3f}{iou:>7}"
+            f"{row['auroc']:>7.3f}{iou:>7}{hit:>7}{box:>8}"
         )
     return "\n".join(lines)
 

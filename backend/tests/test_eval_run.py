@@ -210,3 +210,16 @@ def test_changed_rules_cause_judge_cache_miss(tmp_path: Path) -> None:
     assert judge.calls == first_calls
     run_eval(run_id="rules-c", rules="FAIL everything, always.", **kwargs)
     assert judge.calls > first_calls
+
+
+def test_grounded_mode_writes_localization(tmp_path: Path) -> None:
+    records, summary = _run_mode(tmp_path, "grounded", "run-grounded")
+    assert len(records) == 60
+    defective = [r for r in records if r["label"] == "defective"]
+    assert all(r["hit"] is not None for r in defective)
+    assert all(r["hit"] is None for r in records if r["label"] == "good")
+    metrics = summary["metrics"]
+    for row in (*metrics["per_category"].values(), metrics["overall"]):
+        assert set(row["localization"]) == {"hit_rate", "box_iou"}
+    plain = _run_mode(tmp_path, "sam_judge_ref", "run-plain")[1]["metrics"]["overall"]
+    assert plain["localization"] is None

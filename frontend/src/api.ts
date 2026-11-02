@@ -112,6 +112,8 @@ export interface CategoryMetrics {
   fp: number;
   fn: number;
   iou: number | null;
+  /** Judge-box localization; null for runs without it (older or non-grounded). */
+  localization: { hitRate: number; boxIou: number } | null;
 }
 
 export interface EvalMetrics {
@@ -429,6 +431,12 @@ function parseCategoryMetrics(value: unknown, path: string): CategoryMetrics {
     fp: typeof value["fp"] === "number" ? value["fp"] : 0,
     fn: typeof value["fn"] === "number" ? value["fn"] : 0,
     iou: value["iou"] == null ? null : reqNumber(value, "iou", path),
+    localization: isRecord(value["localization"])
+      ? {
+          hitRate: reqNumber(value["localization"], "hit_rate", `${path}.localization`),
+          boxIou: reqNumber(value["localization"], "box_iou", `${path}.localization`),
+        }
+      : null,
   };
 }
 
