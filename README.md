@@ -12,9 +12,9 @@
 </p>
 
 <p align="center">
-  <a href="https://youtu.be/rWs2xwe_d7o"><img src="https://img.youtube.com/vi/rWs2xwe_d7o/maxresdefault.jpg" alt="ZeroShot QC demo video on YouTube" width="720"></a>
+  <a href="https://youtu.be/IlT8yUzFjS8"><img src="https://img.youtube.com/vi/IlT8yUzFjS8/maxresdefault.jpg" alt="ZeroShot QC demo video on YouTube" width="720"></a>
   <br>
-  <a href="https://youtu.be/rWs2xwe_d7o">Watch the 3-minute demo on YouTube</a>
+  <a href="https://youtu.be/IlT8yUzFjS8">Watch the 3-minute demo on YouTube</a>
 </p>
 
 - **What it does.** Visual inspection with zero training: SAM 3.1 proposes candidate defects from text prompts, then Muse Spark judges the part against plain-English rules and a known-good reference image. No labelled defect images, no model training.
