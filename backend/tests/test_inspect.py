@@ -423,6 +423,23 @@ def test_part_crop_ignores_stray_small_mask(image, profile) -> None:  # type: ig
     assert judge.sizes == ((58, 48), (58, 48), None)
 
 
+def test_part_crop_drops_part_sized_candidates(image, profile) -> None:  # type: ignore[no-untyped-def]
+    part = _rect_mask(50, 30, 50, 40, "bottle", 0.9)
+    whole = _rect_mask(52, 32, 40, 30, "deformed", 0.9)  # 60% of the part box
+    small = _rect_mask(60, 40, 5, 5, "scratch", 0.9)
+
+    class PartAndCandidates:
+        def segment(self, image, prompts):  # type: ignore[no-untyped-def]
+            return [part] if prompts == ["bottle"] else [whole, small]
+
+    detections, _ = run_inspection(
+        image, profile, PartAndCandidates(), judge=SizeJudge(), part_crop=True
+    )
+    assert [d.label for d in detections] == ["scratch"]
+    detections, _ = run_inspection(image, profile, PartAndCandidates(), judge=SizeJudge())
+    assert sorted(d.label for d in detections) == ["deformed", "scratch"]
+
+
 def test_part_crop_part_not_found_judges_full_image(image, profile) -> None:  # type: ignore[no-untyped-def]
     assert _crop_run(profile, image, None) == ((IMG_W, IMG_H), (IMG_W, IMG_H), None)
 
