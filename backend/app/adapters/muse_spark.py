@@ -15,13 +15,13 @@ and raises ``JudgeValidationError`` on the second failure.
 import json
 import re
 
-import httpx
 from PIL import Image
 from pydantic import ValidationError
 
 from app.adapters.base import (
     encode_image_b64,
     extract_responses_text,
+    post_with_retry,
     require_configured,
 )
 from app.config import settings
@@ -162,7 +162,7 @@ class MuseSparkJudge:
         url = settings.meta_api_base_url.rstrip("/") + "/responses"
         payload = _responses_payload(settings.judge_model_id, prompt, [])
         headers = {"Authorization": f"Bearer {settings.meta_api_key}"}
-        response = httpx.post(url, json=payload, headers=headers, timeout=120.0)
+        response = post_with_retry(url, json=payload, headers=headers, timeout=120.0)
         response.raise_for_status()
         data = response.json()
         if isinstance(data, dict) and isinstance(data.get("profile"), dict):
@@ -184,7 +184,7 @@ class MuseSparkJudge:
             images.append(reference)
         payload = _responses_payload(settings.judge_model_id, prompt, images)
         headers = {"Authorization": f"Bearer {settings.meta_api_key}"}
-        response = httpx.post(url, json=payload, headers=headers, timeout=120.0)
+        response = post_with_retry(url, json=payload, headers=headers, timeout=120.0)
         response.raise_for_status()
         return _verdict_json(response.json())
 
@@ -217,7 +217,7 @@ class MuseSparkRuleReviser:
         url = settings.meta_api_base_url.rstrip("/") + "/responses"
         payload = _responses_payload(settings.judge_model_id, prompt, [])
         headers = {"Authorization": f"Bearer {settings.meta_api_key}"}
-        response = httpx.post(url, json=payload, headers=headers, timeout=120.0)
+        response = post_with_retry(url, json=payload, headers=headers, timeout=120.0)
         response.raise_for_status()
         revision = RuleRevision.model_validate(_verdict_json(response.json()))
         if not revision.rules.strip() or len(revision.rules) > 2000:

@@ -14,12 +14,16 @@ import io
 import json
 import re
 
-import httpx
 import numpy as np
 from PIL import Image, ImageDraw
 from pycocotools import mask as mask_utils
 
-from app.adapters.base import encode_image_b64, extract_responses_text, require_configured
+from app.adapters.base import (
+    encode_image_b64,
+    extract_responses_text,
+    post_with_retry,
+    require_configured,
+)
 from app.config import settings
 from app.schemas import RawMask
 
@@ -217,7 +221,7 @@ class SamSegmenter:
             "model": settings.sam_model_id,
             "input": [{"role": "user", "content": content}],
         }
-        response = httpx.post(url, json=payload, headers=headers, timeout=120.0)
+        response = post_with_retry(url, json=payload, headers=headers, timeout=120.0)
         response.raise_for_status()
         data = response.json()
         return self._parse_geometries(data, prompts, image.width, image.height)
