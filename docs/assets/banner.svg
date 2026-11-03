@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-labelledby="t d">
 <title id="t">ZeroShot QC: zero-training visual inspection</title>
-<desc id="d">Dark banner. ZeroShot QC, zero-training visual inspection: SAM 3.1 finds the part, and Muse Spark judges it against plain-English rules and a known-good reference, and boxes each defect. 0.919 F1 on MVTec AD across 5 categories, 63% of defects located, 0 training images. Three steps: the plain-English screw rule from the product profile, SAM 3.1 finding and zooming on the part, and Muse Spark returning FAIL with a red box on the screw head: scratch on the head.</desc>
+<desc id="d">Dark banner. ZeroShot QC, zero-training visual inspection: SAM 3.1 finds the part, and Muse Spark judges it against plain-English rules and a known-good reference, and boxes each defect. 0.918 F1 on MVTec AD across 5 categories, 63% of defects located, 0 training images. Three steps: the plain-English screw rule from the product profile, SAM 3.1 finding and zooming on the part, and Muse Spark returning FAIL with a red box on the screw head: scratch on the head.</desc>
 <defs>
 <pattern id="grid" x="1" y="1" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M0 .5H32M.5 0V32" stroke="#1b1c20" stroke-width="1" fill="none"/></pattern>
 <radialGradient id="glow" gradientUnits="userSpaceOnUse" cx="1" cy="1" r="736"><stop offset="0" stop-color="#9dbce3" stop-opacity="0.14"/><stop offset="1" stop-color="#9dbce3" stop-opacity="0"/></radialGradient>
@@ -16,7 +16,7 @@
 <text x="57" y="199.5" font-size="17" fill="#a3a6ad" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">against plain-English rules and a known-good</text>
 <text x="57" y="225.0" font-size="17" fill="#a3a6ad" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">reference, and boxes each defect.</text>
 <rect x="57" y="249.8" width="440" height="1" fill="#2d2f34"/>
-<text x="57" y="286.9" font-size="26" fill="#ebeae6" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="500">0.919</text>
+<text x="57" y="286.9" font-size="26" fill="#ebeae6" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="500">0.918</text>
 <text x="57" y="306.9" font-size="13" fill="#8b8e95" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">F1 on MVTec AD, 5 categories</text>
 <text x="255" y="286.9" font-size="26" fill="#ebeae6" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="500">0</text>
 <text x="255" y="306.9" font-size="13" fill="#8b8e95" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">training images</text>

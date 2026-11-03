@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(max-width: 600px)" srcset="docs/assets/banner-narrow.svg">
-    <img src="docs/assets/banner.svg" alt="ZeroShot QC, zero-training visual inspection. SAM 3.1 finds the part, and Muse Spark judges it against plain-English rules and a known-good reference, and boxes each defect. 0.919 F1 on MVTec AD across 5 categories, 63% of defects located, 0 training images. Three steps: the plain-English screw rule from the product profile, SAM 3.1 finding and zooming on the part, and Muse Spark returning FAIL with a red box on the screw head." width="100%">
+    <img src="docs/assets/banner.svg" alt="ZeroShot QC, zero-training visual inspection. SAM 3.1 finds the part, and Muse Spark judges it against plain-English rules and a known-good reference, and boxes each defect. 0.918 F1 on MVTec AD across 5 categories, 63% of defects located, 0 training images. Three steps: the plain-English screw rule from the product profile, SAM 3.1 finding and zooming on the part, and Muse Spark returning FAIL with a red box on the screw head." width="100%">
   </picture>
 </p>
 
@@ -17,7 +17,7 @@
   <a href="https://youtu.be/IlT8yUzFjS8">Watch the 3-minute demo on YouTube</a>
 </p>
 
-- **What it does.** Visual inspection with zero training: SAM 3.1 proposes candidate defects from text prompts, then Muse Spark judges the part against plain-English rules and a known-good reference image. No labelled defect images, no model training.
+- **What it does.** Visual inspection with zero training: SAM 3.1 finds the part, then Muse Spark judges it against plain-English rules and a known-good reference image and boxes each defect. No labelled defect images, no model training.
 - **How well.** On real MVTec AD (5 categories x 30 images), F1 is 0.918 in grounded mode, which also puts a box on 63% of real defects. It is 0.919 with a reference image but no boxes, 0.872 without a reference, and 0.000 for SAM alone. Across 7 categories (adding screw and metal nut) grounded F1 is 0.869. Rule tuning helped in 1 of 6 runs: when the synthetic defects matched the real ones, metal nut rose from 0.824 to 0.878. Details and caveats are in [Results](#results).
 - **Where your data goes.** The bundled demo replays cached verdicts offline and sends nothing anywhere. Live mode (you add `META_API_KEY`) sends your images and rules to the Meta Model API endpoint set in `META_API_BASE_URL`.
 
