@@ -18,7 +18,7 @@
 </p>
 
 - **What it does.** Visual inspection with zero training: SAM 3.1 proposes candidate defects from text prompts, then Muse Spark judges the part against plain-English rules and a known-good reference image. No labelled defect images, no model training.
-- **How well.** On real MVTec AD (5 categories x 30 images), F1 is 0.918 in grounded mode, which also puts a box on 63% of real defects. It is 0.919 with a reference image but no boxes, 0.872 without a reference, and 0.000 for SAM alone. Across 7 categories (adding screw and metal nut) grounded F1 is 0.869. Rule tuning helped in 2 of 7 runs, most clearly when the synthetic defects match the real ones. Details and caveats are in [Results](#results).
+- **How well.** On real MVTec AD (5 categories x 30 images), F1 is 0.918 in grounded mode, which also puts a box on 63% of real defects. It is 0.919 with a reference image but no boxes, 0.872 without a reference, and 0.000 for SAM alone. Across 7 categories (adding screw and metal nut) grounded F1 is 0.869. Rule tuning helped in 1 of 6 runs: when the synthetic defects matched the real ones, metal nut rose from 0.824 to 0.878. Details and caveats are in [Results](#results).
 - **Where your data goes.** The bundled demo replays cached verdicts offline and sends nothing anywhere. Live mode (you add `META_API_KEY`) sends your images and rules to the Meta Model API endpoint set in `META_API_BASE_URL`.
 
 ## Quickstart
@@ -78,21 +78,20 @@ Rule tuning, scored on held-out real images that tuning never saw:
 
 | Category | Seed | Start rules | Synthetic defects | F1 before | F1 after |
 |---|---|---|---|---|---|
-| cable | 0 | shared | generic | 0.743 | **0.842** |
+| cable | 0 | shared | generic | 0.686 | 0.686 |
 | cable | 1 | shared | generic | 0.765 | 0.765 |
 | cable | 2 | shared | generic | 0.710 | 0.710 |
-| bottle | 0 | shared | generic | 0.850 | 0.850 |
 | screw | 0 | shared | generic | 0.750 | 0.750 |
 | metal nut | 0 | shared | generic | 0.727 | 0.727 |
 | metal nut | 0 | profile | bent, flipped, scratch, discolored | 0.824 | **0.878** |
 
-"Generic" synthetic defects are scratch, crack, contamination and chip. The judge already catches those, so the tune set shows it few mistakes to learn from. Naming the defects the part really has (`--synth-defects`) gave the clearest gain: metal nut recall went from 0.70 to 0.90, with precision falling from 1.000 to 0.857. The cable seed-0 run predates the temperature-0 judge.
+"Generic" synthetic defects are scratch, crack, contamination and chip. The judge already catches those, so the tune set shows it few mistakes to learn from. Naming the defects the part really has (`--synth-defects`) gave the clearest gain: metal nut recall went from 0.70 to 0.90, with precision falling from 1.000 to 0.857.
 
 Read these with the caveats in mind:
 
 - SAM proposes no defect-level masks on these categories. In the older modes IoU is 0.000 throughout. Grounded mode uses SAM to find the part, crops to it, and turns the judge's boxes into detections. All of its localization comes from those boxes.
 - The judge carries the system, through its missed-defect path. The reference image adds recall (0.820 to 0.910).
-- Tuning sees only good images and Muse Image synthetic defects, no real defect labels. Its held-out set is the eval's 30-image sample for that seed, which tuning never reads. Two gains in seven runs is thin evidence.
+- Tuning sees only good images and Muse Image synthetic defects, no real defect labels. Its held-out set is the eval's 30-image sample for that seed, which tuning never reads. One gain in six runs is thin evidence.
 - 30 images per category is small, and this is a single seed.
 - In the demo samples the scratched screw head now FAILs. The bent metal nut still PASSes: bent nuts are the hardest case here, and this one also PASSes under the tuned rules.
 

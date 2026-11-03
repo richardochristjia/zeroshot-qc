@@ -200,3 +200,9 @@ which caps the total defective images per category.
   nuts and failed 3 of 10 good ones: F1 0.789. Not adopted. The profile rule
   stays (F1 0.824, no false fails); a bend toward a top-down camera is a 3D
   change the photo barely shows, and a side view is the real fix.
+- Cable seed 0 rerun with the current pipeline (`20261103T090240Z-cable`):
+  revision rejected, held-out 0.686 both ways. The earlier 0.743 to 0.842
+  gain (temperature-default judge) did not reproduce. That record and the
+  old bottle record moved to `data/tune-stale-20261102/` and out of the demo.
+  With the current pipeline, tuning gained in 1 of 6 runs: metal_nut with
+  matched synthetic defects.
