@@ -25,7 +25,7 @@
     "label": "Screw, scratched head",
     "profile_id": "screw",
     "file": "samples/screw-scratch_head.png",
-    "expect": "PASS"
+    "expect": "FAIL"
   },
   {
     "id": "metal_nut-good",

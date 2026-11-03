@@ -1,0 +1,42 @@
+{
+  "run_id": "20261103T030321Z-cable",
+  "category": "cable",
+  "adapter": "real",
+  "seed": 2,
+  "counts": {
+    "n_good": 10,
+    "n_synth": 10,
+    "heldout_good": 10,
+    "heldout_defective": 20
+  },
+  "initial_rules": "FAIL any visible scratch, stain, or surface damage; PASS otherwise.",
+  "final_rules": "FAIL any visible scratch, stain, or surface damage; PASS otherwise.",
+  "rounds": [
+    {
+      "round": 1,
+      "rules": "Inspect only the cable product and ignore background fixtures, tools, or scale reference objects. Compare to the reference for correct construction with intact insulated conductors and clean copper strand faces. PASS parts that match the reference allowing normal variation in color shading, surface texture, lighting reflections, and faint superficial hairlines or mold lines that do not cut, thin, breach, or deform the insulation. FAIL for any cut, gouge, deep scratch or abrasion that thins or exposes material, stain, contamination, discoloration from damage, crushed, flattened, melted or otherwise deformed insulation or conductors, missing, broken, frayed, splayed or severely discolored copper strands, exposed copper outside the normal cut face, or embedded foreign material. Independently examine the entire visible cable on every inspection and apply these criteria even when no defect candidates are listed; do not default to PASS and do not report normal texture already present in the reference as a defect.",
+      "rationale": "Relaxed the cosmetic rule to accept faint superficial lines and normal texture that caused false FAILs, and expanded FAIL criteria to structural conductor and insulation defects with independent inspection to catch missed defects instead of defaulting to PASS.",
+      "metrics": {
+        "precision": 1.0,
+        "recall": 0.6,
+        "f1": 0.7499999999999999,
+        "accuracy": 0.8
+      },
+      "accepted": false
+    }
+  ],
+  "heldout": {
+    "before": {
+      "precision": 1.0,
+      "recall": 0.55,
+      "f1": 0.7096774193548387,
+      "accuracy": 0.7
+    },
+    "after": {
+      "precision": 1.0,
+      "recall": 0.55,
+      "f1": 0.7096774193548387,
+      "accuracy": 0.7
+    }
+  }
+}
