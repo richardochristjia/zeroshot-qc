@@ -79,6 +79,7 @@ def test_samples_route(keyless: Path) -> None:
     seed_demo(DEMO_DIR, keyless)
     body = client.get("/api/samples").json()
     assert body
+    assert any(entry["note"] for entry in body)  # the known miss is labelled
     for entry in body:
         assert entry["image_url"].startswith("/files/samples/")
         assert client.get(entry["image_url"]).status_code == 200

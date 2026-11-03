@@ -13,7 +13,7 @@ vi.mock('../api.ts', async (importOriginal) => ({
 }))
 
 const profile = { id: 'p1', name: 'P1', defectPrompts: [], rules: '', mmPerPx: null, minScore: 0.1, referenceImage: null }
-const sample = { id: 's1', label: 'Sample one', profileId: 'p1', imageUrl: '/files/samples/s1.png' }
+const sample = { id: 's1', label: 'Sample one', profileId: 'p1', imageUrl: '/files/samples/s1.png', note: null }
 const result: api.InspectionResult = {
   id: 'r1',
   profileId: 'p1',
@@ -120,4 +120,11 @@ test('judge detections render dashed with a missed-defect row linked to them', a
   fireEvent.click(await screen.findByRole('button', { name: /Sample one/ }))
   expect(await screen.findByText(/hairline crack/)).toBeTruthy()
   expect(screen.getByText(/found by judge, j1/)).toBeTruthy()
+})
+
+test("a sample's note shows with its verdict", async () => {
+  vi.mocked(api.listSamples).mockResolvedValue([{ ...sample, note: 'Known miss: bent tab.' }])
+  render(<MemoryRouter><Inspect /></MemoryRouter>)
+  fireEvent.click(await screen.findByRole('button', { name: /Sample one/ }))
+  expect(await screen.findByText('Known miss: bent tab.')).toBeTruthy()
 })

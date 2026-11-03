@@ -39,6 +39,7 @@
     "label": "Metal nut, bent",
     "profile_id": "metal_nut",
     "file": "samples/metal_nut-bent.png",
-    "expect": "PASS"
+    "expect": "PASS",
+    "note": "Known miss: two tabs are bent up toward the camera, which a top-down photo barely shows. Bent nuts are the hardest case here; a side camera is the real fix."
   }
 ]
