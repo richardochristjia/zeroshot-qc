@@ -8,5 +8,5 @@
   "mm_per_px": null,
   "name": "Transistor",
   "reference_image": "mvtec/transistor/train/good/000.png",
-  "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec transistor SOP. Draft: FAIL a transistor with any bent or cut lead or case damage; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
+  "rules": "FAIL a transistor with any bent or cut lead or case damage; PASS otherwise."
 }
