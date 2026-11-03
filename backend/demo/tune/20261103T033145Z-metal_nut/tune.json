@@ -1,0 +1,42 @@
+{
+  "run_id": "20261103T033145Z-metal_nut",
+  "category": "metal_nut",
+  "adapter": "real",
+  "seed": 0,
+  "counts": {
+    "n_good": 10,
+    "n_synth": 10,
+    "heldout_good": 10,
+    "heldout_defective": 20
+  },
+  "initial_rules": "FAIL any visible scratch, stain, or surface damage; PASS otherwise.",
+  "final_rules": "FAIL any visible scratch, stain, or surface damage; PASS otherwise.",
+  "rounds": [
+    {
+      "round": 1,
+      "rules": "Metal nut inspection SOP: Confirm the part is the correct nut form with intact symmetric wings and a clean central hole and threads. PASS parts showing normal manufacturing variation including fine machining or polishing lines, light scuffs, slight shine or color unevenness, and faint superficial discoloration such as light brown tarnish, oil sheen or small smooth specks on the face or wings without pitting, roughness, flaking, or depth. Do not FAIL for minor cosmetic variation alone. FAIL only for true functional defects: cracked, chipped, bent or deformed wings, damaged or obstructed threads or hole, deep scratches or gouges, large dark stains, heavy rust or corrosion with pitting, or adhered foreign material affecting fit or strength. Small, faint and smooth discoloration is PASS; extensive, dark, rough or corroded damage is FAIL.",
+      "rationale": "Relaxed the FAIL-any-stain rule that caused false FAILs on faint brown tarnish to PASS minor cosmetic variation, while keeping FAIL for cracks, deformation and heavy corrosion to avoid missed defects.",
+      "metrics": {
+        "precision": 1.0,
+        "recall": 0.8,
+        "f1": 0.888888888888889,
+        "accuracy": 0.9
+      },
+      "accepted": false
+    }
+  ],
+  "heldout": {
+    "before": {
+      "precision": 0.9230769230769231,
+      "recall": 0.6,
+      "f1": 0.7272727272727274,
+      "accuracy": 0.7
+    },
+    "after": {
+      "precision": 0.9230769230769231,
+      "recall": 0.6,
+      "f1": 0.7272727272727274,
+      "accuracy": 0.7
+    }
+  }
+}

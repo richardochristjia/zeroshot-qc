@@ -1,0 +1,60 @@
+{
+  "run_id": "20261103-metal_nut-profile-synth",
+  "category": "metal_nut",
+  "adapter": "real",
+  "seed": 0,
+  "synth_defects": [
+    "one lobe bent out of shape",
+    "nut flipped upside down, showing the plain back face",
+    "scratch",
+    "discolored patch"
+  ],
+  "counts": {
+    "n_good": 10,
+    "n_synth": 10,
+    "heldout_good": 10,
+    "heldout_defective": 20
+  },
+  "initial_rules": "FAIL a metal nut that is bent, scratched, or discolored; PASS otherwise.",
+  "final_rules": "For metal_nut inspection: PASS only if the four-lobe nut is symmetric with all lobes flat and evenly formed and the surface shows a uniform silver finish with fine, even machining texture. FAIL if any lobe is bent, twisted, lifted, or asymmetric, even slightly. FAIL for any scratch, scuff, cut, or abrasion that appears as a distinct isolated line or mark breaking the finish, even if faint, short, or light - uniform concentric tool marks are acceptable, irregular bright or dark lines are not. FAIL for any discoloration such as dark spots, brown/black stains, bluish or rainbow oxidation, dull patches, or mottled uneven tone that differs from the reference finish. To avoid false alarms, continue to PASS uniform machining texture, minor even tool marks, and pure white specular lighting glare. To avoid missed defects, do not dismiss localized bends, faint isolated scratches, or persistent mottled or off-color areas as normal texture or lighting - if the anomaly is localized, colored, or differs from the reference finish, FAIL it.",
+  "rounds": [
+    {
+      "round": 1,
+      "rules": "For metal_nut inspection: PASS only if the four-lobe nut is symmetric with all lobes flat and evenly formed and the surface shows a uniform silver finish with fine, even machining texture. FAIL if any lobe is bent, twisted, lifted, or asymmetric, even slightly. FAIL for any scratch, scuff, cut, or abrasion that appears as a distinct isolated line or mark breaking the finish, even if faint, short, or light - uniform concentric tool marks are acceptable, irregular bright or dark lines are not. FAIL for any discoloration such as dark spots, brown/black stains, bluish or rainbow oxidation, dull patches, or mottled uneven tone that differs from the reference finish. To avoid false alarms, continue to PASS uniform machining texture, minor even tool marks, and pure white specular lighting glare. To avoid missed defects, do not dismiss localized bends, faint isolated scratches, or persistent mottled or off-color areas as normal texture or lighting - if the anomaly is localized, colored, or differs from the reference finish, FAIL it.",
+      "rationale": "Tightened bend, scratch, and discoloration definitions to stop dismissing subtle defects as machining texture or glare, while explicitly preserving PASS for uniform texture and white highlights to avoid false alarms.",
+      "metrics": {
+        "precision": 0.9,
+        "recall": 0.9,
+        "f1": 0.9,
+        "accuracy": 0.9
+      },
+      "accepted": true
+    },
+    {
+      "round": 2,
+      "rules": "For metal_nut inspection: PASS only if the four-lobe nut is symmetric with all lobes flat and evenly formed and the entire surface including center and outer flange shows a uniform silver finish with fine, even concentric machining texture. FAIL if any lobe is bent, twisted, lifted, or asymmetric, even slightly. FAIL for any scratch, scuff, cut, or abrasion that appears as a distinct isolated line breaking the finish, even if faint, short, or light - uniform concentric tool marks are acceptable, irregular bright or dark lines are not. FAIL for any true discoloration such as dark spots, opaque brown/black stains, bluish or rainbow oxidation, greenish-gray mottling, dull patches, or mottled uneven tone. To avoid false alarms, PASS uniform machining texture, minor even tool marks, pure white specular glare, and diffuse warm or brownish lighting reflections or gradients that blend into the finish without a sharp dark opaque boundary. To avoid missed defects, do not accept a mottled greenish-gray or off-color outer flange as normal - the reference is uniform silver throughout - FAIL persistent mottled or off-color areas, and do not dismiss localized bends, faint isolated scratches, or dark sharply-bounded stains as lighting or texture.",
+      "rationale": "Added distinction between diffuse warm lighting reflections to PASS vs opaque bounded stains to FAIL to stop false alarms, and clarified the reference is uniform silver on the flange so greenish-gray mottling must FAIL to stop missed defects.",
+      "metrics": {
+        "precision": 0.5882352941176471,
+        "recall": 1.0,
+        "f1": 0.7407407407407407,
+        "accuracy": 0.65
+      },
+      "accepted": false
+    }
+  ],
+  "heldout": {
+    "before": {
+      "precision": 1.0,
+      "recall": 0.7,
+      "f1": 0.8235294117647058,
+      "accuracy": 0.8
+    },
+    "after": {
+      "precision": 0.8571428571428571,
+      "recall": 0.9,
+      "f1": 0.8780487804878048,
+      "accuracy": 0.8333333333333334
+    }
+  }
+}
