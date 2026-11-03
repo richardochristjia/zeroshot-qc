@@ -18,7 +18,7 @@
 </p>
 
 - **What it does.** Visual inspection with zero training: SAM 3.1 proposes candidate defects from text prompts, then Muse Spark judges the part against plain-English rules and a known-good reference image. No labelled defect images, no model training.
-- **How well.** On real MVTec AD (5 categories x 30 images), F1 is 0.918 in grounded mode, which also puts a box on 63% of real defects. It is 0.919 with a reference image but no boxes, 0.872 without a reference, and 0.000 for SAM alone. Rule tuning raised cable from 0.743 to 0.842. Details and caveats are in [Results](#results).
+- **How well.** On real MVTec AD (5 categories x 30 images), F1 is 0.918 in grounded mode, which also puts a box on 63% of real defects. It is 0.919 with a reference image but no boxes, 0.872 without a reference, and 0.000 for SAM alone. Across 7 categories (adding screw and metal nut) grounded F1 is 0.869. Rule tuning helped in 2 of 7 runs, most clearly when the synthetic defects match the real ones. Details and caveats are in [Results](#results).
 - **Where your data goes.** The bundled demo replays cached verdicts offline and sends nothing anywhere. Live mode (you add `META_API_KEY`) sends your images and rules to the Meta Model API endpoint set in `META_API_BASE_URL`.
 
 ## Quickstart
@@ -65,21 +65,36 @@ Grounded mode also locates defects. Hit rate is the share of defects where a box
 | Box IoU | 0.334 | 0.340 | 0.360 | 0.578 | 0.431 | 0.409 |
 | Pixel IoU | 0.303 | 0.205 | 0.317 | 0.407 | 0.250 | 0.296 |
 
+The current pipeline (judge at temperature 0, part-sized SAM candidates dropped) on 7 categories, same shared rules string:
+
+| | bottle | cable | capsule | carpet | grid | metal nut | screw | Overall |
+|---|---|---|---|---|---|---|---|---|
+| F1 | 0.872 | 0.686 | 0.976 | 1.000 | 1.000 | 0.727 | 0.750 | **0.869** |
+| Hit rate | 0.450 | 0.600 | 0.550 | 0.950 | 0.700 | 0.600 | 0.350 | 0.600 |
+
+On the first five categories this is F1 0.913 against 0.918: the same within noise (7 of 150 verdicts changed, in both directions). With each profile's own rules instead of the shared string, metal nut rises to 0.824 (bent nuts missed: 6 of 8 down to 2) and screw stays at 0.750, both at precision 1.000.
+
 Rule tuning, scored on held-out real images that tuning never saw:
 
-| Category | F1 before | F1 after | Rounds kept |
-|---|---|---|---|
-| cable | 0.743 | **0.842** | 1 of 2 |
-| bottle | 0.850 | 0.850 | 0 of 1 |
+| Category | Seed | Start rules | Synthetic defects | F1 before | F1 after |
+|---|---|---|---|---|---|
+| cable | 0 | shared | generic | 0.743 | **0.842** |
+| cable | 1 | shared | generic | 0.765 | 0.765 |
+| cable | 2 | shared | generic | 0.710 | 0.710 |
+| bottle | 0 | shared | generic | 0.850 | 0.850 |
+| screw | 0 | shared | generic | 0.750 | 0.750 |
+| metal nut | 0 | shared | generic | 0.727 | 0.727 |
+| metal nut | 0 | profile | bent, flipped, scratch, discolored | 0.824 | **0.878** |
+
+"Generic" synthetic defects are scratch, crack, contamination and chip. The judge already catches those, so the tune set shows it few mistakes to learn from. Naming the defects the part really has (`--synth-defects`) gave the clearest gain: metal nut recall went from 0.70 to 0.90, with precision falling from 1.000 to 0.857. The cable seed-0 run predates the temperature-0 judge.
 
 Read these with the caveats in mind:
 
 - SAM proposes no defect-level masks on these categories. In the older modes IoU is 0.000 throughout. Grounded mode uses SAM to find the part, crops to it, and turns the judge's boxes into detections. All of its localization comes from those boxes.
 - The judge carries the system, through its missed-defect path. The reference image adds recall (0.820 to 0.910).
-- Tuning sees only good images and Muse Image synthetic defects, no real defect labels. Its held-out set is the same 30 images per category as the eval. The cable gain comes from one accepted revision, so treat it as one data point.
+- Tuning sees only good images and Muse Image synthetic defects, no real defect labels. Its held-out set is the eval's 30-image sample for that seed, which tuning never reads. Two gains in seven runs is thin evidence.
 - 30 images per category is small, and this is a single seed.
-- A scratched screw head is still a silent PASS on a defective part in the demo samples. So is the bent metal nut since the grounded re-record (it was a FAIL before).
-- The banner's screw is an example. Screw is not in this eval yet.
+- In the demo samples the scratched screw head now FAILs. The bent metal nut still PASSes: bent nuts are the hardest case here, and this one also PASSes under the tuned rules.
 
 <details>
 <summary>How this is measured</summary>
