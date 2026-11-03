@@ -8,5 +8,5 @@
   "mm_per_px": null,
   "name": "Capsule",
   "reference_image": "mvtec/capsule/train/good/000.png",
-  "rules": "PLACEHOLDER for M4 eval: preliminary draft, refine with the MVTec capsule SOP. Draft: FAIL a capsule with any crack, faulty imprint, or scratch; PASS otherwise. NOTE: mm_per_px unset pending MVTec calibration (M5)."
+  "rules": "FAIL a capsule with any crack, faulty imprint, or scratch; PASS otherwise."
 }
