@@ -40,6 +40,14 @@ SAMPLES = [
     ("metal_nut", "good", "metal_nut/test/good/000.png", "Metal nut, good"),
     ("metal_nut", "bent", "metal_nut/test/bent/000.png", "Metal nut, bent"),
 ]
+# Shown under the verdict, for samples the pipeline gets wrong.
+NOTES = {
+    "metal_nut-bent": (
+        "Known miss: two tabs are bent up toward the camera, which a top-down "
+        "photo barely shows. Bent nuts are the hardest case here; a side camera "
+        "is the real fix."
+    ),
+}
 MAX_BYTES = 40 * 1024 * 1024
 LICENSE = """# MVTec AD attribution
 
@@ -104,10 +112,11 @@ def main() -> None:
         _, verdict = run_inspection(
             img, load_profile(pid), segmenter, judge=judge, part_crop=True
         )
-        manifest.append(
-            {"id": f"{pid}-{kind}", "label": label, "profile_id": pid,
-             "file": f"samples/{name}", "expect": verdict.verdict}
-        )
+        entry = {"id": f"{pid}-{kind}", "label": label, "profile_id": pid,
+                 "file": f"samples/{name}", "expect": verdict.verdict}
+        if entry["id"] in NOTES:
+            entry["note"] = NOTES[entry["id"]]
+        manifest.append(entry)
         print(f"{name}: {verdict.verdict}")
     (OUT / "samples.json").write_text(json.dumps(manifest, indent=2) + "\n")
     (OUT / "LICENSE-MVTEC.md").write_text(LICENSE)

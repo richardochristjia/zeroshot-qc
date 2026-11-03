@@ -68,6 +68,7 @@ export default function Inspect(): JSX.Element {
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [result, setResult] = useState<InspectionResult | null>(null)
+  const [sampleNote, setSampleNote] = useState<string | null>(null)
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 })
@@ -157,6 +158,7 @@ export default function Inspect(): JSX.Element {
     if (debounceRef.current !== null) window.clearTimeout(debounceRef.current)
     setStatus('ready')
     setResult(null)
+    setSampleNote(null)
     setError(null)
     setHoveredId(null)
     setNaturalSize({ w: 0, h: 0 })
@@ -176,6 +178,7 @@ export default function Inspect(): JSX.Element {
       const blob = await response.blob()
       const picked = new File([blob], `${sample.id}.png`, { type: blob.type || 'image/png' })
       pickFile(picked)
+      setSampleNote(sample.note)
       setProfileId(sample.profileId)
       void runInspect(picked, sample.profileId)
     } catch {
@@ -313,6 +316,12 @@ export default function Inspect(): JSX.Element {
             ))}
           </ul>
         </div>
+      )}
+
+      {result !== null && sampleNote !== null && (
+        <Alert kind="notice" className="mb-4">
+          {sampleNote}
+        </Alert>
       )}
 
       {result?.demo === true && (

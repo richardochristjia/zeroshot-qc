@@ -36,9 +36,15 @@ describe('parseInspectionResult judge fields', () => {
 
 describe('listSamples', () => {
   it('maps entries and swallows failures', async () => {
-    const body = [{ id: 'a', label: 'A', profile_id: 'bottle', image_url: '/files/samples/a.png' }]
+    const body = [
+      { id: 'a', label: 'A', profile_id: 'bottle', image_url: '/files/samples/a.png' },
+      { id: 'b', label: 'B', profile_id: 'bottle', image_url: '/files/samples/b.png', note: 'Known miss.' },
+    ]
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => body }))
-    expect(await listSamples()).toEqual([{ id: 'a', label: 'A', profileId: 'bottle', imageUrl: '/files/samples/a.png' }])
+    expect(await listSamples()).toEqual([
+      { id: 'a', label: 'A', profileId: 'bottle', imageUrl: '/files/samples/a.png', note: null },
+      { id: 'b', label: 'B', profileId: 'bottle', imageUrl: '/files/samples/b.png', note: 'Known miss.' },
+    ])
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')))
     expect(await listSamples()).toEqual([])
   })

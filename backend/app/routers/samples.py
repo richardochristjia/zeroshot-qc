@@ -18,6 +18,7 @@ def list_samples() -> list[dict]:
             "label": e["label"],
             "profile_id": e["profile_id"],
             "image_url": "/files/" + e["file"],
+            "note": e.get("note"),
         }
         for e in load_samples(Path(settings.data_dir))
     ]

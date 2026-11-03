@@ -848,6 +848,8 @@ export interface Sample {
   label: string;
   profileId: string;
   imageUrl: string;
+  /** Shown under the verdict, e.g. for a known miss. */
+  note: string | null;
 }
 
 /** GET /api/samples: bundled demo samples; `[]` on any failure. */
@@ -862,6 +864,7 @@ export async function listSamples(signal?: AbortSignal): Promise<Sample[]> {
         label: reqString(item, "label", "Sample"),
         profileId: reqString(item, "profile_id", "Sample"),
         imageUrl: reqString(item, "image_url", "Sample"),
+        note: optString(item["note"]),
       };
     });
   } catch (err: unknown) {
