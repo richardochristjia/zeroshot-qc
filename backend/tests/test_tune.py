@@ -208,3 +208,16 @@ def test_tune_set_skips_failed_synth(tmp_path: Path) -> None:
     ref = sorted((FIXTURE_ROOT / "widget/train/good").glob("*.png"))[0]
     items = build_tune_set(FIXTURE_ROOT, "widget", ref, tmp_path, FlakyGenerator(), 1, 3, 0)
     assert [label for _, label in items] == ["good", "defective", "defective"]
+
+
+def test_tune_set_uses_given_synth_defects(tmp_path: Path) -> None:
+    seen = []
+
+    class Recording(FakeImageGenerator):
+        def add_defect(self, image, defect, mask):  # type: ignore[no-untyped-def]
+            seen.append(defect)
+            return super().add_defect(image, defect, mask)
+
+    ref = sorted((FIXTURE_ROOT / "widget/train/good").glob("*.png"))[0]
+    build_tune_set(FIXTURE_ROOT, "widget", ref, tmp_path, Recording(), 0, 3, 0, ["bent lobe", "flipped"])
+    assert seen == ["bent lobe", "flipped", "bent lobe"]

@@ -67,7 +67,10 @@ def _make_scorer(category, segmenter, judge, reference):
     return score
 
 
-def build_tune_set(root, category, reference_path, run_dir, generator, n_good, n_synth, seed):
+def build_tune_set(
+    root, category, reference_path, run_dir, generator, n_good, n_synth, seed,
+    defects=SYNTH_DEFECTS,
+):
     """Seeded (path, label) items from train/good; synth images go under run_dir."""
     pool = [
         p for p in _iter_images(Path(root) / category / "train" / "good")
@@ -81,7 +84,7 @@ def build_tune_set(root, category, reference_path, run_dir, generator, n_good, n
     synth_dir.mkdir(parents=True, exist_ok=True)
     for index in range(n_synth if bases else 0):
         base = _load(bases[index % len(bases)])
-        defect = SYNTH_DEFECTS[index % len(SYNTH_DEFECTS)]
+        defect = defects[index % len(defects)]
         try:
             image = generator.add_defect(base, defect, None)
         except httpx.HTTPError as exc:
@@ -99,7 +102,7 @@ def build_tune_set(root, category, reference_path, run_dir, generator, n_good, n
 def run_tune(
     *, root, category, reviser, generator=None, adapter="scripted", rounds=3,
     seed=0, n_good=10, n_synth=10, heldout_good=10, heldout_defective=20,
-    rules=EVAL_RULES, cache_dir, out_dir, run_id,
+    rules=EVAL_RULES, synth_defects=SYNTH_DEFECTS, cache_dir, out_dir, run_id,
     segmenter_inner=None, judge_inner=None,
 ) -> dict:
     root = Path(root)
@@ -113,7 +116,8 @@ def run_tune(
     reference = _load(reference_path)
     run_dir = Path(out_dir) / run_id
     items = build_tune_set(
-        root, category, reference_path, run_dir, generator, n_good, n_synth, seed
+        root, category, reference_path, run_dir, generator, n_good, n_synth, seed,
+        synth_defects,
     )
     score = _make_scorer(category, segmenter, judge, reference)
 
@@ -150,6 +154,7 @@ def run_tune(
         "category": category,
         "adapter": adapter,
         "seed": seed,
+        "synth_defects": list(synth_defects),
         "counts": {
             "n_good": sum(1 for _, l in items if l == "good"),
             "n_synth": sum(1 for _, l in items if l == "defective"),
@@ -181,6 +186,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--heldout-defective", type=int, default=20)
     parser.add_argument("--root", default=settings.mvtec_dir)
     parser.add_argument("--rules", default=EVAL_RULES)
+    parser.add_argument(
+        "--synth-defects", nargs="+", default=SYNTH_DEFECTS,
+        help="Defects Muse Image adds; name the ones your rules care about.",
+    )
     parser.add_argument("--cache-dir", default=str(Path(settings.data_dir) / "cache"))
     parser.add_argument("--out-dir", default=str(Path(settings.data_dir) / "tune"))
     parser.add_argument("--run-id", default=None)
@@ -204,7 +213,7 @@ def main(argv: list[str] | None = None) -> int:
             generator=generator, adapter=args.adapter, rounds=args.rounds,
             seed=args.seed, n_good=args.n_good, n_synth=args.n_synth,
             heldout_good=args.heldout_good, heldout_defective=args.heldout_defective,
-            rules=args.rules, cache_dir=args.cache_dir, out_dir=args.out_dir,
+            rules=args.rules, synth_defects=args.synth_defects, cache_dir=args.cache_dir, out_dir=args.out_dir,
             run_id=run_id,
         )
     except DatasetError as exc:
