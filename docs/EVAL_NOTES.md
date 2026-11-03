@@ -153,3 +153,38 @@ which caps the total defective images per category.
   revision.
 - Demo re-record: screw scratch_head is still a silent PASS. metal_nut bent
   flipped from FAIL to PASS under part crop. Both are single images.
+
+## Pipeline fixes and wider eval (2026-11-03, real adapters, seed 0)
+
+- Why the demo's two defective parts passed. Metal nut bent/000: the judge
+  sampled differently per run (fresh runs gave FAIL at 512 and 1024 px).
+  Screw scratch_head/000: SAM answered "deformed screw" with a box around the
+  whole screw; the judge ruled it a false alarm and missed the head scratch.
+  Removing that candidate, or clearer rules, each flipped it to FAIL.
+  Resolution was not the cause.
+- Fixes: judge at temperature 0 (part of the cache key; the API rejects
+  `seed`); SAM candidates covering at least half the part box are dropped
+  when part crop is on; "PLACEHOLDER ... Draft:" wrappers and calibration
+  notes removed from every profile's rules.
+- Reasoning effort: low and medium both missed the two defects and were not
+  reliably faster. The default (high) stays.
+- Latency per live inspection: SAM 2-4 s per call, judge 25-42 s. The part
+  lookup now runs alongside the defect call. The reference's part lookup is
+  a cache hit after the first call.
+- Run `20261103T030057Z-grounded` (7 categories): F1 0.869, hit 0.600.
+  First five categories: F1 0.913 against 0.918 before (7 of 150 verdicts
+  flipped, both directions). metal_nut 0.727 (bent missed 6 of 8, flip 2 of
+  4), screw 0.750 (recall 0.600).
+- Profile rules instead of the shared string
+  (`20261103-grounded-profile-rules-*`): metal_nut 0.824 (bent missed 2,
+  flip 4), screw 0.750 (hit 0.35 to 0.55). Precision 1.000 on both.
+- Tuning, six more runs: cable seeds 1 and 2, screw, metal_nut with generic
+  synthetic defects all rejected their first revision. metal_nut from its
+  profile rules with matched synthetic defects (bent lobe, flipped, scratch,
+  discolored): accepted round 1, held-out 0.824 to 0.878 (recall 0.70 to
+  0.90, precision 1.000 to 0.857).
+- Two transient API errors (a 400 from /images/edits, a 503 from
+  /responses) each ended a tune run. Calls now retry 429/5xx and network
+  errors; a failed synth image is skipped.
+- Demo re-record: screw scratch_head replays FAIL. metal_nut bent replays
+  PASS, also under the tuned rules (it is not in the tune run's held-out set).
