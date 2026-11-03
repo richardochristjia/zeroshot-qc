@@ -430,3 +430,22 @@ def test_sam_sends_each_prompt_as_bare_input_text(
     content = sent["input"][0]["content"]
     texts = [c["text"] for c in content if c["type"] == "input_text"]
     assert texts == PROMPTS
+
+
+def test_post_with_retry_retries_transient_then_raises_client_errors(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import app.adapters.base as base
+
+    monkeypatch.setattr(base.time, "sleep", lambda s: None)
+    request = httpx.Request("POST", "https://x")
+    codes = iter([503, 429, 200])
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: httpx.Response(next(codes), request=request))
+    assert base.post_with_retry("https://x").status_code == 200
+    calls = []
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: calls.append(1) or httpx.Response(400, request=request))
+    with pytest.raises(httpx.HTTPStatusError):
+        base.post_with_retry("https://x")
+    assert len(calls) == 1
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: calls.append(1) or httpx.Response(503, request=request))
+    with pytest.raises(httpx.HTTPStatusError):
+        base.post_with_retry("https://x", attempts=2)
+    assert len(calls) == 3

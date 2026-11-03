@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+import httpx
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -183,18 +184,17 @@ def test_reviser_retries_once_then_raises(monkeypatch) -> None:
         def json(self):
             return {"output": [{"content": [{"text": next(texts)}]}]}
 
-    monkeypatch.setattr(ms.httpx, "post", lambda *a, **k: Resp())
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: Resp())
     prompt = ms.render_tune_prompt("old", [{"label": "good"}], "widget")
     assert "old" in prompt and "widget" in prompt and '"label": "good"' in prompt
     assert ms.MuseSparkRuleReviser().revise("old", [], "widget").rules == "ok rules"
     texts = iter(["x", "y"])
-    monkeypatch.setattr(ms.httpx, "post", lambda *a, **k: Resp())
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: Resp())
     with pytest.raises(ms.JudgeValidationError):
         ms.MuseSparkRuleReviser().revise("old", [], "widget")
 
 
 def test_tune_set_skips_failed_synth(tmp_path: Path) -> None:
-    import httpx
 
     class FlakyGenerator(FakeImageGenerator):
         calls = 0

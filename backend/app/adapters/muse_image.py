@@ -9,10 +9,9 @@ base64 image bytes.
 import base64
 import io
 
-import httpx
 from PIL import Image
 
-from app.adapters.base import require_configured
+from app.adapters.base import post_with_retry, require_configured
 from app.config import settings
 
 
@@ -65,7 +64,7 @@ class MuseImageGenerator:
             files["mask"] = ("mask.png", _png_bytes(mask), "image/png")
         form = {"model": settings.image_model_id, "prompt": defect_description}
         headers = {"Authorization": f"Bearer {settings.meta_api_key}"}
-        response = httpx.post(
+        response = post_with_retry(
             url, files=files, data=form, headers=headers, timeout=180.0
         )
         response.raise_for_status()

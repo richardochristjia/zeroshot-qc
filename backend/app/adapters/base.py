@@ -2,9 +2,11 @@
 
 import base64
 import io
+import time
 from typing import Protocol
 from urllib.parse import urlsplit
 
+import httpx
 from PIL import Image
 
 from app.config import settings
@@ -13,6 +15,30 @@ from app.schemas import Detection, ProductProfile, RawMask, Verdict
 
 class AdapterNotConfiguredError(RuntimeError):
     """Raised by a real adapter before any HTTP when required settings are empty."""
+
+
+RETRY_STATUS = {429, 500, 502, 503, 504}
+RETRY_DELAY = 2.0
+
+
+def post_with_retry(url: str, attempts: int = 3, **kwargs) -> httpx.Response:
+    """``httpx.post`` that retries rate limits, 5xx and network errors with backoff.
+
+    A single transient 503 used to end an hour-long tune or eval run.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            response = httpx.post(url, **kwargs)
+            response.raise_for_status()
+            return response
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code not in RETRY_STATUS or attempt == attempts:
+                raise
+        except httpx.TransportError:
+            if attempt == attempts:
+                raise
+        time.sleep(RETRY_DELAY * 2 ** (attempt - 1))
+    raise AssertionError("unreachable")
 
 
 def encode_image_b64(image: Image.Image) -> str:
