@@ -110,9 +110,9 @@ Records are in `backend/demo/runs/*/summary.json`; notes and failure patterns ar
 
 | Model | Job | Called from |
 |---|---|---|
-| SAM 3.1 | Segments candidate defect regions from the profile's text prompts | [`backend/app/adapters/sam.py`](backend/app/adapters/sam.py) |
-| Muse Spark | Judges the part against the rules and the reference image; also drafts a profile from an SOP | [`backend/app/adapters/muse_spark.py`](backend/app/adapters/muse_spark.py) |
-| Muse Image | Generates synthetic defect images for test data | [`backend/app/adapters/muse_image.py`](backend/app/adapters/muse_image.py) |
+| SAM 3.1 | Finds the part (so the app can zoom in on it) and segments candidate defect regions from the profile's text prompts | [`backend/app/adapters/sam.py`](backend/app/adapters/sam.py) |
+| Muse Spark | Judges the part against the rules and the reference image and boxes the defects it finds; rewrites the rules in tuning; also drafts a profile from an SOP | [`backend/app/adapters/muse_spark.py`](backend/app/adapters/muse_spark.py) |
+| Muse Image | Generates synthetic defect images for test data and for the tune set | [`backend/app/adapters/muse_image.py`](backend/app/adapters/muse_image.py) |
 
 ## How it works
 
@@ -135,13 +135,17 @@ The Tune page replays offline rule tuning: the judge's rules are rewritten from 
 
 ## Screens
 
-Inspect, after clicking "Bottle, broken": the judge fails the part through a missed defect even though SAM proposed nothing.
+Inspect, after clicking "Screw, scratched head": the judge fails the part and boxes the scratch on the head.
 
-![Inspect page showing a FAIL verdict on a broken bottle](docs/assets/screens/inspect.png)
+![Inspect page showing a FAIL verdict and a judge box on a scratched screw head](docs/assets/screens/inspect.png)
 
-Eval: the four runs, F1 ablation, confusion matrix and failure examples. Try the "False fail" and "Missed" filters.
+Eval: the five runs, F1 ablation, confusion matrix and failure examples. Try the "False fail" and "Missed" filters.
 
 ![Eval page showing the F1 ablation, confusion matrix and failures](docs/assets/screens/eval.png)
+
+Tune: the rules before and after tuning on metal nut, with the held-out F1 (0.824 to 0.878).
+
+![Tune page showing the rule rewrite and held-out F1 for metal nut](docs/assets/screens/tune.png)
 
 ## Use it from code
 
