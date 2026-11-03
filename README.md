@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(max-width: 600px)" srcset="docs/assets/banner-narrow.svg">
-    <img src="docs/assets/banner.svg" alt="ZeroShot QC, zero-training visual inspection. SAM 3.1 finds candidate defects from text prompts and Muse Spark judges the part against plain-English rules and a known-good reference. 0.919 F1 on MVTec AD across 5 categories and 0 training images. Three steps: a text prompt from the screw profile, SAM 3.1 segmenting candidate regions, and Muse Spark returning FAIL against the rule that any head scratch, thread damage or deformation fails." width="100%">
+    <img src="docs/assets/banner.svg" alt="ZeroShot QC, zero-training visual inspection. SAM 3.1 finds the part, and Muse Spark judges it against plain-English rules and a known-good reference, and boxes each defect. 0.919 F1 on MVTec AD across 5 categories, 63% of defects located, 0 training images. Three steps: the plain-English screw rule from the product profile, SAM 3.1 finding and zooming on the part, and Muse Spark returning FAIL with a red box on the screw head." width="100%">
   </picture>
 </p>
 
