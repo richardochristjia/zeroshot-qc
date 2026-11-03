@@ -191,3 +191,20 @@ def test_reviser_retries_once_then_raises(monkeypatch) -> None:
     monkeypatch.setattr(ms.httpx, "post", lambda *a, **k: Resp())
     with pytest.raises(ms.JudgeValidationError):
         ms.MuseSparkRuleReviser().revise("old", [], "widget")
+
+
+def test_tune_set_skips_failed_synth(tmp_path: Path) -> None:
+    import httpx
+
+    class FlakyGenerator(FakeImageGenerator):
+        calls = 0
+
+        def add_defect(self, image, defect, mask):  # type: ignore[no-untyped-def]
+            FlakyGenerator.calls += 1
+            if FlakyGenerator.calls == 2:
+                raise httpx.HTTPStatusError("400", request=None, response=None)  # type: ignore[arg-type]
+            return super().add_defect(image, defect, mask)
+
+    ref = sorted((FIXTURE_ROOT / "widget/train/good").glob("*.png"))[0]
+    items = build_tune_set(FIXTURE_ROOT, "widget", ref, tmp_path, FlakyGenerator(), 1, 3, 0)
+    assert [label for _, label in items] == ["good", "defective", "defective"]

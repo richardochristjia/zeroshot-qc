@@ -20,6 +20,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import httpx
 import numpy as np
 from PIL import Image
 
@@ -81,7 +82,12 @@ def build_tune_set(root, category, reference_path, run_dir, generator, n_good, n
     for index in range(n_synth if bases else 0):
         base = _load(bases[index % len(bases)])
         defect = SYNTH_DEFECTS[index % len(SYNTH_DEFECTS)]
-        image = generator.add_defect(base, defect, None)
+        try:
+            image = generator.add_defect(base, defect, None)
+        except httpx.HTTPError as exc:
+            # One transient API error must not lose an hour-long run.
+            print(f"synth {index} ({defect}): skipped, {exc}")
+            continue
         if not np.any(diff_mask(base, image)):
             print(f"synth {index} ({defect}): empty diff, keeping as defective")
         path = synth_dir / f"{index:03d}.png"
