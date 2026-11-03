@@ -188,3 +188,10 @@ which caps the total defective images per category.
   errors; a failed synth image is skipped.
 - Demo re-record: screw scratch_head replays FAIL. metal_nut bent replays
   PASS, also under the tuned rules (it is not in the tune run's held-out set).
+- Bent nut follow-ups. A rule describing a bent tab from above ("4 wide, flat
+  tabs; FAIL if any looks narrow, dark, sliver-shaped or missing",
+  `20261103-grounded-tab-rule-metal_nut`) cut misses (bent 2 to 1, flip 4 to
+  2) but failed 6 of 10 good nuts: F1 0.791 against 0.824. Not adopted.
+  SAM 3.1 returns no masks for "tab", "metal tab" or "prong", and its
+  "metal nut" mask is box-shaped (or absent on 6 of 13 nuts), so tab
+  geometry cannot be measured from it.
