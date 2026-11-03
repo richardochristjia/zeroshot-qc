@@ -68,6 +68,9 @@ class ScriptedFixtureSegmenter:
     """One mask per red component plus a fixed false-positive box."""
 
     def segment(self, image: Image.Image, prompts: list[str]) -> list[RawMask]:
+        # Part lookups send one bare noun; fixture images have no separate part.
+        if len(prompts) == 1:
+            return []
         label = prompts[0] if prompts else "defect"
         masks = [
             RawMask(label=label, score=REAL_SCORE, mask_rle=_encode(part))

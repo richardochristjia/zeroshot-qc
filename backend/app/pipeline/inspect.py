@@ -14,6 +14,7 @@ import os
 import re
 import tempfile
 import warnings
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
@@ -149,16 +150,23 @@ def enforce_consistency(verdict: Verdict) -> Verdict:
 
 PART_PAD = 0.08
 NO_CROP_AREA = 0.95
+# A candidate whose box covers this much of the part box is SAM re-finding
+# the part, not a defect; the judge dismisses it and then misses the defect.
+PART_SIZED = 0.5
 
 
 def part_noun(profile: ProductProfile) -> str:
     return profile.name.replace("_", " ").replace("-", " ").strip().lower()
 
 
-def locate_part(
+def _box_area(box: tuple[int, int, int, int]) -> int:
+    return (box[2] - box[0]) * (box[3] - box[1])
+
+
+def part_box(
     image: Image.Image, profile: ProductProfile, segmenter: Segmenter
 ) -> tuple[int, int, int, int] | None:
-    """Padded (x0, y0, x1, y1) box of the part, or None when absent or ~whole frame.
+    """Unpadded (x0, y0, x1, y1) box of the largest part mask, or None.
 
     Uses the largest mask only, so a stray small mask cannot widen the crop.
     """
@@ -169,17 +177,38 @@ def locate_part(
         [m for m in masks if m.score >= profile.min_score], width, height
     ):
         ys, xs = np.nonzero(binary)
-        if xs.size:
-            boxes.append((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
-    if not boxes:
+        boxes.append((int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1))
+    return max(boxes, key=_box_area) if boxes else None
+
+
+def crop_box(
+    box: tuple[int, int, int, int] | None, size: tuple[int, int]
+) -> tuple[int, int, int, int] | None:
+    """Padded crop around a part box; None when absent or ~whole frame."""
+    if box is None:
         return None
-    x0, y0, x1, y1 = max(boxes, key=lambda b: (b[2] - b[0]) * (b[3] - b[1]))
+    width, height = size
+    x0, y0, x1, y1 = box
     pad = PART_PAD * max(x1 - x0, y1 - y0)
     x0, y0 = max(0, round(x0 - pad)), max(0, round(y0 - pad))
     x1, y1 = min(width, round(x1 + pad)), min(height, round(y1 + pad))
     if (x1 - x0) * (y1 - y0) >= NO_CROP_AREA * width * height:
         return None
     return int(x0), int(y0), int(x1), int(y1)
+
+
+def locate_part(
+    image: Image.Image, profile: ProductProfile, segmenter: Segmenter
+) -> tuple[int, int, int, int] | None:
+    """Padded (x0, y0, x1, y1) box of the part, or None when absent or ~whole frame."""
+    return crop_box(part_box(image, profile, segmenter), image.size)
+
+
+def _part_sized(binary: np.ndarray, part: tuple[int, int, int, int]) -> bool:
+    ys, xs = np.nonzero(binary)
+    x0, y0 = max(int(xs.min()), part[0]), max(int(ys.min()), part[1])
+    x1, y1 = min(int(xs.max()) + 1, part[2]), min(int(ys.max()) + 1, part[3])
+    return max(0, x1 - x0) * max(0, y1 - y0) >= PART_SIZED * _box_area(part)
 
 
 def judge_box_to_pixels(
@@ -259,9 +288,19 @@ def run_inspection(
     if image.mode != "RGB":
         image = image.convert("RGB")
     width, height = image.size
-    raw_masks = segmenter.segment(image, profile.defect_prompts)
+    part = None
+    if judge is not None and part_crop:
+        # The part lookup does not depend on the defect call: run both at once.
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            part_job = pool.submit(part_box, image, profile, segmenter)
+            raw_masks = segmenter.segment(image, profile.defect_prompts)
+            part = part_job.result()
+    else:
+        raw_masks = segmenter.segment(image, profile.defect_prompts)
     kept = [m for m in raw_masks if m.score >= profile.min_score]
     decoded = _decode_valid_masks(kept, width, height)
+    if part is not None:
+        decoded = [(m, b) for m, b in decoded if not _part_sized(b, part)]
     decoded.sort(key=lambda item: (-item[0].score, item[0].label))
 
     groups: list[dict] = []
@@ -308,15 +347,16 @@ def run_inspection(
     overlay = make_overlay(image, detections)
     judged_image = image
     crop = (0, 0, width, height)
-    if part_crop:
-        box = locate_part(image, profile, segmenter)
-        if box:
-            judged_image, overlay = image.crop(box), overlay.crop(box)
-            crop = box
-        if box and effective_reference is not None:
-            ref_box = locate_part(effective_reference, profile, segmenter)
-            if ref_box:
-                effective_reference = effective_reference.crop(ref_box)
+    box = crop_box(part, image.size)
+    if box:
+        judged_image, overlay = image.crop(box), overlay.crop(box)
+        crop = box
+        # Same reference every call, so this is a cache hit after the first.
+        ref_box = effective_reference is not None and locate_part(
+            effective_reference, profile, segmenter
+        )
+        if ref_box:
+            effective_reference = effective_reference.crop(ref_box)
     verdict = judge.judge(
         judged_image, overlay, effective_reference, detections, effective_profile
     )
