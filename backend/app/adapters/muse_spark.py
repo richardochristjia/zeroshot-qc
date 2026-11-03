@@ -29,6 +29,10 @@ from app.prompts import render_judge_prompt, render_sop_prompt, render_tune_prom
 from app.schemas import Detection, ProductProfile, RuleRevision, Verdict
 
 
+# Default sampling flipped the same bent nut between PASS and FAIL across runs.
+SAMPLING = {"temperature": 0}
+
+
 def _responses_payload(model_id: str, prompt: str, images: list[Image.Image]) -> dict:
     """Build a Responses API ``POST {base}/responses`` payload.
 
@@ -44,7 +48,7 @@ def _responses_payload(model_id: str, prompt: str, images: list[Image.Image]) ->
                 "image_url": "data:image/png;base64," + encode_image_b64(image),
             }
         )
-    return {"model": model_id, "input": [{"role": "user", "content": content}]}
+    return {"model": model_id, "input": [{"role": "user", "content": content}], **SAMPLING}
 
 
 def _verdict_json(data: object) -> object:

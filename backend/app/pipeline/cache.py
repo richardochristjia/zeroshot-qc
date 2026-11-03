@@ -30,6 +30,7 @@ from typing import Any
 from PIL import Image
 
 from app.adapters.base import Judge, Segmenter
+from app.adapters.muse_spark import SAMPLING
 from app.prompts import JUDGE_TEMPLATE
 from app.schemas import Detection, ProductProfile, RawMask, Verdict
 
@@ -82,8 +83,9 @@ def judge_cache_key(
 
     Components in order: call kind, judge prompt template bytes, image
     PNG bytes, overlay PNG bytes, reference PNG bytes (or a None
-    marker), detections JSON, profile JSON, then the model id. Any
-    profile/rules edit changes the profile JSON and so is a miss.
+    marker), detections JSON, profile JSON, sampling settings, then the
+    model id. Any profile/rules edit changes the profile JSON and so is a
+    miss.
     """
     digest = hashlib.sha256()
     _frame(digest, b"judge")
@@ -96,6 +98,7 @@ def judge_cache_key(
         _frame(digest, _png_bytes(reference))
     _frame(digest, _canonical_json([d.model_dump() for d in detections]))
     _frame(digest, _canonical_json(profile.model_dump()))
+    _frame(digest, _canonical_json(SAMPLING))
     _frame(digest, model_id.encode("utf-8"))
     return digest.hexdigest()
 
