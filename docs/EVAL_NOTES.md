@@ -195,3 +195,8 @@ which caps the total defective images per category.
   SAM 3.1 returns no masks for "tab", "metal tab" or "prong", and its
   "metal nut" mask is box-shaped (or absent on 6 of 13 nuts), so tab
   geometry cannot be measured from it.
+- A per-tab rule (compare each of the 4 tabs with the other three on the same
+  nut, `20261103-grounded-per-tab-metal_nut`) missed 1 bent and 4 flipped
+  nuts and failed 3 of 10 good ones: F1 0.789. Not adopted. The profile rule
+  stays (F1 0.824, no false fails); a bend toward a top-down camera is a 3D
+  change the photo barely shows, and a side view is the real fix.
