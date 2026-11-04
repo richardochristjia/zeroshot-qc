@@ -15,6 +15,7 @@ from app.routers.profiles import router as profiles_router
 from app.routers.samples import router as samples_router
 from app.routers.synth import router as synth_router
 from app.routers.tune import router as tune_router
+from app.routers.voice import router as voice_router
 
 app = FastAPI()
 
@@ -24,6 +25,7 @@ app.include_router(eval_router)
 app.include_router(synth_router)
 app.include_router(samples_router)
 app.include_router(tune_router)
+app.include_router(voice_router)
 
 
 @app.on_event("startup")
@@ -73,5 +75,6 @@ def health() -> dict:
             "sam": settings.sam_model_id,
             "judge": settings.judge_model_id,
             "image": settings.image_model_id,
+            "voice": settings.voice_model_id,
         },
     }
