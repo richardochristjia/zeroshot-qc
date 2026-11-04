@@ -152,13 +152,16 @@ def _ref_diff_records(sample, root: Path) -> list[dict]:
             shown = str(item.image_path.relative_to(root))
         except ValueError:
             shown = str(item.image_path)
+        # score / (score + threshold): monotone in score, 0.5 at the threshold, and comparable
+        # across categories for the pooled AUROC. Confidence keeps the verdict-word convention
+        # (fail_score = confidence on FAIL, 1 - confidence on PASS) so the Eval page can read it.
+        ratio = score / (score + threshold) if score + threshold else 0.5
         records.append(
             {
                 "category": item.category, "image": shown, "label": item.label,
-                "defect_type": item.defect_type, "verdict": verdict_word, "confidence": None,
-                # score / (score + threshold): monotone in score, 0.5 at the threshold,
-                # and comparable across categories for the pooled AUROC.
-                "fail_score": score / (score + threshold) if score + threshold else 0.5,
+                "defect_type": item.defect_type, "verdict": verdict_word,
+                "confidence": ratio if verdict_word == "FAIL" else 1.0 - ratio,
+                "fail_score": ratio,
                 "n_detections": 0, "iou": iou, "hit": None, "box_iou": None,
             }
         )

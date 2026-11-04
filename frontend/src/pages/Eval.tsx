@@ -52,6 +52,7 @@ const MODE_NAMES: Record<string, string> = {
   sam_judge: 'SAM + judge',
   sam_judge_ref: 'SAM + judge + reference',
   grounded: 'Grounded judge',
+  ref_diff: 'Reference diff (no Meta model)',
 }
 
 function modeName(mode: string): string {
