@@ -247,10 +247,11 @@ export default function Eval(): JSX.Element {
   if (summary !== null) {
     const key = groupKey(summary)
     const seen = new Set<string>()
-    for (const run of runs) {
+    // Newest run per mode (runs arrive oldest first), so a re-run replaces its predecessor.
+    for (const run of [...runs].reverse()) {
       if (groupKey(run) !== key || seen.has(run.mode)) continue
       seen.add(run.mode)
-      ablation.push(run)
+      ablation.unshift(run)
     }
   }
   const bestId = pickDefaultRun(ablation)
