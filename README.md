@@ -6,10 +6,13 @@
 </p>
 
 <p align="center">
+  <a href="https://huggingface.co/spaces/Xenonsense/zeroshot-qc"><img alt="Try it live on Hugging Face Spaces" src="https://img.shields.io/badge/Try%20it-live-FFD21E?logo=huggingface&logoColor=black"></a>
   <a href="#quickstart"><img alt="Run with Docker" src="https://img.shields.io/badge/run%20with-Docker-2496ED?logo=docker&logoColor=white"></a>
   <a href="#which-meta-models-do-what"><img alt="Meta models: SAM 3.1, Muse Spark, Muse Image" src="https://img.shields.io/badge/Meta%20models-SAM%203.1%20%C2%B7%20Muse%20Spark%20%C2%B7%20Muse%20Image-0866FF"></a>
   <a href="backend/demo/LICENSE-MVTEC.md"><img alt="Demo data: CC BY-NC-SA 4.0" src="https://img.shields.io/badge/demo%20data-CC%20BY--NC--SA%204.0-lightgrey"></a>
 </p>
+
+Built for the Meta Global AI Developer Hackathon 2026, track: Build for Your World.
 
 <p align="center">
   <a href="https://youtu.be/IlT8yUzFjS8"><img src="https://img.youtube.com/vi/IlT8yUzFjS8/maxresdefault.jpg" alt="ZeroShot QC demo video on YouTube" width="720"></a>
@@ -22,6 +25,8 @@
 - **Where your data goes.** The bundled demo replays cached verdicts offline and sends nothing anywhere. Live mode (you add `META_API_KEY`) sends your images and rules to the Meta Model API endpoint set in `META_API_BASE_URL`.
 
 ## Quickstart
+
+No install needed: the [live demo](https://huggingface.co/spaces/Xenonsense/zeroshot-qc) replays cached verdicts with no key.
 
 You need [Docker](https://docs.docker.com/get-docker/) with the daemon running. No API key and no `.env` are required.
 
