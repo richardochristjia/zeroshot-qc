@@ -9,3 +9,4 @@ numpy==1.26.4
 opencv-python-headless==4.10.0.84
 pycocotools==2.0.8
 pytest==8.3.4
+meta-sam-parser==0.1.0

@@ -22,6 +22,7 @@ from PIL import Image
 from pycocotools import mask as mask_api
 
 from app.adapters.base import Judge, Segmenter
+from app.adapters.sam import MAX_BOX_OBJECTS, box_prompt
 from app.config import settings
 from app.pipeline.measure import decode_rle_for_image, measure_mask
 from app.pipeline.overlay import make_overlay
@@ -231,18 +232,56 @@ def judge_box_to_pixels(
     return px0, py0, px1 - px0, py1 - py0
 
 
+def refine_judge_masks(
+    image: Image.Image, segmenter: Segmenter, boxes: list[tuple[int, int, int, int]]
+) -> list[np.ndarray | None]:
+    """SAM outline per judge box (xywh px), clipped to the box; None keeps the box mask.
+
+    Best effort: any failure returns all None, so a keyless fallback never loses the verdict.
+    """
+    width, height = image.size
+    refined: list[np.ndarray | None] = [None] * len(boxes)
+    try:
+        for start in range(0, len(boxes), MAX_BOX_OBJECTS):
+            chunk = boxes[start : start + MAX_BOX_OBJECTS]
+            raw = segmenter.segment(image, [box_prompt(chunk, image.size)])
+            by_id = {m.label: m for m in raw}
+            for offset, (x, y, w, h) in enumerate(chunk):
+                mask = by_id.get(str(offset + 1))
+                binary = decode_rle_for_image(mask.mask_rle, width, height, "box") if mask else None
+                if binary is None:
+                    continue
+                clipped = np.zeros((height, width), dtype=np.uint8)
+                clipped[y : y + h, x : x + w] = binary[y : y + h, x : x + w]
+                if clipped.any():
+                    refined[start + offset] = clipped
+    except Exception as exc:
+        warnings.warn(f"SAM box refinement skipped: {type(exc).__name__}")
+        return [None] * len(boxes)
+    return refined
+
+
 def _judge_detections(
-    verdict: Verdict, crop: tuple[int, int, int, int], size: tuple[int, int], mm_per_px: float | None
+    verdict: Verdict,
+    crop: tuple[int, int, int, int],
+    image: Image.Image,
+    segmenter: Segmenter,
+    mm_per_px: float | None,
 ) -> list[Detection]:
-    width, height = size
+    width, height = image.size
+    mapped = [
+        (index, box)
+        for index, missed in enumerate(verdict.missed_defects, start=1)
+        if (box := judge_box_to_pixels(missed.box, crop)) is not None
+    ]
+    refined = refine_judge_masks(image, segmenter, [box for _, box in mapped]) if mapped else []
     found = []
-    for index, missed in enumerate(verdict.missed_defects, start=1):
-        mapped = judge_box_to_pixels(missed.box, crop)
-        if mapped is None:
-            continue
-        x, y, w, h = mapped
-        binary = np.zeros((height, width), dtype=np.uint8)
-        binary[y : y + h, x : x + w] = 1
+    for (index, (x, y, w, h)), sam_mask in zip(mapped, refined):
+        if sam_mask is None:
+            binary = np.zeros((height, width), dtype=np.uint8)
+            binary[y : y + h, x : x + w] = 1
+        else:
+            binary = sam_mask
         mask_rle = _encode_mask_text(binary)
         sizes = measure_mask(mask_rle, mm_per_px)
         found.append(
@@ -250,7 +289,7 @@ def _judge_detections(
                 id=f"j{index}",
                 label="judge",
                 score=verdict.confidence,
-                bbox=sizes["bbox"],
+                bbox=(x, y, w, h),
                 mask_rle=mask_rle,
                 area_px=sizes["area_px"],
                 length_px=sizes["length_px"],
@@ -361,7 +400,7 @@ def run_inspection(
         judged_image, overlay, effective_reference, detections, effective_profile
     )
     detections = detections + _judge_detections(
-        verdict, crop, (width, height), profile.mm_per_px
+        verdict, crop, image, segmenter, profile.mm_per_px
     )
     return detections, enforce_consistency(verdict)
 

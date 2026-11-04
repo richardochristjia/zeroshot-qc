@@ -512,3 +512,63 @@ def test_overlay_outlines_judge_detection_without_tint() -> None:
     out = make_overlay(base, [det])
     assert out.getpixel((10, 28)) == (179, 38, 30)  # outline
     assert out.getpixel((20, 24)) == (10, 10, 10)  # interior untouched
+
+
+# --- SAM box refinement of judge boxes -----------------------------------
+
+
+class BoxSegmenter:
+    """Answers box prompts by label id; records every prompt."""
+
+    def __init__(self, masks=None, error=None) -> None:  # type: ignore[no-untyped-def]
+        self.masks, self.error, self.prompts = masks or {}, error, []
+
+    def segment(self, image, prompts):  # type: ignore[no-untyped-def]
+        if prompts[0].startswith("<0f>"):
+            self.prompts.append(prompts[0])
+            if self.error:
+                raise self.error
+            return [RawMask(label=k, score=1.0, mask_rle=_rle_of(v)) for k, v in self.masks.items()]
+        return []
+
+
+def _judge_run(image, profile, segmenter, boxes):  # type: ignore[no-untyped-def]
+    return run_inspection(image, profile, segmenter, judge=MissedJudge(boxes))
+
+
+def test_judge_mask_is_sam_clipped_to_box_and_bbox_stays_box(image, profile) -> None:  # type: ignore[no-untyped-def]
+    # judge box 0-1000 on the full frame -> px (20, 12, 40, 24)
+    box = [100, 100, 300, 300]
+    seg = BoxSegmenter({"1": _rect_binary(0, 0, 100, 60)})
+    dets, _ = _judge_run(image, profile, seg, [box])
+    (det,) = [d for d in dets if d.source == "judge"]
+    assert det.bbox == (20, 12, 40, 24)
+    assert det.area_px == 40 * 24  # SAM mask covers the whole box; anything outside is clipped
+    seg = BoxSegmenter({"1": _rect_binary(30, 20, 100, 60)})
+    (det,) = _judge_run(image, profile, seg, [box])[0]
+    assert det.bbox == (20, 12, 40, 24)
+    assert det.area_px == (60 - 30) * (36 - 20)
+
+
+@pytest.mark.parametrize(
+    "seg",
+    [
+        BoxSegmenter(),
+        BoxSegmenter({"9": _rect_binary(0, 0, 100, 60)}),
+        BoxSegmenter({"1": np.zeros((IMG_H, IMG_W))}),
+        BoxSegmenter(error=RuntimeError("boom")),
+    ],
+)
+def test_judge_keeps_box_mask_when_sam_fails(image, profile, seg) -> None:  # type: ignore[no-untyped-def]
+    dets, verdict = _judge_run(image, profile, seg, [[100, 100, 300, 300]])
+    (det,) = dets
+    assert verdict.verdict == "FAIL" and det.area_px == 40 * 24
+
+
+def test_more_than_16_judge_boxes_chunk_into_two_calls(image, profile) -> None:  # type: ignore[no-untyped-def]
+    boxes = [[i * 50, 0, i * 50 + 40, 100] for i in range(17)]
+    seg = BoxSegmenter()
+    _judge_run(image, profile, seg, boxes)
+    assert len(seg.prompts) == 2
+    assert seg.prompts[0].count("<|box;") == 16 and seg.prompts[1].count("<|box;") == 1
+    assert seg.prompts[1].startswith("<0f>1<|box;")
