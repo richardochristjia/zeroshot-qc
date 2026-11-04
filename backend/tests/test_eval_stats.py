@@ -22,6 +22,8 @@ def test_bootstrap_deterministic_and_brackets_point() -> None:
     for row in first.values():
         point, lo, hi = row["f1"]
         assert lo <= point <= hi
+    assert any(r['f1'][2] > r['f1'][1] for r in first.values())  # not a degenerate CI
+    assert first != bootstrap(recs, B=200, seed=4)
 
 
 def test_point_f1_matches_summary(tmp_path: Path) -> None:
@@ -44,3 +46,10 @@ def test_mcnemar_exact_p() -> None:
     res = mcnemar(a, b)
     assert res["b01"] + res["b10"] == 5 and 0 < res["p"] <= 1
     assert mcnemar(a, [dict(r, verdict="PASS") for r in a])["p"] < 0.05
+
+
+def test_mcnemar_p_is_two_sided_exact() -> None:
+    a = _records()
+    ok = [i for i, r in enumerate(a) if (r["verdict"] == "FAIL") == (r["label"] == "defective")][:5]
+    b = [dict(r, verdict="PASS" if r["verdict"] == "FAIL" else "FAIL") if i in ok else r for i, r in enumerate(a)]
+    assert mcnemar(a, b)["p"] == 0.0625  # 5 vs 0 discordant: 2 * 0.5**5
