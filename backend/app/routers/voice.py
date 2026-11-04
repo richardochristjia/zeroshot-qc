@@ -18,8 +18,9 @@ def _get_transcriber() -> Transcriber:
 
 
 @router.post("/api/voice/transcribe")
-async def transcribe(audio: UploadFile = File(...)) -> dict:
-    wav = await audio.read(MAX_WAV_BYTES + 1)
+def transcribe(audio: UploadFile = File(...)) -> dict:
+    # sync def: FastAPI runs it in a threadpool, so the blocking upstream call can't stall the loop
+    wav = audio.file.read(MAX_WAV_BYTES + 1)
     if len(wav) > MAX_WAV_BYTES:
         raise HTTPException(status_code=422, detail="audio is over 10 MB")
     if wav[:4] != b"RIFF" or wav[8:12] != b"WAVE":
