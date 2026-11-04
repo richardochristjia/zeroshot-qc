@@ -20,7 +20,10 @@ ENV HOME=/home/user \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     DATA_DIR=/home/user/data \
-    FRONTEND_DIR=/home/user/web
+    FRONTEND_DIR=/home/user/web \
+    SAM_MODEL_ID=sam-3.1 \
+    JUDGE_MODEL_ID=muse-spark-1.3 \
+    IMAGE_MODEL_ID=muse-image-1.0
 WORKDIR /home/user/app
 COPY --from=web --chown=user /src/backend /home/user/app
 COPY --from=web --chown=user /src/frontend/dist /home/user/web
