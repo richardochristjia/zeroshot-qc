@@ -14,7 +14,9 @@ import io
 import json
 import re
 
+import cv2
 import numpy as np
+from meta_sam_parser import CompletedOutcome, decode_mask_to_raster, image_segmentation_format
 from PIL import Image, ImageDraw
 from pycocotools import mask as mask_utils
 
@@ -28,6 +30,44 @@ from app.config import settings
 from app.schemas import RawMask
 
 _GEOMETRY_KEYS = ("masks", "results", "detections", "instances", "boxes")
+
+# Box prompts (docs: dev.meta.ai/docs/sam/segmenting): one image is `<0f>`, objects are
+# comma-separated `<id><|box;...|>`, x2/y2 inclusive, w/h = the sent image size.
+BOX_PROMPT_PREFIX = "<0f>"
+MAX_BOX_OBJECTS = 16
+
+
+def box_prompt(boxes: list[tuple[int, int, int, int]], size: tuple[int, int]) -> str:
+    """Render xywh pixel boxes as one SAM box prompt with ids 1..n."""
+    if not 1 <= len(boxes) <= MAX_BOX_OBJECTS:
+        raise ValueError(f"box prompt needs 1..{MAX_BOX_OBJECTS} boxes, got {len(boxes)}")
+    width, height = size
+    parts = [
+        f"{i}<|box;x1={x};y1={y};x2={x + w - 1};y2={y + h - 1};w={width};h={height}|>"
+        for i, (x, y, w, h) in enumerate(boxes, start=1)
+    ]
+    return BOX_PROMPT_PREFIX + ",".join(parts)
+
+
+def _decode_box_reply(text: str, width: int, height: int) -> list[RawMask]:
+    """One RawMask per object id (labelled by id); several records for an id are OR-ed."""
+    parser = image_segmentation_format().create_parser()
+    parser.push(text)
+    full: dict[str, np.ndarray] = {}
+    for rec in parser.finish(CompletedOutcome()).result.records:
+        if rec.kind != "mask":
+            continue
+        m, b = rec.mask, rec.bounds
+        raster = np.frombuffer(decode_mask_to_raster(m), dtype=np.uint8).reshape(m.height, m.width)
+        size = (b.right - b.left, b.bottom - b.top)
+        if raster.shape[::-1] != size:
+            raster = cv2.resize(raster, size, interpolation=cv2.INTER_NEAREST)
+        canvas = full.setdefault(str(rec.object_id), np.zeros((height, width), dtype=bool))
+        canvas[b.top : b.bottom, b.left : b.right] |= raster > 0
+    return [
+        RawMask(label=label, score=1.0, mask_rle=_binary_to_rle(binary))
+        for label, binary in full.items()
+    ]
 
 
 def _is_valid_mask_rle(mask_rle: object, height: int, width: int) -> bool:
@@ -233,6 +273,8 @@ class SamSegmenter:
         text = extract_responses_text(data).strip()
         if not text:
             return []
+        if len(prompts) == 1 and prompts[0].startswith(BOX_PROMPT_PREFIX):
+            return _decode_box_reply(text, width, height)
         entries = _native_entries(text)
         if entries is None:
             entries = _entries_from_text(text)
