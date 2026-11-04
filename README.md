@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(max-width: 600px)" srcset="docs/assets/banner-narrow.svg">
-    <img src="docs/assets/banner.svg" alt="ZeroShot QC, zero-training visual inspection. SAM 3.1 finds the part, and Muse Spark judges it against plain-English rules and a known-good reference, and boxes each defect. 0.918 F1 on MVTec AD across 5 categories, 63% of defects located, 0 training images. Three steps: the plain-English screw rule from the product profile, SAM 3.1 finding and zooming on the part, and Muse Spark returning FAIL with a red box on the screw head." width="100%">
+    <img src="docs/assets/banner.svg" alt="ZeroShot QC, zero-training visual inspection. SAM 3.1 finds the part, and Muse Spark judges it against plain-English rules and a known-good reference, boxes each defect, and SAM 3.1 outlines it. 0.918 F1 on MVTec AD across 5 categories, 63% of defects located, 0 training images. Three steps: the plain-English screw rule from the product profile, SAM 3.1 finding and zooming on the part, and Muse Spark returning FAIL with a red box on the screw head." width="100%">
   </picture>
 </p>
 
@@ -19,8 +19,8 @@ Built for the Meta Global AI Developer Hackathon 2026, track: Build for Your Wor
   <a href="https://youtu.be/IlT8yUzFjS8">Watch the 3-minute demo on YouTube</a>
 </p>
 
-- **What it does.** Visual inspection with zero training: SAM 3.1 finds the part, then Muse Spark judges it against plain-English rules and a known-good reference image and boxes each defect. No labelled defect images, no model training.
-- **How well.** On real MVTec AD (5 categories x 30 images), F1 is 0.918 in grounded mode, which also puts a box on 63% of real defects. It is 0.919 with a reference image but no boxes, 0.872 without a reference, and 0.000 for SAM alone. Across 7 categories (adding screw and metal nut) grounded F1 is 0.869. Rule tuning helped in 1 of 6 runs: when the synthetic defects matched the real ones, metal nut rose from 0.824 to 0.878. Details and caveats are in [Results](#results).
+- **What it does.** Visual inspection with zero training: SAM 3.1 finds the part, then Muse Spark judges it against plain-English rules and a known-good reference image and boxes each defect, then SAM 3.1 outlines each box. Spoken rule edits on the Line page go through Muse Voice Transcribe. No labelled defect images, no model training.
+- **How well.** On real MVTec AD (5 categories x 30 images), F1 is 0.918 in grounded mode, which also puts a box on 63% of real defects. It is 0.919 with a reference image but no boxes, 0.872 without a reference, and 0.000 for SAM alone. Across 7 categories (adding screw and metal nut) grounded F1 is 0.869 (95% CI 0.826 to 0.904), and SAM's outline lifts pixel IoU from 0.285 to 0.403 with the same verdicts. A plain reference-diff baseline with no Meta model reaches F1 0.358. Rule tuning helped in 1 of 6 runs: when the synthetic defects matched the real ones, metal nut rose from 0.824 to 0.878. Details and caveats are in [Results](#results).
 - **Where your data goes.** The bundled demo replays cached verdicts offline and sends nothing anywhere. Live mode (you add `META_API_KEY`) sends your images and rules to the Meta Model API endpoint set in `META_API_BASE_URL`.
 
 ## Quickstart
@@ -36,7 +36,9 @@ Open http://localhost:8080. Every page is already populated from a bundled demo 
 What to try:
 
 - **Inspect**: click a "Try a sample" thumbnail. It picks the profile and returns a real SAM + Muse Spark verdict, replayed from cache. Edit the rules box to re-judge; with no key, edits and your own uploads return a placeholder verdict with a "Demo result" banner.
-- **Eval**: three evaluation runs with failure thumbnails.
+- **Eval**: seven evaluation runs (SAM only, SAM + judge, + reference, grounded, and the reference-diff baseline) with the newest run per mode in the ablation, plus failure thumbnails.
+- **Tune**: replays the metal nut rule rewrite and its held-out F1.
+- **Line**: camera inspection. Spoken rule edits need a key and `VOICE_MODEL_ID`.
 - **Synthetic**: generated bottle defect images with masks.
 - **Profiles**: product profiles with their reference images.
 
@@ -168,11 +170,11 @@ The Tune page replays offline rule tuning: the judge's rules are rewritten from 
 
 ## Screens
 
-Inspect, after clicking "Screw, scratched head": the judge fails the part and boxes the scratch on the head.
+Inspect, after clicking "Screw, scratched head": the judge fails the part and boxes the scratch on the head. The page draws the judge's box; SAM 3.1's outline inside it sets the mask used for the defect area and pixel IoU.
 
-![Inspect page showing a FAIL verdict and a judge box on a scratched screw head](docs/assets/screens/inspect.png)
+![Inspect page showing a FAIL verdict and the judge's box on a scratched screw head](docs/assets/screens/inspect.png)
 
-Eval: the five runs, F1 ablation, confusion matrix and failure examples. Try the "False fail" and "Missed" filters.
+Eval: the seven runs, F1 ablation, confusion matrix and failure examples. Try the "False fail" and "Missed" filters.
 
 ![Eval page showing the F1 ablation, confusion matrix and failures](docs/assets/screens/eval.png)
 
