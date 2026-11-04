@@ -72,6 +72,16 @@ The current pipeline (judge at temperature 0, part-sized SAM candidates dropped)
 | F1 | 0.872 | 0.686 | 0.976 | 1.000 | 1.000 | 0.727 | 0.750 | **0.869** |
 | Hit rate | 0.450 | 0.600 | 0.550 | 0.950 | 0.700 | 0.600 | 0.350 | 0.600 |
 
+Pixel IoU: judge box vs SAM 3.1 outline. Same 210 images, same judge verdicts replayed from cache (F1, hit rate and box IoU are identical, checked per image). Only the mask changes: before, the judge's box filled in; now SAM 3.1 outlines each judge box and the mask is clipped to it. Mean over each category's 20 defective images:
+
+| | bottle | cable | capsule | carpet | grid | metal nut | screw | Overall |
+|---|---|---|---|---|---|---|---|---|
+| Judge box | 0.300 | 0.213 | 0.299 | 0.438 | 0.300 | 0.288 | 0.155 | 0.285 |
+| SAM outline | 0.423 | 0.338 | 0.333 | 0.569 | 0.567 | 0.406 | 0.185 | **0.403** |
+| Images better / worse | 12 / 4 | 11 / 1 | 11 / 4 | 10 / 10 | 16 / 4 | 11 / 1 | 7 / 3 | 78 / 27 |
+
+SAM's outline wins on average in every category, but not on every image: it made 27 of 140 defective images worse (carpet 10 of 20), and 35 came out unchanged (SAM returned nothing, or its mask matched the box). Screw gains the least (+0.03): the judge's boxes there often miss the defect (hit rate 0.350), and an outline inside a misplaced box cannot reach it. Details and caveats in [docs/EVAL_NOTES.md](docs/EVAL_NOTES.md).
+
 On the first five categories this is F1 0.913 against 0.918: the same within noise (7 of 150 verdicts changed, in both directions). With each profile's own rules instead of the shared string, metal nut rises to 0.824 (bent nuts missed: 6 of 8 down to 2) and screw stays at 0.750, both at precision 1.000.
 
 Error bars and a non-Meta baseline (all computed from each run's per-image results, no model calls: `python -m app.eval.stats RUN_DIR [--vs RUN_DIR]`). The 95% intervals are bootstrapped by resampling images within each category 2,000 times. The reference-diff baseline is plain OpenCV: it blurs the image, subtracts the category's known-good reference, scores the 99.5th percentile of the difference, and sets its threshold from ten `train/good` images only, with no defect labels and no Meta model. It never saw the eval images when its threshold was set, and it was not tuned afterwards.
@@ -100,7 +110,7 @@ Rule tuning, scored on held-out real images that tuning never saw:
 
 Read these with the caveats in mind:
 
-- SAM proposes no defect-level masks on these categories. In the older modes IoU is 0.000 throughout. Grounded mode uses SAM to find the part, crops to it, and turns the judge's boxes into detections. All of its localization comes from those boxes.
+- SAM proposes no defect-level masks from text prompts on these categories. In the older modes IoU is 0.000 throughout. Grounded mode uses SAM to find the part, crops to it, and turns the judge's boxes into detections. Where the defect is comes from the judge's boxes (hit rate, box IoU); SAM only sharpens the outline inside each box (pixel IoU 0.285 to 0.403).
 - The judge carries the system, through its missed-defect path. The reference image adds recall (0.820 to 0.910).
 - Tuning sees only good images and Muse Image synthetic defects, no real defect labels. Its held-out set is the eval's 30-image sample for that seed, which tuning never reads. One gain in six runs is thin evidence.
 - 30 images per category is small, and this is a single seed.
