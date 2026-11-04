@@ -125,7 +125,8 @@ def _gray_blur(path: Path, size: tuple[int, int]) -> np.ndarray:
 
 def _ref_diff_records(sample, root: Path) -> list[dict]:
     """Score one category: no model, threshold = max score over train/good images only."""
-    reference = _gray_blur(sample.reference_path, Image.open(sample.reference_path).size)
+    with Image.open(sample.reference_path) as raw:
+        reference = _gray_blur(sample.reference_path, raw.size)
     size = (reference.shape[1], reference.shape[0])
     train = sorted(
         p for p in sample.reference_path.parent.iterdir()
@@ -199,9 +200,7 @@ def run_eval(
     if mode == "ref_diff":
         for sample in samples:
             records += _ref_diff_records(sample, root)
-        samples_to_run = []
     else:
-        samples_to_run = samples
         cache = DiskCache(cache_dir)
         segmenter, judge = _resolve_adapters(
             adapter, cache, segmenter_inner, judge_inner
@@ -209,7 +208,7 @@ def run_eval(
         if mode != "sam_only" and judge is None:
             raise ValueError(f"mode {mode!r} needs a judge adapter")
 
-    for sample in samples_to_run:
+    for sample in ([] if mode == "ref_diff" else samples):
         profile = build_eval_profile(sample.category, rules)
         reference = None
         if mode in ("sam_judge_ref", "grounded"):
