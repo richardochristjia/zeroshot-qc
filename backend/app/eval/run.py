@@ -7,6 +7,8 @@ sampling, ``run_inspection``, cache — is shared::
     sam_judge      judge without a reference image
     sam_judge_ref  judge with the category reference image (full system)
     grounded       sam_judge_ref on a part crop; judge boxes become detections
+    ref_diff       no model: blurred absdiff against the reference, threshold from
+                   train/good images only (a non-Meta baseline)
 
 Writes ``<out-dir>/<run-id>/results.jsonl`` (one line per image) plus
 ``summary.json`` (per-category and overall metrics) and prints the
@@ -26,6 +28,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import cv2
 import numpy as np
 from PIL import Image
 
@@ -34,11 +37,11 @@ from app.eval.dataset import DatasetError, sample_dataset, sample_synth_dataset
 from app.eval.fakes import ReferenceAwareJudge, ScriptedFixtureSegmenter
 from app.eval.metrics import fail_score, localization, pixel_iou, summarize
 from app.pipeline.cache import CachedJudge, CachedSegmenter, DiskCache
-from app.pipeline.inspect import run_inspection
+from app.pipeline.inspect import _encode_mask_text, run_inspection
 from app.pipeline.wiring import build_judge, build_segmenter
 from app.schemas import ProductProfile
 
-MODES = ("sam_only", "sam_judge", "sam_judge_ref", "grounded")
+MODES = ("sam_only", "sam_judge", "sam_judge_ref", "grounded", "ref_diff")
 ADAPTER_CHOICES = ("real", "fake", "scripted")
 DATA_CHOICES = ("mvtec", "synth")
 
@@ -108,6 +111,60 @@ def _resolve_adapters(adapter: str, cache: DiskCache, inner_segmenter, inner_jud
     return segmenter, judge
 
 
+REF_DIFF_K = 10  # train/good images (besides the reference) that set the threshold
+REF_DIFF_SCORE_PCT = 99.5
+REF_DIFF_MASK_PCT = 99.9
+
+
+def _gray_blur(path: Path, size: tuple[int, int]) -> np.ndarray:
+    with Image.open(path) as raw:
+        gray = cv2.cvtColor(np.asarray(raw.convert("RGB")), cv2.COLOR_RGB2GRAY)
+    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+    return cv2.resize(gray, size).astype(np.float32)
+
+
+def _ref_diff_records(sample, root: Path) -> list[dict]:
+    """Score one category: no model, threshold = max score over train/good images only."""
+    reference = _gray_blur(sample.reference_path, Image.open(sample.reference_path).size)
+    size = (reference.shape[1], reference.shape[0])
+    train = sorted(
+        p for p in sample.reference_path.parent.iterdir()
+        if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".bmp") and p != sample.reference_path
+    )[:REF_DIFF_K]
+    train_diffs = [np.abs(_gray_blur(p, size) - reference) for p in train]
+    threshold = max(np.percentile(d, REF_DIFF_SCORE_PCT) for d in train_diffs)
+    mask_cut = np.percentile(np.concatenate([d.ravel() for d in train_diffs]), REF_DIFF_MASK_PCT)
+    records = []
+    for item in sample.items:
+        with Image.open(item.image_path) as raw:
+            width, height = raw.size
+        diff = np.abs(_gray_blur(item.image_path, size) - reference)
+        score = float(np.percentile(diff, REF_DIFF_SCORE_PCT))
+        verdict_word = "FAIL" if score > threshold else "PASS"
+        truth = _load_mask(item.mask_path)
+        iou = None
+        if truth is not None:
+            binary = (diff > mask_cut) if verdict_word == "FAIL" else np.zeros_like(diff, dtype=bool)
+            if (width, height) != size:
+                binary = cv2.resize(binary.astype(np.uint8), (width, height), interpolation=cv2.INTER_NEAREST)
+            iou = pixel_iou([_encode_mask_text(binary)], truth, width, height)
+        try:
+            shown = str(item.image_path.relative_to(root))
+        except ValueError:
+            shown = str(item.image_path)
+        records.append(
+            {
+                "category": item.category, "image": shown, "label": item.label,
+                "defect_type": item.defect_type, "verdict": verdict_word, "confidence": None,
+                # score / (score + threshold): monotone in score, 0.5 at the threshold,
+                # and comparable across categories for the pooled AUROC.
+                "fail_score": score / (score + threshold) if score + threshold else 0.5,
+                "n_detections": 0, "iou": iou, "hit": None, "box_iou": None,
+            }
+        )
+    return records
+
+
 def run_eval(
     *,
     root: str | Path,
@@ -135,15 +192,21 @@ def run_eval(
         samples = sample_synth_dataset(root, categories, n_good, n_defective, seed)
     else:
         samples = sample_dataset(root, categories, n_good, n_defective, seed)
-    cache = DiskCache(cache_dir)
-    segmenter, judge = _resolve_adapters(
-        adapter, cache, segmenter_inner, judge_inner
-    )
-    if mode != "sam_only" and judge is None:
-        raise ValueError(f"mode {mode!r} needs a judge adapter")
-
     records: list[dict] = []
-    for sample in samples:
+    if mode == "ref_diff":
+        for sample in samples:
+            records += _ref_diff_records(sample, root)
+        samples_to_run = []
+    else:
+        samples_to_run = samples
+        cache = DiskCache(cache_dir)
+        segmenter, judge = _resolve_adapters(
+            adapter, cache, segmenter_inner, judge_inner
+        )
+        if mode != "sam_only" and judge is None:
+            raise ValueError(f"mode {mode!r} needs a judge adapter")
+
+    for sample in samples_to_run:
         profile = build_eval_profile(sample.category, rules)
         reference = None
         if mode in ("sam_judge_ref", "grounded"):
@@ -214,7 +277,7 @@ def run_eval(
         "run_id": run_id,
         "mode": mode,
         "source": source,
-        "adapter": adapter,
+        "adapter": "none" if mode == "ref_diff" else adapter,
         "seed": seed,
         "categories": [sample.category for sample in samples],
         "n_good": summary_good,
