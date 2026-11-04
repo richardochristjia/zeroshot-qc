@@ -27,7 +27,7 @@ Verify with `cd backend && python scripts/smoke.py --fake` (needs no dataset or 
 cp .env.example .env
 ```
 
-Fill in `.env` (all 8 keys; empty values keep local/fake defaults):
+Fill in `.env` (all 10 keys; empty values keep local/fake defaults):
 
 | Key | What it is |
 |---|---|
@@ -36,9 +36,11 @@ Fill in `.env` (all 8 keys; empty values keep local/fake defaults):
 | `SAM_MODEL_ID` | SAM 3.1 model id (from Meta docs) |
 | `JUDGE_MODEL_ID` | Muse Spark model id (from Meta docs) |
 | `IMAGE_MODEL_ID` | Muse Image model id (from Meta docs) |
+| `VOICE_MODEL_ID` | Muse Voice Transcribe model id for spoken rule edits (from Meta docs) |
 | `DATA_DIR` | Data dir (`./data` local; `/data` in the container) |
 | `MVTEC_DIR` | MVTec AD location (`./data/mvtec`) |
 | `CORS_ORIGINS` | Allowed browser origins, comma-separated (`http://localhost:5173` local) |
+| `USE_FAKE_ADAPTERS` | `true` serves the fake segmenter/judge for `/api/inspect` (no keys needed); default `false` |
 
 ## Run locally
 
