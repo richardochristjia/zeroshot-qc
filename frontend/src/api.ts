@@ -885,3 +885,14 @@ export async function getHealth(signal?: AbortSignal): Promise<"ok" | "down"> {
     return "down";
   }
 }
+
+/** POST /api/voice/transcribe: a WAV recording in, the spoken text out. */
+export async function transcribeAudio(wav: Blob, signal?: AbortSignal): Promise<string> {
+  const form = new FormData();
+  form.append("audio", wav, "rules.wav");
+  const response = await fetch(apiUrl("/api/voice/transcribe"), { method: "POST", body: form, signal });
+  if (!response.ok) await throwForStatus(response, "generic");
+  const data: unknown = await response.json();
+  if (!isRecord(data)) fail("VoiceTranscript");
+  return reqString(data, "text", "VoiceTranscript");
+}
