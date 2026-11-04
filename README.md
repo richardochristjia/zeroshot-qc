@@ -50,9 +50,10 @@ docker compose up --build
 
 ## Impact
 
-- Measured on 20 live inspections: median 25 s and p90 36 s per part, about $0.017 per part (about $17 per 1,000), from Meta's published prices.
-- Onboarding a part takes a written SOP (a draft profile in 15 s) and one good photo. No defect photos and no training.
-- Manual inspection is not error-free either: in a Sandia study of 82 inspectors, 15% of defective precision parts were passed.
+- Aimed at small, high-mix shops with no vision engineer and no defect photos: 40% of surveyed manufacturers still inspect mostly by hand, and 62% name scarce defect images as the top barrier to AI vision (vendor survey, weak source).
+- The manual baseline is poor: Sandia's 82 inspectors caught 85% of defects but rejected 35% of good parts, at 56 s per part. Warranty claims alone cost US manufacturers 1.30% of sales.
+- Our measurement (20 live runs): median 25 s per part, about $0.017. Onboarding is a written SOP and one good photo.
+- Fits sampling, incoming and audit checks (an 80-sample lot is about 33 min and $1.36). It does not fit fast lines (about 125x too slow for 300 bottles a minute), inline gating, or sole checks on safety-critical parts, and real-plant F1 will be below 0.869 at low defect rates.
 - Every number, with its source and strength, is in [docs/IMPACT.md](docs/IMPACT.md).
 
 ## Results
