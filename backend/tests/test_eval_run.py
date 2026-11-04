@@ -243,3 +243,13 @@ def test_ref_diff_needs_no_adapters_and_ranks_above_chance(tmp_path: Path) -> No
     assert (tmp_path / "runs" / "rd" / "summary.json").is_file()
     assert (tmp_path / "runs" / "rd" / "results.jsonl").is_file()
     assert summary["metrics"]["overall"]["auroc"] > 0.5
+
+
+def test_time_inspect_selection_skips_the_seed0_sample() -> None:
+    from scripts.time_inspect import select_images
+
+    picks = select_images(FIXTURE_ROOT, ["widget", "gizmo"], per_label=1, n_good=5, n_defective=10)
+    from app.eval.dataset import sample_dataset
+
+    taken = {i.image_path for s in sample_dataset(FIXTURE_ROOT, ["widget", "gizmo"], 5, 10, 0) for i in s.items}
+    assert picks and all(item.image_path not in taken for _, item in picks)
