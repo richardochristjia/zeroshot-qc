@@ -206,3 +206,23 @@ which caps the total defective images per category.
   old bottle record moved to `data/tune-stale-20261102/` and out of the demo.
   With the current pipeline, tuning gained in 1 of 6 runs: metal_nut with
   matched synthetic defects.
+
+## SAM box masks, error bars and a reference-diff baseline (2026-11-04)
+
+SAM outlines of judge boxes (code done, live numbers pending):
+- Probe 1 sent 10 crops around judge boxes to SAM 3.1 with the judge's defect noun as a concept prompt ("stain", "scratch", "chip"). All 10 replies were empty, so concept prompts do not find MVTec defects.
+- Probe 2 sent the same 10 judge boxes as box prompts on the full image. Every call returned a mask. Mean pixel IoU against ground truth: judge box 0.303, SAM mask 0.503, SAM mask clipped to the judge box 0.482. Two cases got worse when clipped (0.258 to 0.242, 0.241 to 0.211). 1.4 to 4.4 s per call.
+- Method: after the judge, each judge box goes to SAM as a box prompt (`<0f>1<|box;x1;y1;x2;y2;w;h|>`, at most 16 per request), the reply is decoded with Meta's `meta-sam-parser`, and the mask is clipped to the box. The detection's bbox stays the judge box, so F1, hit rate and box IoU cannot move; only pixel IoU does. Refinement is best effort: any failure keeps the box mask. Clipping was chosen before the eval and is not tuned on it.
+- Cache-only dry run of the 7-category grounded eval (`python -m scripts.dry_run_box_calls`, inner adapters raise on call): F1 0.869 reproduced with 0 judge misses and 0 part/candidate misses, and 114 SAM box calls to make. The live re-eval and its per-category pixel IoU are not run yet.
+
+Error bars (`python -m app.eval.stats RUN_DIR [--vs RUN_DIR]`), seed 0, 2,000 bootstrap draws resampled within category:
+- Overall F1 (95% CI): SAM + judge 0.872 (0.825 to 0.916); + reference 0.919 (0.882 to 0.953); grounded, 5 categories 0.918 (0.880 to 0.951); grounded, 7 categories 0.869 (0.826 to 0.904).
+- Single categories are wide: bottle 0.829 (0.686 to 0.939) and cable 0.778 (0.606 to 0.909) with the reference.
+- McNemar (exact, two-sided): judge vs judge + reference 10 vs 2 discordant, p = 0.039; judge + reference vs grounded 4 vs 4, p = 1.0.
+
+Reference-diff baseline (`--mode ref_diff`, run `20261104T000000Z-ref_diff`, 7 categories, seed 0, no model call):
+- Per image: grayscale, 5x5 Gaussian blur, resize to the reference, absolute difference with the blurred reference. Score is the 99.5th percentile. The threshold is the largest score over ten `train/good` images other than the reference. The mask is the difference above the 99.9th percentile of those images' pooled differences. No defect labels and no eval images are used to set either value.
+- Result: F1 0.358 (0.270 to 0.442), AUROC 0.593 (0.516 to 0.670), precision 0.821, recall 0.229, pixel IoU 0.021. Per category F1: bottle 0.533, cable 0.667, capsule 0.400, carpet 0.000, grid 0.182, metal nut 0.148, screw 0.400.
+- Grounded (0.869 on the same images) wins by 97 images to 16 (McNemar p < 0.001).
+- `fail_score` is score / (score + threshold) so AUROC pools across categories; `confidence` follows from it.
+- Not tuned after seeing results. The baseline is unaligned: parts that move or rotate against the reference raise every score.

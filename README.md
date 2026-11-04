@@ -50,12 +50,12 @@ docker compose up --build
 
 Real MVTec AD, real adapters, F1 per category (the demo's Eval page shows the same runs):
 
-| Mode | bottle | cable | capsule | carpet | grid | Overall |
-|---|---|---|---|---|---|---|
-| SAM only | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
-| SAM + judge | 0.842 | 0.625 | 0.842 | 1.000 | 1.000 | 0.872 |
-| SAM + judge + reference | 0.829 | 0.778 | 0.976 | 1.000 | 1.000 | **0.919** |
-| Grounded (part crop + judge boxes) | 0.850 | 0.743 | 0.976 | 1.000 | 1.000 | **0.918** |
+| Mode | bottle | cable | capsule | carpet | grid | Overall | Overall 95% CI |
+|---|---|---|---|---|---|---|---|
+| SAM only | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | - |
+| SAM + judge | 0.842 | 0.625 | 0.842 | 1.000 | 1.000 | 0.872 | 0.825 to 0.916 |
+| SAM + judge + reference | 0.829 | 0.778 | 0.976 | 1.000 | 1.000 | **0.919** | 0.882 to 0.953 |
+| Grounded (part crop + judge boxes) | 0.850 | 0.743 | 0.976 | 1.000 | 1.000 | **0.918** | 0.880 to 0.951 |
 
 Grounded mode also locates defects. Hit rate is the share of defects where a box covers at least half of the true defect:
 
@@ -73,6 +73,17 @@ The current pipeline (judge at temperature 0, part-sized SAM candidates dropped)
 | Hit rate | 0.450 | 0.600 | 0.550 | 0.950 | 0.700 | 0.600 | 0.350 | 0.600 |
 
 On the first five categories this is F1 0.913 against 0.918: the same within noise (7 of 150 verdicts changed, in both directions). With each profile's own rules instead of the shared string, metal nut rises to 0.824 (bent nuts missed: 6 of 8 down to 2) and screw stays at 0.750, both at precision 1.000.
+
+Error bars and a non-Meta baseline (all computed from each run's per-image results, no model calls: `python -m app.eval.stats RUN_DIR [--vs RUN_DIR]`). The 95% intervals are bootstrapped by resampling images within each category 2,000 times. The reference-diff baseline is plain OpenCV: it blurs the image, subtracts the category's known-good reference, scores the 99.5th percentile of the difference, and sets its threshold from ten `train/good` images only, with no defect labels and no Meta model. It never saw the eval images when its threshold was set, and it was not tuned afterwards.
+
+| 7 categories, seed 0 | F1 (95% CI) | AUROC (95% CI) |
+|---|---|---|
+| Reference diff (no Meta model) | 0.358 (0.270 to 0.442) | 0.593 (0.516 to 0.670) |
+| Grounded, SAM + Muse Spark | **0.869** (0.826 to 0.904) | **0.944** (0.920 to 0.966) |
+
+McNemar's exact test on per-image correctness: grounded beats the baseline on 97 images the baseline got wrong, against 16 the other way (p < 0.001). Adding the reference image to SAM + judge helps (10 images gained, 2 lost, p = 0.039); grounded mode against SAM + judge + reference is a tie (4 and 4, p = 1.0). The intervals are 8 to 10 points wide on the overall F1 and 30 to 40 points wide on single categories, so only the large gaps here are safe to read: the baseline against the judge, and the judge with and without a reference on the pooled sample. Differences of a few points between the Meta-model rows are within noise.
+
+The baseline's best categories are cable (F1 0.667) and bottle (0.533); it flags none of the carpet defects, and its mask overlaps the true defect by 2% on average (pixel IoU 0.021). It is not a tuned classical method, and a trained anomaly model such as PatchCore would beat it. It exists to show how much the judge adds over an obvious approach with no Meta model.
 
 Rule tuning, scored on held-out real images that tuning never saw:
 
@@ -110,9 +121,10 @@ Records are in `backend/demo/runs/*/summary.json`; notes and failure patterns ar
 
 | Model | Job | Called from |
 |---|---|---|
-| SAM 3.1 | Finds the part (so the app can zoom in on it) and segments candidate defect regions from the profile's text prompts | [`backend/app/adapters/sam.py`](backend/app/adapters/sam.py) |
+| SAM 3.1 | Finds the part (so the app can zoom in on it), segments candidate defect regions from the profile's text prompts, and outlines each defect Muse Spark boxes (box prompt, mask clipped to the box) | [`backend/app/adapters/sam.py`](backend/app/adapters/sam.py) |
 | Muse Spark | Judges the part against the rules and the reference image and boxes the defects it finds; rewrites the rules in tuning; also drafts a profile from an SOP | [`backend/app/adapters/muse_spark.py`](backend/app/adapters/muse_spark.py) |
 | Muse Image | Generates synthetic defect images for test data and for the tune set | [`backend/app/adapters/muse_image.py`](backend/app/adapters/muse_image.py) |
+| Muse Voice Transcribe | Turns a spoken rule edit on the Line page into text the operator reviews and applies | [`backend/app/adapters/muse_voice.py`](backend/app/adapters/muse_voice.py) |
 
 ## How it works
 
@@ -123,7 +135,8 @@ flowchart LR
     K --> J[Muse Spark judge<br/>rules + reference image]
     P --> J
     J --> B[Boxes for defects<br/>SAM missed]
-    B --> V[PASS / FAIL<br/>+ overlay]
+    B --> O[SAM 3.1 outlines<br/>judge boxes]
+    O --> V[PASS / FAIL<br/>+ overlay]
     J --> V
     C[(Cache)] -.replays.-> S
     C -.replays.-> J
