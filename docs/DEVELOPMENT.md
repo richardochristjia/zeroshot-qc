@@ -19,7 +19,7 @@ Verify with `cd backend && python scripts/smoke.py --fake` (needs no dataset or 
 - Python 3.11 (`python3.11 --version`; pinned in `.python-version`)
 - Node 18+ (`node --version`) with npm
 - Docker with the daemon running (`docker info` must succeed)
-- No API keys are needed for a fake-adapter local run. Real SAM 3.1 / Muse Spark / Muse Image calls need the keys below.
+- No API keys are needed for a fake-adapter local run. Real SAM 3.1 / Muse Spark / Muse Image / Muse Voice calls need the keys below.
 
 ## Setup
 
@@ -121,3 +121,13 @@ Notes:
 - Keyless: with no `META_API_KEY`, bundled samples replay real cached verdicts and other inputs fall back to placeholder models (flagged `demo: true`). `USE_FAKE_ADAPTERS=true` forces fakes everywhere.
 - Data persists in the `zqc-data` volume across `down`/`up` (`down -v` deletes it).
 - Stop the dev servers (`uvicorn :8000`, Vite) first if the host ports are taken.
+
+## Eval commands (from `backend/`)
+
+| Command | Cost |
+|---|---|
+| `python -m app.eval.stats RUN_DIR [--vs RUN_DIR] [--boots N] [--seed N]` | Free: bootstrap CIs and McNemar from a run's stored results. |
+| `python -m app.eval.run --mode ref_diff --mvtec-dir DIR ...` | Free, no model: OpenCV reference-diff baseline. Needs the MVTec images. |
+| `python -m scripts.time_inspect [--dry]` | Paid: live model calls. `--dry` lists the images and call budget without calling the API. |
+
+`app.eval.run` takes `--mode {sam_only,sam_judge,sam_judge_ref,grounded,ref_diff}`; every mode except `ref_diff` calls the models unless `--adapter fake` or `scripted` is used.
