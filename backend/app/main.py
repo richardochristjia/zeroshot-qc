@@ -75,3 +75,26 @@ def health() -> dict:
             "image": settings.image_model_id,
         },
     }
+
+
+@app.get("/{rel_path:path}", include_in_schema=False)
+def serve_frontend(rel_path: str) -> FileResponse:
+    """Serve the built SPA when FRONTEND_DIR is set; must stay the last route."""
+
+    if (
+        not settings.frontend_dir
+        or rel_path in ("api", "files")
+        or rel_path.startswith(("api/", "files/"))
+    ):
+        raise HTTPException(status_code=404, detail="Not Found")
+    root = Path(settings.frontend_dir).resolve()
+    if (
+        rel_path
+        and not rel_path.startswith("/")
+        and "\\" not in rel_path
+        and not any(seg in (".", "..") for seg in rel_path.split("/"))
+    ):
+        candidate = (root / rel_path).resolve()
+        if root in candidate.parents and candidate.is_file():
+            return FileResponse(candidate)
+    return FileResponse(root / "index.html")
