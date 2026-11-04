@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { JSX } from 'react'
-import { ApiError, inspectImage, listProfiles } from '../api.ts'
+import { ApiError, inspectImage, listProfiles, transcribeAudio } from '../api.ts'
 import type { InspectionResult, ProductProfile } from '../api.ts'
 import { Alert } from '../components/Alert.tsx'
 import { Button } from '../components/Button.tsx'
@@ -10,11 +10,14 @@ import { Panel, PanelHeader } from '../components/Panel.tsx'
 import { VerdictBadge } from '../components/VerdictBadge.tsx'
 import { FRAME_H, FRAME_W, HOLD_MS, arm, idleState, pause, shouldBeep, step, toGray } from '../line-trigger.ts'
 import type { Phase, TriggerState } from '../line-trigger.ts'
+import { Field } from '../components/Field.tsx'
+import { WAV_RATE, encodeWav, toMono16k } from '../wav.ts'
 
 const SAMPLE_MS = 100
 const MUTE_KEY = 'zqc-line-mute'
 const RIBBON_MAX = 40
 const THUMBS_MAX = 8
+const MAX_RECORD_MS = 15000
 
 type CamState = { kind: 'starting' } | { kind: 'live' } | { kind: 'error'; title: string; body: string }
 
@@ -76,6 +79,12 @@ export default function Line(): JSX.Element {
   const [showGuide, setShowGuide] = useState(true)
   const [muted, setMuted] = useState(readMuted)
   const [flashKey, setFlashKey] = useState(0)
+  const [rulesText, setRulesText] = useState('')
+  const [appliedRules, setAppliedRules] = useState<string | null>(null)
+  const [mic, setMic] = useState<'idle' | 'recording' | 'transcribing'>('idle')
+  const [rulesError, setRulesError] = useState<string | null>(null)
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const appliedRef = useRef<string | null>(null)
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const sampleRef = useRef<HTMLCanvasElement | null>(null)
@@ -93,6 +102,7 @@ export default function Line(): JSX.Element {
     entriesRef.current = entries
     profileRef.current = profileId
     mutedRef.current = muted
+    appliedRef.current = appliedRules
   })
 
   useEffect(() => {
@@ -100,7 +110,10 @@ export default function Line(): JSX.Element {
     listProfiles(controller.signal)
       .then((loaded) => {
         setProfiles(loaded)
-        if (loaded.length > 0) setProfileId(loaded[0].id)
+        if (loaded.length > 0) {
+          setProfileId(loaded[0].id)
+          setRulesText(loaded[0].rules)
+        }
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return
@@ -108,6 +121,54 @@ export default function Line(): JSX.Element {
       })
     return () => controller.abort()
   }, [])
+
+  // The rules box starts from the active profile's rules (the override replaces them wholesale).
+  const selectProfile = (id: string): void => {
+    setProfileId(id)
+    setRulesText(profiles.find((p) => p.id === id)?.rules ?? '')
+    setAppliedRules(null)
+    setRulesError(null)
+  }
+
+  useEffect(() => () => recorderRef.current?.stop(), [])
+
+  const toggleMic = async (): Promise<void> => {
+    if (mic === 'recording') {
+      recorderRef.current?.stop()
+      return
+    }
+    if (mic === 'transcribing') return
+    setRulesError(null)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      const chunks: Blob[] = []
+      const limit = window.setTimeout(() => recorder.state === 'recording' && recorder.stop(), MAX_RECORD_MS)
+      recorder.ondataavailable = (event) => chunks.push(event.data)
+      recorder.onstop = () => {
+        window.clearTimeout(limit)
+        stream.getTracks().forEach((t) => t.stop())
+        recorderRef.current = null
+        setMic('transcribing')
+        void (async () => {
+          try {
+            const samples = await toMono16k(new Blob(chunks))
+            const text = (await transcribeAudio(encodeWav(samples, WAV_RATE))).trim()
+            if (text !== '') setRulesText((prev) => (prev.trim() === '' ? text : `${prev.trimEnd()}\n${text}`))
+          } catch (err: unknown) {
+            setRulesError(err instanceof ApiError ? err.detail : 'Could not transcribe the recording.')
+          } finally {
+            setMic('idle')
+          }
+        })()
+      }
+      recorderRef.current = recorder
+      recorder.start()
+      setMic('recording')
+    } catch {
+      setRulesError('Microphone access was refused or no microphone was found.')
+    }
+  }
 
   const setTrigger = useCallback((next: TriggerState): void => {
     triggerRef.current = next
@@ -175,7 +236,7 @@ export default function Line(): JSX.Element {
     try {
       const blob = await grabFrame()
       if (blob === null) throw new Error('Could not capture the frame.')
-      const result = await inspectImage({ image: blob, filename: `line-${n}.jpg`, profileId: activeProfile, signal: controller.signal })
+      const result = await inspectImage({ image: blob, filename: `line-${n}.jpg`, profileId: activeProfile, rules: appliedRef.current ?? undefined, signal: controller.signal })
       nextNRef.current = n + 1
       const thumbUrl = URL.createObjectURL(blob)
       setEntries((prev) => {
@@ -337,7 +398,7 @@ export default function Line(): JSX.Element {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <select className="ctl w-auto!" aria-label="Profile" value={profileId} onChange={(event) => {
               storeGuide(null)
-              setProfileId(event.target.value)
+              selectProfile(event.target.value)
             }}>
             {profiles.map((p) => (
               <option key={p.id} value={p.id}>
@@ -452,6 +513,35 @@ export default function Line(): JSX.Element {
               </>
             )}
           </div>
+
+          <Panel aria-label="Session rules">
+            <PanelHeader title="Session rules">
+              <Button
+                icon={mic === 'recording' ? 'pause' : 'play'}
+                className="min-h-8"
+                onClick={() => void toggleMic()}
+                disabled={mic === 'transcribing'}
+                aria-label={mic === 'recording' ? 'Stop recording' : 'Record a rule'}
+              >
+                {mic === 'recording' ? 'Stop' : mic === 'transcribing' ? 'Transcribing…' : 'Speak'}
+              </Button>
+            </PanelHeader>
+            <div className="grid gap-3 p-4">
+              {rulesError !== null && <Alert>{rulesError}</Alert>}
+              <Field label="Rules for this session" hint="Spoken text is added on a new line. Nothing applies until you press Apply.">
+                <textarea className="ctl" rows={4} value={rulesText} onChange={(event) => setRulesText(event.target.value)} />
+              </Field>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="primary" onClick={() => setAppliedRules(rulesText.trim() === '' ? null : rulesText)}>
+                  Apply
+                </Button>
+                <Button onClick={() => setAppliedRules(null)} disabled={appliedRules === null}>
+                  Clear
+                </Button>
+                {appliedRules !== null && <span className="text-sm text-ink-2">Session rules are in use.</span>}
+              </div>
+            </div>
+          </Panel>
 
           <Panel aria-label="This session">
             <PanelHeader title="This session">
