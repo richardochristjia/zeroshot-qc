@@ -36,7 +36,7 @@ Open http://localhost:8080. Every page is already populated from a bundled demo 
 What to try:
 
 - **Inspect**: click a "Try a sample" thumbnail. It picks the profile and returns a real SAM + Muse Spark verdict, replayed from cache. Edit the rules box to re-judge; with no key, edits and your own uploads return a placeholder verdict with a "Demo result" banner.
-- **Eval**: seven evaluation runs (SAM only, SAM + judge, + reference, grounded, and the reference-diff baseline) with the newest run per mode in the ablation, plus failure thumbnails.
+- **Eval**: seven evaluation runs (SAM only, SAM + judge, + reference, grounded, and the reference-diff baseline) with same-category runs compared in the ablation, plus failure thumbnails.
 - **Tune**: replays the metal nut rule rewrite and its held-out F1.
 - **Line**: camera inspection. Spoken rule edits need a key and `VOICE_MODEL_ID`.
 - **Synthetic**: generated bottle defect images with masks.
