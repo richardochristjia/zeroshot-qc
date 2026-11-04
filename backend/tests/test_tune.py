@@ -177,6 +177,7 @@ def test_reviser_retries_once_then_raises(monkeypatch) -> None:
 
     monkeypatch.setattr(settings, "judge_model_id", "m")
     monkeypatch.setattr(settings, "meta_api_key", "k")
+    monkeypatch.setattr(settings, "meta_api_base_url", "https://x.test")
     texts = iter(["not json", json.dumps({"rules": "ok rules", "rationale": "r"})])
 
     class Resp:
