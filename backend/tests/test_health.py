@@ -18,7 +18,7 @@ client = TestClient(app)
 def _reset_settings(monkeypatch: pytest.MonkeyPatch):
     # Ensure each test starts from a known empty baseline; individual
     # tests override via monkeypatch again where needed.
-    for field in ("sam_model_id", "judge_model_id", "image_model_id"):
+    for field in ("sam_model_id", "judge_model_id", "image_model_id", "voice_model_id"):
         monkeypatch.setattr(settings, field, "")
     yield
 
@@ -28,7 +28,7 @@ def test_health_empty_settings() -> None:
     assert resp.status_code == 200
     assert resp.json() == {
         "status": "ok",
-        "models": {"sam": "", "judge": "", "image": ""},
+        "models": {"sam": "", "judge": "", "image": "", "voice": ""},
     }
 
 
@@ -45,11 +45,12 @@ def test_health_configured_model_ids(monkeypatch: pytest.MonkeyPatch) -> None:
             "sam": "sam-test-id",
             "judge": "judge-test-id",
             "image": "image-test-id",
+            "voice": "",
         },
     }
     # exact shape, no extra keys
     assert set(body.keys()) == {"status", "models"}
-    assert set(body["models"].keys()) == {"sam", "judge", "image"}
+    assert set(body["models"].keys()) == {"sam", "judge", "image", "voice"}
 
 
 def test_health_never_leaks_secrets(monkeypatch: pytest.MonkeyPatch) -> None:

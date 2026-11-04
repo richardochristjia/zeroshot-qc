@@ -206,3 +206,8 @@ class FakeRuleReviser:
         return revision if revision.rules else revision.model_copy(
             update={"rules": rules + " Ignore marks that match the reference."}
         )
+
+
+class FakeTranscriber:
+    def transcribe(self, wav: bytes) -> str:
+        return "also fail any visible dent"

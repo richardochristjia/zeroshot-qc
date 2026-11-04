@@ -100,6 +100,10 @@ class Judge(Protocol):
     def sop_to_profile(self, sop_text: str, category_name: str) -> ProductProfile: ...
 
 
+class Transcriber(Protocol):
+    def transcribe(self, wav: bytes) -> str: ...
+
+
 class ImageGenerator(Protocol):
     def add_defect(
         self, good_image: Image.Image, defect_description: str, mask: Image.Image | None
