@@ -130,4 +130,4 @@ Notes:
 | `python -m app.eval.run --mode ref_diff --mvtec-dir DIR ...` | Free, no model: OpenCV reference-diff baseline. Needs the MVTec images. |
 | `python -m scripts.time_inspect [--dry]` | Paid: live model calls. `--dry` lists the images and call budget without calling the API. |
 
-`app.eval.run` takes `--mode {sam_only,sam_judge,sam_judge_ref,grounded,ref_diff}`; every mode except `ref_diff` calls the models unless `--adapter fake` or `scripted` is used.
+`app.eval.run` takes `--mode {sam_only,sam_judge,sam_judge_ref,grounded,ref_diff}`; `--adapter` defaults to `scripted` (no model calls); only `--adapter real` calls the Meta models.
