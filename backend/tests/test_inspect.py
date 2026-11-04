@@ -572,3 +572,30 @@ def test_more_than_16_judge_boxes_chunk_into_two_calls(image, profile) -> None: 
     assert len(seg.prompts) == 2
     assert seg.prompts[0].count("<|box;") == 16 and seg.prompts[1].count("<|box;") == 1
     assert seg.prompts[1].startswith("<0f>1<|box;")
+
+
+def test_two_judge_boxes_get_their_own_sam_ids(image, profile) -> None:  # type: ignore[no-untyped-def]
+    # px boxes (20, 12, 40, 24) and (100, 60, 60, 36); masks sit inside their own box only
+    seg = BoxSegmenter({"1": _rect_binary(20, 12, 10, 10), "2": _rect_binary(100, 60, 20, 6)})
+    dets, _ = _judge_run(image, profile, seg, [[100, 100, 300, 300], [500, 500, 800, 800]])
+    assert [(d.bbox, d.area_px) for d in dets if d.source == "judge"] == [
+        ((20, 12, 40, 24), 100),
+        ((100, 60, 60, 36), 120),
+    ]
+
+
+def test_second_chunk_id_1_lands_on_box_17(image, profile) -> None:  # type: ignore[no-untyped-def]
+    replies = iter([{}, {"1": _rect_binary(160, 0, 4, 12)}])  # chunk 1 empty, chunk 2 id 1
+
+    class PerCall(BoxSegmenter):
+        def segment(self, image, prompts):  # type: ignore[no-untyped-def]
+            if prompts[0].startswith("<0f>"):
+                self.masks = next(replies)
+            return super().segment(image, prompts)
+
+    boxes = [[i * 50, 0, i * 50 + 40, 100] for i in range(17)]
+    dets, _ = _judge_run(image, profile, PerCall(), boxes)
+    judged = [d for d in dets if d.source == "judge"]
+    assert len(judged) == 17
+    assert judged[16].bbox == (160, 0, 8, 12) and judged[16].area_px == 4 * 12
+    assert all(d.area_px == 8 * 12 for d in judged[:16])
