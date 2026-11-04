@@ -46,6 +46,13 @@ cp .env.example .env
 docker compose up --build
 ```
 
+## Impact
+
+- Measured on 20 live inspections: median 25 s and p90 36 s per part, about $0.017 per part (about $17 per 1,000), from Meta's published prices.
+- Onboarding a part takes a written SOP (a draft profile in 15 s) and one good photo. No defect photos and no training.
+- Manual inspection is not error-free either: in a Sandia study of 82 inspectors, 15% of defective precision parts were passed.
+- Every number, with its source and strength, is in [docs/IMPACT.md](docs/IMPACT.md).
+
 ## Results
 
 Real MVTec AD, real adapters, F1 per category (the demo's Eval page shows the same runs):

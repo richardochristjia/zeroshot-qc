@@ -1,0 +1,342 @@
+{
+  "run_at": "2026-11-04T04:36:16.989161+00:00",
+  "n_images": 20,
+  "seconds_median": 25.14,
+  "seconds_p90": 35.98,
+  "calls_per_part": {
+    "sam": 2.5,
+    "sam_box": 0.45,
+    "spark": 1.0
+  },
+  "usd_per_part_mean": 0.0171415,
+  "sop_draft_seconds": 15.0,
+  "sop_draft_calls": 1,
+  "prices": {
+    "sam_per_image": 0.0025,
+    "spark_in_per_m": 1.25,
+    "spark_out_per_m": 4.25,
+    "source": "dev.meta.ai/docs/pricing-rate-limits, 2026-11-04"
+  },
+  "rows": [
+    {
+      "category": "bottle",
+      "label": "good",
+      "verdict": "PASS",
+      "seconds": 24.53,
+      "calls": {
+        "sam": 2,
+        "sam_box": 0,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 3874,
+        "out": 1713
+      },
+      "usd": 0.01712
+    },
+    {
+      "category": "bottle",
+      "label": "good",
+      "verdict": "PASS",
+      "seconds": 34.09,
+      "calls": {
+        "sam": 2,
+        "sam_box": 0,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 3874,
+        "out": 1567
+      },
+      "usd": 0.0165
+    },
+    {
+      "category": "bottle",
+      "label": "defective",
+      "verdict": "FAIL",
+      "seconds": 24.78,
+      "calls": {
+        "sam": 3,
+        "sam_box": 1,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 3874,
+        "out": 1530
+      },
+      "usd": 0.01885
+    },
+    {
+      "category": "bottle",
+      "label": "defective",
+      "verdict": "FAIL",
+      "seconds": 25.5,
+      "calls": {
+        "sam": 3,
+        "sam_box": 1,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 3874,
+        "out": 1531
+      },
+      "usd": 0.01885
+    },
+    {
+      "category": "cable",
+      "label": "good",
+      "verdict": "PASS",
+      "seconds": 39.02,
+      "calls": {
+        "sam": 2,
+        "sam_box": 0,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 4909,
+        "out": 1487
+      },
+      "usd": 0.01746
+    },
+    {
+      "category": "cable",
+      "label": "good",
+      "verdict": "PASS",
+      "seconds": 24.07,
+      "calls": {
+        "sam": 2,
+        "sam_box": 0,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 4909,
+        "out": 1161
+      },
+      "usd": 0.01607
+    },
+    {
+      "category": "cable",
+      "label": "defective",
+      "verdict": "FAIL",
+      "seconds": 34.63,
+      "calls": {
+        "sam": 3,
+        "sam_box": 1,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 4909,
+        "out": 2000
+      },
+      "usd": 0.02214
+    },
+    {
+      "category": "cable",
+      "label": "defective",
+      "verdict": "PASS",
+      "seconds": 35.98,
+      "calls": {
+        "sam": 2,
+        "sam_box": 0,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 4909,
+        "out": 1880
+      },
+      "usd": 0.01913
+    },
+    {
+      "category": "capsule",
+      "label": "good",
+      "verdict": "PASS",
+      "seconds": 28.98,
+      "calls": {
+        "sam": 3,
+        "sam_box": 0,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 2294,
+        "out": 1502
+      },
+      "usd": 0.01675
+    },
+    {
+      "category": "capsule",
+      "label": "good",
+      "verdict": "PASS",
+      "seconds": 20.84,
+      "calls": {
+        "sam": 2,
+        "sam_box": 0,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 2422,
+        "out": 1280
+      },
+      "usd": 0.01347
+    },
+    {
+      "category": "capsule",
+      "label": "defective",
+      "verdict": "FAIL",
+      "seconds": 27.4,
+      "calls": {
+        "sam": 3,
+        "sam_box": 1,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 2422,
+        "out": 1370
+      },
+      "usd": 0.01635
+    },
+    {
+      "category": "capsule",
+      "label": "defective",
+      "verdict": "FAIL",
+      "seconds": 26.52,
+      "calls": {
+        "sam": 3,
+        "sam_box": 1,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 2422,
+        "out": 1118
+      },
+      "usd": 0.01528
+    },
+    {
+      "category": "carpet",
+      "label": "good",
+      "verdict": "PASS",
+      "seconds": 14.62,
+      "calls": {
+        "sam": 2,
+        "sam_box": 0,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 4909,
+        "out": 657
+      },
+      "usd": 0.01393
+    },
+    {
+      "category": "carpet",
+      "label": "good",
+      "verdict": "PASS",
+      "seconds": 16.7,
+      "calls": {
+        "sam": 2,
+        "sam_box": 0,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 4909,
+        "out": 725
+      },
+      "usd": 0.01422
+    },
+    {
+      "category": "carpet",
+      "label": "defective",
+      "verdict": "FAIL",
+      "seconds": 21.67,
+      "calls": {
+        "sam": 3,
+        "sam_box": 1,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 4909,
+        "out": 939
+      },
+      "usd": 0.01763
+    },
+    {
+      "category": "carpet",
+      "label": "defective",
+      "verdict": "FAIL",
+      "seconds": 35.27,
+      "calls": {
+        "sam": 3,
+        "sam_box": 1,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 4909,
+        "out": 1991
+      },
+      "usd": 0.0221
+    },
+    {
+      "category": "grid",
+      "label": "good",
+      "verdict": "PASS",
+      "seconds": 14.42,
+      "calls": {
+        "sam": 2,
+        "sam_box": 0,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 4909,
+        "out": 784
+      },
+      "usd": 0.01447
+    },
+    {
+      "category": "grid",
+      "label": "good",
+      "verdict": "PASS",
+      "seconds": 17.95,
+      "calls": {
+        "sam": 2,
+        "sam_box": 0,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 4909,
+        "out": 866
+      },
+      "usd": 0.01482
+    },
+    {
+      "category": "grid",
+      "label": "defective",
+      "verdict": "FAIL",
+      "seconds": 29.02,
+      "calls": {
+        "sam": 3,
+        "sam_box": 1,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 4909,
+        "out": 1372
+      },
+      "usd": 0.01947
+    },
+    {
+      "category": "grid",
+      "label": "defective",
+      "verdict": "FAIL",
+      "seconds": 22.69,
+      "calls": {
+        "sam": 3,
+        "sam_box": 1,
+        "spark": 1
+      },
+      "tokens": {
+        "in": 4909,
+        "out": 1079
+      },
+      "usd": 0.01822
+    }
+  ]
+}
