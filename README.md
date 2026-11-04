@@ -7,9 +7,11 @@
 
 <p align="center">
   <a href="#quickstart"><img alt="Run with Docker" src="https://img.shields.io/badge/run%20with-Docker-2496ED?logo=docker&logoColor=white"></a>
-  <a href="#which-meta-models-do-what"><img alt="Meta models: SAM 3.1, Muse Spark, Muse Image" src="https://img.shields.io/badge/Meta%20models-SAM%203.1%20%C2%B7%20Muse%20Spark%20%C2%B7%20Muse%20Image-0866FF"></a>
+  <a href="#which-meta-models-do-what"><img alt="Meta models: SAM 3.1, Muse Spark, Muse Image, Muse Voice" src="https://img.shields.io/badge/Meta%20models-SAM%203.1%20%C2%B7%20Muse%20Spark%20%C2%B7%20Muse%20Image%20%C2%B7%20Muse%20Voice-0866FF"></a>
   <a href="backend/demo/LICENSE-MVTEC.md"><img alt="Demo data: CC BY-NC-SA 4.0" src="https://img.shields.io/badge/demo%20data-CC%20BY--NC--SA%204.0-lightgrey"></a>
 </p>
+
+Built for the Meta Global AI Developer Hackathon 2026, track: Build for Your World.
 
 <p align="center">
   <a href="https://youtu.be/IlT8yUzFjS8"><img src="https://img.youtube.com/vi/IlT8yUzFjS8/maxresdefault.jpg" alt="ZeroShot QC demo video on YouTube" width="720"></a>
