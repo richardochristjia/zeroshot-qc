@@ -1,11 +1,15 @@
 """POST /api/voice/transcribe: fake, keyless and non-WAV paths, plus the adapter request."""
 
+import asyncio
 import json
+import time
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
 import app.adapters.muse_voice as muse_voice
+import app.routers.voice as voice
 from app.config import settings
 from app.main import app
 
@@ -21,6 +25,30 @@ def test_fake_transcriber_returns_text(monkeypatch) -> None:
     monkeypatch.setattr(settings, "use_fake_adapters", True)
     resp = _post(WAV)
     assert resp.status_code == 200 and resp.json() == {"text": "also fail any visible dent"}
+
+
+def test_slow_transcribe_does_not_block_health(monkeypatch) -> None:
+    class Slow:
+        def transcribe(self, wav: bytes) -> str:
+            time.sleep(1.5)
+            return "x"
+
+    monkeypatch.setattr(voice, "_get_transcriber", lambda: Slow())
+
+    async def run() -> float:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://t") as c:
+            start = time.monotonic()
+            post = asyncio.create_task(
+                c.post("/api/voice/transcribe", files={"audio": ("a.wav", WAV, "audio/wav")})
+            )
+            await asyncio.sleep(0.05)
+            assert (await c.get("/api/health")).status_code == 200
+            elapsed = time.monotonic() - start
+            assert (await post).json() == {"text": "x"}
+            return elapsed
+
+    assert asyncio.run(run()) < 1.0
 
 
 def test_keyless_is_503(monkeypatch) -> None:
