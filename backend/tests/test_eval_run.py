@@ -225,3 +225,21 @@ def test_grounded_mode_writes_localization(tmp_path: Path) -> None:
     assert metrics["overall"]["localization"]["hit_rate"] == pytest.approx(sum(hits) / len(hits))
     plain = _run_mode(tmp_path, "sam_judge_ref", "run-plain")[1]["metrics"]["overall"]
     assert plain["localization"] is None
+
+
+def test_ref_diff_needs_no_adapters_and_ranks_above_chance(tmp_path: Path) -> None:
+    class Boom:
+        def segment(self, *a, **k):
+            raise AssertionError("ref_diff must not call a segmenter")
+
+        judge = segment
+
+    records, summary = run_eval(
+        root=FIXTURE_ROOT, mode="ref_diff", seed=0, adapter="real",
+        cache_dir=tmp_path / "cache", out_dir=tmp_path / "runs", run_id="rd",
+        segmenter_inner=Boom(), judge_inner=Boom(),
+    )
+    assert len(records) == 60
+    assert (tmp_path / "runs" / "rd" / "summary.json").is_file()
+    assert (tmp_path / "runs" / "rd" / "results.jsonl").is_file()
+    assert summary["metrics"]["overall"]["auroc"] > 0.5
