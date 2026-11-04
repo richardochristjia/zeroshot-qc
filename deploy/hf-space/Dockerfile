@@ -6,8 +6,8 @@ FROM node:20-alpine AS web
 ARG REPO=https://github.com/richardochristjia/zeroshot-qc.git
 ARG REF=main
 RUN apk add --no-cache git
-# Busts the layer cache whenever the branch head moves.
-ADD https://api.github.com/repos/richardochristjia/zeroshot-qc/git/refs/heads/${REF} /tmp/ref.json
+# Busts the layer cache when the branch head moves; the atom feed has no API rate limit.
+ADD https://github.com/richardochristjia/zeroshot-qc/commits/${REF}.atom /tmp/ref.atom
 RUN git clone --depth 1 --branch "$REF" "$REPO" /src
 WORKDIR /src/frontend
 RUN npm ci && npm run build
