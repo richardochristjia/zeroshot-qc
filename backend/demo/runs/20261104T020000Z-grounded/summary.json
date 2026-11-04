@@ -1,0 +1,159 @@
+{
+  "run_id": "20261104T020000Z-grounded",
+  "mode": "grounded",
+  "source": "mvtec",
+  "adapter": "real",
+  "seed": 0,
+  "categories": [
+    "bottle",
+    "cable",
+    "capsule",
+    "carpet",
+    "grid",
+    "screw",
+    "metal_nut"
+  ],
+  "n_good": 10,
+  "n_defective": 20,
+  "rules": "FAIL any visible scratch, stain, or surface damage; PASS otherwise.",
+  "metrics": {
+    "per_category": {
+      "bottle": {
+        "precision": 0.8947368421052632,
+        "recall": 0.85,
+        "f1": 0.8717948717948718,
+        "accuracy": 0.8333333333333334,
+        "auroc": 0.9,
+        "n": 30.0,
+        "tp": 17.0,
+        "tn": 8.0,
+        "fp": 2.0,
+        "fn": 3.0,
+        "iou": 0.42284303855340466,
+        "localization": {
+          "hit_rate": 0.45,
+          "box_iou": 0.3431733344523391
+        }
+      },
+      "cable": {
+        "precision": 0.8,
+        "recall": 0.6,
+        "f1": 0.6857142857142857,
+        "accuracy": 0.6333333333333333,
+        "auroc": 0.795,
+        "n": 30.0,
+        "tp": 12.0,
+        "tn": 7.0,
+        "fp": 3.0,
+        "fn": 8.0,
+        "iou": 0.33840097626428156,
+        "localization": {
+          "hit_rate": 0.6,
+          "box_iou": 0.3394462671361473
+        }
+      },
+      "capsule": {
+        "precision": 0.9523809523809523,
+        "recall": 1.0,
+        "f1": 0.975609756097561,
+        "accuracy": 0.9666666666666667,
+        "auroc": 0.995,
+        "n": 30.0,
+        "tp": 20.0,
+        "tn": 9.0,
+        "fp": 1.0,
+        "fn": 0.0,
+        "iou": 0.3333059280504992,
+        "localization": {
+          "hit_rate": 0.55,
+          "box_iou": 0.31874956741748345
+        }
+      },
+      "carpet": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "accuracy": 1.0,
+        "auroc": 1.0,
+        "n": 30.0,
+        "tp": 20.0,
+        "tn": 10.0,
+        "fp": 0.0,
+        "fn": 0.0,
+        "iou": 0.5686820245233599,
+        "localization": {
+          "hit_rate": 0.95,
+          "box_iou": 0.6328277230159002
+        }
+      },
+      "grid": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "accuracy": 1.0,
+        "auroc": 1.0,
+        "n": 30.0,
+        "tp": 20.0,
+        "tn": 10.0,
+        "fp": 0.0,
+        "fn": 0.0,
+        "iou": 0.5665958571988832,
+        "localization": {
+          "hit_rate": 0.7,
+          "box_iou": 0.5009622628928654
+        }
+      },
+      "metal_nut": {
+        "precision": 0.9230769230769231,
+        "recall": 0.6,
+        "f1": 0.7272727272727274,
+        "accuracy": 0.7,
+        "auroc": 0.895,
+        "n": 30.0,
+        "tp": 12.0,
+        "tn": 9.0,
+        "fp": 1.0,
+        "fn": 8.0,
+        "iou": 0.40580558377732256,
+        "localization": {
+          "hit_rate": 0.6,
+          "box_iou": 0.3544868226838607
+        }
+      },
+      "screw": {
+        "precision": 1.0,
+        "recall": 0.6,
+        "f1": 0.7499999999999999,
+        "accuracy": 0.7333333333333333,
+        "auroc": 0.9375,
+        "n": 30.0,
+        "tp": 12.0,
+        "tn": 10.0,
+        "fp": 0.0,
+        "fn": 8.0,
+        "iou": 0.18504537470262825,
+        "localization": {
+          "hit_rate": 0.35,
+          "box_iou": 0.17274040938296226
+        }
+      }
+    },
+    "overall": {
+      "precision": 0.9416666666666667,
+      "recall": 0.8071428571428572,
+      "f1": 0.8692307692307693,
+      "accuracy": 0.8380952380952381,
+      "auroc": 0.9441326530612245,
+      "n": 210.0,
+      "tp": 113.0,
+      "tn": 63.0,
+      "fp": 7.0,
+      "fn": 27.0,
+      "iou": 0.40295411186719704,
+      "localization": {
+        "hit_rate": 0.6,
+        "box_iou": 0.38034091242593693
+      }
+    }
+  }
+}

@@ -30,6 +30,7 @@ RUNS = [
     "20261027T094406Z-sam_judge_ref",
     "20261102T083055Z-grounded",
     "20261103T030057Z-grounded",
+    "20261104T020000Z-grounded",
     "20261104T000000Z-ref_diff",
 ]
 # (profile, test subdir, index) -> one good and one defective each
